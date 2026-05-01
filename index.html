@@ -568,7 +568,57 @@ footer {
     </div>
   </div>
 </section>
-  <section id="sec-thm5" class="theorem-section" data-nav="thm5"></section>
+  <section id="sec-thm5" class="theorem-section" data-nav="thm5">
+  <h2>定理 5：Feature Learning 必然發生</h2>
+  <div class="layer-intuition">
+    <p>四條獨立的證明路線，全部指向同一結論：隨機初始化的梯度下降必然學到正確的特徵方向。</p>
+    <ul>
+      <li><strong>路線 A（景觀分析）</strong>：損失函數的所有谷底都與目標方向對齊，其他臨界點都是不穩定的鞍點——梯度下降不可能卡在錯誤的方向。</li>
+      <li><strong>路線 B（兩階段動力學）</strong>：訓練分為兩個階段——先是緩慢的偵測期（從噪聲中找到微弱信號），然後是指數級的對齊期（一旦偵測到，迅速鎖定目標方向）。</li>
+      <li><strong>路線 C（平均場支撐坍縮）</strong>：未對齊目標方向的神經元浪費資源——在無限寬度極限下，最優分佈的支撐集坍縮到目標方向上。</li>
+      <li><strong>路線 D（高維幾何）</strong>：在高維空間中，隨機方向幾乎必然與目標正交——只有 Feature Learning 能打破這個幾何障礙。</li>
+    </ul>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p><strong>設定</strong>：Single-index model $f^*(x) = \varphi(w^{*T} x)$，$\varphi$ 為 CPL（連續分段線性），$\kappa = 1$（$\mu_1 \neq 0$，即信號在一階 Hermite 係數中可見）。</p>
+      <p><strong>結論</strong>：從隨機初始化出發，GD 幾乎必然收斂到 $w_j \in \text{span}(w^*)$。</p>
+      <p><strong>收斂速率</strong>：$\beta_j / \alpha_j = O(e^{-\gamma t / 2})$，其中橫向分量以指數速率衰減。</p>
+    </div>
+  </details>
+  <details class="layer">
+    <summary>完整證明</summary>
+    <div class="layer-content">
+      <p><strong>路線 A（景觀分析）</strong>：</p>
+      <p><strong>Step 1.</strong> ReLU 方向獨立引理：對 CPL 激活函數，損失可分解為方向 $m = \cos(w, w^*)$ 與範數 $\|w\|$ 的函數。</p>
+      <p><strong>Step 2（定理 5a）</strong>：所有全局最小值滿足 $w_j \in \text{span}(w^*)$，即 $m = \pm 1$。</p>
+      <p><strong>Step 3（定理 5b）</strong>：所有非對齊臨界點（$m \neq \pm 1$）都是嚴格鞍點（Hessian 至少有一個嚴格負特徵值）。</p>
+      <p><strong>Step 4（定理 5c）</strong>：GD 幾乎必然避開嚴格鞍點（Lee et al. 2016；或由 tame function theory 推出——損失為 definable function，鞍點的穩定流形為零測集）。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-12">
+      <h3>損失景觀等高線</h3>
+    </div>
+    <div class="chart-container" id="chart-13">
+      <h3>兩階段動力學</h3>
+      <div class="chart-controls">
+        <label>$\mu_1$（信號強度） <input type="range" id="chart13-mu" min="0.1" max="2" step="0.1" value="1"><span class="value-display" id="chart13-mu-val">1.0</span></label>
+        <label>p（寬度） <input type="range" id="chart13-p" min="10" max="100" step="1" value="50"><span class="value-display" id="chart13-p-val">50</span></label>
+      </div>
+    </div>
+    <div class="chart-container" id="chart-14">
+      <h3>四條證明路線</h3>
+      <div class="chart-controls">
+        <button id="chart14-routeA" class="active">路線 A</button>
+        <button id="chart14-routeB">路線 B</button>
+        <button id="chart14-routeC">路線 C</button>
+        <button id="chart14-routeD">路線 D</button>
+      </div>
+    </div>
+  </div>
+</section>
   <section id="sec-thm3" class="theorem-section" data-nav="thm3"></section>
   <section id="sec-thm6" class="theorem-section" data-nav="thm6"></section>
   <section id="sec-aux" class="theorem-section"></section>
@@ -1797,6 +1847,596 @@ chartInitFns['chart-11'] = () => createChart('chart-11', ({ g, innerW, innerH, c
     .selectAll('text').style('font-size', '11px');
 
   return { update: () => {}, getState: () => ({}), setState: () => {} };
+});
+
+// === Chart #12: Loss Landscape Contour with GD Trajectory ===
+chartInitFns['chart-12'] = () => createChart('chart-12', ({ g, innerW, innerH, container }) => {
+  // Domain: m = cos(w, w*) in [-1, 1], r = ||w|| in [0, 2]
+  const mScale = d3.scaleLinear().domain([-1, 1]).range([0, innerW]);
+  const rScale = d3.scaleLinear().domain([0, 2]).range([innerH, 0]);
+
+  // Loss function: L(m, r) = (1-m)^2 * r^2 + 0.1*(r-1)^2
+  // Global min at m=1, r=1; saddle near m=0
+  function loss(m, r) {
+    return (1 - m) * (1 - m) * r * r + 0.1 * (r - 1) * (r - 1);
+  }
+
+  // Gradients (partial derivatives)
+  function gradM(m, r) {
+    return -2 * (1 - m) * r * r;
+  }
+  function gradR(m, r) {
+    return 2 * (1 - m) * (1 - m) * r + 0.2 * (r - 1);
+  }
+
+  // Build contour data on a grid
+  const gridN = 80;
+  const values = new Float64Array(gridN * gridN);
+  for (let j = 0; j < gridN; j++) {
+    for (let i = 0; i < gridN; i++) {
+      const m = -1 + (2 * i) / (gridN - 1);
+      const r = (2 * j) / (gridN - 1);
+      values[j * gridN + i] = loss(m, r);
+    }
+  }
+
+  // Contour thresholds
+  const thresholds = d3.range(0, 4.5, 0.2);
+  const contourGen = d3.contours().size([gridN, gridN]).thresholds(thresholds);
+  const contourData = contourGen(values);
+
+  // Color scale for contours
+  const colorScale = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 4]);
+
+  // Map contour coordinates from grid to SVG
+  const contourPath = d3.geoPath().projection(
+    d3.geoTransform({
+      point: function(x, y) {
+        const m = -1 + (2 * x) / (gridN - 1);
+        const r = (2 * y) / (gridN - 1);
+        this.stream.point(mScale(m), rScale(r));
+      }
+    })
+  );
+
+  // Draw filled contours
+  g.selectAll('.contour-fill')
+    .data(contourData)
+    .enter().append('path')
+    .attr('class', 'contour-fill')
+    .attr('d', contourPath)
+    .attr('fill', d => colorScale(d.value))
+    .attr('stroke', '#888')
+    .attr('stroke-width', 0.3)
+    .attr('opacity', 0.7);
+
+  // Mark global minimum (m=1, r=1) with green dot
+  g.append('circle')
+    .attr('cx', mScale(1)).attr('cy', rScale(1))
+    .attr('r', 6).attr('fill', '#1e8050').attr('stroke', 'white').attr('stroke-width', 2);
+  g.append('text')
+    .attr('x', mScale(1) - 15).attr('y', rScale(1) - 12)
+    .attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#1e8050')
+    .text('Global min');
+
+  // Mark saddle point near (m=0, r~0.95) with red x
+  const saddleM = 0, saddleR = 1.0;
+  const sx = mScale(saddleM), sy = rScale(saddleR);
+  g.append('line').attr('x1', sx - 5).attr('y1', sy - 5).attr('x2', sx + 5).attr('y2', sy + 5).attr('stroke', '#c93135').attr('stroke-width', 2.5);
+  g.append('line').attr('x1', sx - 5).attr('y1', sy + 5).attr('x2', sx + 5).attr('y2', sy - 5).attr('stroke', '#c93135').attr('stroke-width', 2.5);
+  g.append('text')
+    .attr('x', sx + 10).attr('y', sy + 4)
+    .attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#c93135')
+    .text('Saddle');
+
+  // Draggable start point and GD trajectory
+  let startM = -0.5, startR = 1.5;
+
+  const trajectoryPath = g.append('path')
+    .attr('fill', 'none').attr('stroke', '#1e2030').attr('stroke-width', 2)
+    .attr('stroke-dasharray', '4,2');
+
+  // Arrowhead
+  const defs = g.append('defs');
+  defs.append('marker')
+    .attr('id', 'arrow-12')
+    .attr('viewBox', '0 0 10 10')
+    .attr('refX', 8).attr('refY', 5)
+    .attr('markerWidth', 6).attr('markerHeight', 6)
+    .attr('orient', 'auto-start-reverse')
+    .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#1e2030');
+  trajectoryPath.attr('marker-end', 'url(#arrow-12)');
+
+  const startDot = g.append('circle')
+    .attr('r', 7).attr('fill', '#2a6bb8').attr('stroke', 'white').attr('stroke-width', 2)
+    .attr('cursor', 'grab');
+
+  function simulateGD(m0, r0, steps, lr) {
+    const path = [[m0, r0]];
+    let m = m0, r = r0;
+    for (let i = 0; i < steps; i++) {
+      const gm = gradM(m, r);
+      const gr = gradR(m, r);
+      m = Math.max(-1, Math.min(1, m - lr * gm));
+      r = Math.max(0.01, Math.min(2, r - lr * gr));
+      path.push([m, r]);
+      if (Math.abs(m - 1) < 0.01 && Math.abs(r - 1) < 0.01) break;
+    }
+    return path;
+  }
+
+  function updateTrajectory() {
+    startDot.attr('cx', mScale(startM)).attr('cy', rScale(startR));
+    const traj = simulateGD(startM, startR, 200, 0.02);
+    const lineGen = d3.line().x(d => mScale(d[0])).y(d => rScale(d[1]));
+    trajectoryPath.attr('d', lineGen(traj));
+  }
+
+  updateTrajectory();
+
+  const drag = d3.drag()
+    .on('start', function() { d3.select(this).attr('cursor', 'grabbing'); })
+    .on('drag', function(event) {
+      startM = Math.max(-1, Math.min(1, mScale.invert(event.x)));
+      startR = Math.max(0.05, Math.min(2, rScale.invert(event.y)));
+      updateTrajectory();
+    })
+    .on('end', function() { d3.select(this).attr('cursor', 'grab'); });
+
+  startDot.call(drag);
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(mScale).ticks(5).tickFormat(d => d.toFixed(1)))
+    .selectAll('text').style('font-size', '13px');
+  g.append('g')
+    .call(d3.axisLeft(rScale).ticks(5).tickFormat(d => d.toFixed(1)))
+    .selectAll('text').style('font-size', '13px');
+
+  // Axis labels
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('m = cos(w, w*)');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('||w||');
+
+  return {
+    update: updateTrajectory,
+    getState: () => ({ startM, startR }),
+    setState: (s) => {
+      startM = s.startM; startR = s.startR;
+      updateTrajectory();
+    }
+  };
+});
+
+// === Chart #13: Two-Phase Dynamics m(t) Curve ===
+chartInitFns['chart-13'] = () => createChart('chart-13', ({ g, innerW, innerH, container }) => {
+  let mu1 = 1.0, pVal = 50;
+  const tMax = 200, dt = 0.5;
+  const eps0 = 0.1;
+
+  const xScale = d3.scaleLinear().domain([0, tMax]).range([0, innerW]);
+  const yScale = d3.scaleLinear().domain([0, 1.05]).range([innerH, 0]);
+
+  // Axes
+  const axisX = g.append('g').attr('transform', `translate(0,${innerH})`);
+  const axisY = g.append('g');
+
+  // Axis labels
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('t（時間步）');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('m（對齊度）');
+
+  // Phase transition line
+  const phaseLine = g.append('line')
+    .attr('stroke', '#8a7020').attr('stroke-width', 1.5).attr('stroke-dasharray', '6,3');
+
+  // Phase labels
+  const phase1Label = g.append('text')
+    .attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#2a6bb8');
+  const phase2Label = g.append('text')
+    .attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e8050');
+
+  // Horizontal reference at eps0
+  const epsLine = g.append('line')
+    .attr('x1', 0).attr('x2', innerW)
+    .attr('stroke', '#d5d6da').attr('stroke-width', 1).attr('stroke-dasharray', '3,3');
+  const epsLabel = g.append('text')
+    .attr('font-size', '11px').attr('fill', '#8a8c98');
+
+  // Curve
+  const curvePath = g.append('path')
+    .attr('fill', 'none').attr('stroke', '#2a6bb8').attr('stroke-width', 2.5);
+
+  // Phase 2 portion highlighted
+  const curve2Path = g.append('path')
+    .attr('fill', 'none').attr('stroke', '#1e8050').attr('stroke-width', 2.5);
+
+  const lineGen = d3.line().x(d => d[0]).y(d => d[1]);
+
+  function solveODE() {
+    // Phase 1: dm/dt = mu1 / (2 * sqrt(p)) — constant drift
+    // Phase 2: dm/dt = (gamma/2) * (1 - m^2) where gamma = |mu1| / sqrt(p)
+    const gamma = Math.abs(mu1) / Math.sqrt(pVal);
+    const drift = mu1 / (2 * Math.sqrt(pVal));
+
+    const points = [];
+    let m = 0.001; // start near 0
+    let transitionT = null;
+
+    for (let t = 0; t <= tMax; t += dt) {
+      points.push({ t, m, phase: m < eps0 ? 1 : 2 });
+      if (m < eps0) {
+        // Phase 1: constant drift
+        m += drift * dt;
+        if (m >= eps0 && transitionT === null) transitionT = t;
+      } else {
+        // Phase 2: exponential alignment
+        const dmdt = (gamma / 2) * (1 - m * m);
+        m += dmdt * dt;
+      }
+      m = Math.min(m, 1.0);
+      if (m >= 0.999) {
+        points.push({ t: t + dt, m: 1.0, phase: 2 });
+        break;
+      }
+    }
+    return { points, transitionT: transitionT || tMax };
+  }
+
+  function update() {
+    const { points, transitionT } = solveODE();
+
+    // Split into phase 1 and phase 2
+    const p1 = points.filter(d => d.phase === 1 || d.t <= transitionT + dt);
+    const p2 = points.filter(d => d.t >= transitionT);
+
+    axisX.call(d3.axisBottom(xScale).ticks(6)).selectAll('text').style('font-size', '13px');
+    axisY.call(d3.axisLeft(yScale).ticks(5).tickFormat(d => d.toFixed(1))).selectAll('text').style('font-size', '13px');
+
+    curvePath.attr('d', lineGen(p1.map(d => [xScale(d.t), yScale(d.m)])));
+    curve2Path.attr('d', lineGen(p2.map(d => [xScale(d.t), yScale(d.m)])));
+
+    // Phase transition vertical line
+    phaseLine
+      .attr('x1', xScale(transitionT)).attr('x2', xScale(transitionT))
+      .attr('y1', 0).attr('y2', innerH);
+
+    // Phase labels
+    const labelX1 = Math.min(xScale(transitionT / 2), xScale(transitionT) - 30);
+    phase1Label
+      .attr('x', Math.max(20, labelX1)).attr('y', 18)
+      .text('Phase 1：偵測');
+    const labelX2 = Math.min(xScale((transitionT + tMax) / 2), innerW - 50);
+    phase2Label
+      .attr('x', Math.max(xScale(transitionT) + 10, labelX2)).attr('y', 18)
+      .text('Phase 2：對齊');
+
+    // eps0 line
+    epsLine.attr('y1', yScale(eps0)).attr('y2', yScale(eps0));
+    epsLabel.attr('x', innerW - 5).attr('y', yScale(eps0) - 5)
+      .attr('text-anchor', 'end').text('m = ' + eps0);
+  }
+
+  update();
+
+  // Slider bindings
+  const muSlider = container.querySelector('#chart13-mu');
+  const pSlider = container.querySelector('#chart13-p');
+  const muDisplay = container.querySelector('#chart13-mu-val');
+  const pDisplay = container.querySelector('#chart13-p-val');
+
+  muSlider?.addEventListener('input', () => {
+    mu1 = +muSlider.value;
+    muDisplay.textContent = mu1.toFixed(1);
+    update();
+  });
+  pSlider?.addEventListener('input', () => {
+    pVal = +pSlider.value;
+    pDisplay.textContent = pVal;
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ mu1, pVal }),
+    setState: (s) => {
+      mu1 = s.mu1; pVal = s.pVal;
+      if (muSlider) { muSlider.value = mu1; muDisplay.textContent = mu1.toFixed(1); }
+      if (pSlider) { pSlider.value = pVal; pDisplay.textContent = pVal; }
+      update();
+    }
+  };
+});
+
+// === Chart #14: Four Proof Routes (tabbed panels) ===
+chartInitFns['chart-14'] = () => createChart('chart-14', ({ g, innerW, innerH, container }) => {
+  let activeRoute = 'A';
+
+  // Conclusion text at bottom
+  const conclusionG = g.append('g').attr('transform', `translate(${innerW / 2}, ${innerH - 5})`);
+  conclusionG.append('text')
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '15px').attr('font-weight', '700').attr('fill', '#1e8050')
+    .text('→ Feature Learning 必然發生');
+
+  // Drawing area (above conclusion)
+  const drawH = innerH - 40;
+
+  // === Route A: Simplified loss landscape contour ===
+  const routeA = g.append('g').attr('class', 'route-panel');
+
+  function drawRouteA() {
+    routeA.selectAll('*').remove();
+    const gridN = 40;
+    const mScaleA = d3.scaleLinear().domain([-1, 1]).range([0, innerW]);
+    const rScaleA = d3.scaleLinear().domain([0, 2]).range([drawH, 0]);
+
+    // Simplified contour via colored rectangles
+    const cellW = innerW / gridN, cellH = drawH / gridN;
+    const colorA = d3.scaleSequential(d3.interpolateYlOrRd).domain([0, 3]);
+
+    for (let j = 0; j < gridN; j++) {
+      for (let i = 0; i < gridN; i++) {
+        const m = -1 + (2 * i) / (gridN - 1);
+        const r = (2 * j) / (gridN - 1);
+        const l = (1 - m) * (1 - m) * r * r + 0.1 * (r - 1) * (r - 1);
+        routeA.append('rect')
+          .attr('x', i * cellW).attr('y', j * cellH)
+          .attr('width', cellW + 0.5).attr('height', cellH + 0.5)
+          .attr('fill', colorA(Math.min(l, 3))).attr('opacity', 0.7);
+      }
+    }
+
+    // Mark global min
+    routeA.append('circle')
+      .attr('cx', mScaleA(1)).attr('cy', rScaleA(1))
+      .attr('r', 5).attr('fill', '#1e8050').attr('stroke', 'white').attr('stroke-width', 1.5);
+    // Mark saddle
+    const sxA = mScaleA(0), syA = rScaleA(1);
+    routeA.append('line').attr('x1', sxA - 4).attr('y1', syA - 4).attr('x2', sxA + 4).attr('y2', syA + 4).attr('stroke', '#c93135').attr('stroke-width', 2);
+    routeA.append('line').attr('x1', sxA - 4).attr('y1', syA + 4).attr('x2', sxA + 4).attr('y2', syA - 4).attr('stroke', '#c93135').attr('stroke-width', 2);
+
+    // Labels
+    routeA.append('text').attr('x', innerW / 2).attr('y', 18)
+      .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+      .text('所有谷底對齊 w*，非對齊點皆為鞍點');
+    routeA.append('text').attr('x', mScaleA(1)).attr('y', rScaleA(1) - 10)
+      .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#1e8050').text('min');
+    routeA.append('text').attr('x', sxA + 12).attr('y', syA + 4)
+      .attr('font-size', '11px').attr('fill', '#c93135').text('saddle');
+  }
+
+  // === Route B: Static m(t) curve ===
+  const routeB = g.append('g').attr('class', 'route-panel').attr('visibility', 'hidden');
+
+  function drawRouteB() {
+    routeB.selectAll('*').remove();
+    const tMax = 150, eps0 = 0.1;
+    const mu1 = 1.0, p = 50;
+    const gamma = mu1 / Math.sqrt(p);
+    const drift = mu1 / (2 * Math.sqrt(p));
+
+    const xB = d3.scaleLinear().domain([0, tMax]).range([0, innerW]);
+    const yB = d3.scaleLinear().domain([0, 1.05]).range([drawH, 0]);
+
+    // Solve
+    const pts = [];
+    let m = 0.001, transT = tMax;
+    for (let t = 0; t <= tMax; t += 0.5) {
+      const phase = m < eps0 ? 1 : 2;
+      pts.push({ t, m, phase });
+      if (m < eps0) {
+        m += drift * 0.5;
+        if (m >= eps0) transT = t;
+      } else {
+        m += (gamma / 2) * (1 - m * m) * 0.5;
+      }
+      m = Math.min(m, 1.0);
+    }
+
+    // Axes
+    routeB.append('g').attr('transform', `translate(0,${drawH})`)
+      .call(d3.axisBottom(xB).ticks(5)).selectAll('text').style('font-size', '11px');
+    routeB.append('g')
+      .call(d3.axisLeft(yB).ticks(5).tickFormat(d => d.toFixed(1))).selectAll('text').style('font-size', '11px');
+
+    // Phase 1 curve
+    const line = d3.line().x(d => xB(d.t)).y(d => yB(d.m));
+    routeB.append('path').datum(pts.filter(d => d.phase === 1 || d.t <= transT + 1))
+      .attr('fill', 'none').attr('stroke', '#2a6bb8').attr('stroke-width', 2).attr('d', line);
+    // Phase 2 curve
+    routeB.append('path').datum(pts.filter(d => d.t >= transT))
+      .attr('fill', 'none').attr('stroke', '#1e8050').attr('stroke-width', 2).attr('d', line);
+
+    // Phase transition line
+    routeB.append('line')
+      .attr('x1', xB(transT)).attr('x2', xB(transT))
+      .attr('y1', 0).attr('y2', drawH)
+      .attr('stroke', '#8a7020').attr('stroke-width', 1.5).attr('stroke-dasharray', '5,3');
+
+    // Labels
+    routeB.append('text').attr('x', xB(transT / 2)).attr('y', 18)
+      .attr('text-anchor', 'middle').attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#2a6bb8')
+      .text('Phase 1：偵測');
+    routeB.append('text').attr('x', xB((transT + tMax) / 2)).attr('y', 18)
+      .attr('text-anchor', 'middle').attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#1e8050')
+      .text('Phase 2：對齊');
+  }
+
+  // === Route C: Neuron directions collapsing ===
+  const routeC = g.append('g').attr('class', 'route-panel').attr('visibility', 'hidden');
+
+  function drawRouteC() {
+    routeC.selectAll('*').remove();
+    const cx = innerW / 2, cy = drawH / 2;
+    const radius = Math.min(cx, cy) - 30;
+
+    // Circle
+    routeC.append('circle')
+      .attr('cx', cx).attr('cy', cy).attr('r', radius)
+      .attr('fill', 'none').attr('stroke', '#d5d6da').attr('stroke-width', 1.5);
+
+    // Target direction (top)
+    const targetAngle = -Math.PI / 2;
+    const tx = cx + radius * Math.cos(targetAngle);
+    const ty = cy + radius * Math.sin(targetAngle);
+    routeC.append('circle')
+      .attr('cx', tx).attr('cy', ty)
+      .attr('r', 8).attr('fill', '#1e8050').attr('stroke', 'white').attr('stroke-width', 2);
+    routeC.append('text')
+      .attr('x', tx + 15).attr('y', ty + 4)
+      .attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e8050')
+      .text('w*');
+
+    // Initial neuron directions (scattered)
+    const nNeurons = 12;
+    const initAngles = d3.range(nNeurons).map(i => (2 * Math.PI * i) / nNeurons + (Math.random() - 0.5) * 0.3);
+
+    // Arrows from scattered to collapsed
+    initAngles.forEach((angle, i) => {
+      const x1 = cx + radius * 0.8 * Math.cos(angle);
+      const y1 = cy + radius * 0.8 * Math.sin(angle);
+
+      // Initial position: small gray dot
+      routeC.append('circle')
+        .attr('cx', x1).attr('cy', y1)
+        .attr('r', 4).attr('fill', '#8a8c98').attr('opacity', 0.5);
+
+      // Arrow pointing toward target
+      const midX = cx + radius * 0.9 * Math.cos(targetAngle + (angle - targetAngle) * 0.15);
+      const midY = cy + radius * 0.9 * Math.sin(targetAngle + (angle - targetAngle) * 0.15);
+
+      routeC.append('line')
+        .attr('x1', x1).attr('y1', y1)
+        .attr('x2', midX).attr('y2', midY)
+        .attr('stroke', '#2a6bb8').attr('stroke-width', 1).attr('opacity', 0.4)
+        .attr('stroke-dasharray', '3,2');
+
+      // Collapsed position: blue dot near target
+      routeC.append('circle')
+        .attr('cx', midX).attr('cy', midY)
+        .attr('r', 4).attr('fill', '#2a6bb8');
+    });
+
+    // Labels
+    routeC.append('text').attr('x', innerW / 2).attr('y', 18)
+      .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+      .text('神經元方向坍縮至 w*');
+    routeC.append('text').attr('x', cx - radius - 10).attr('y', cy + radius + 20)
+      .attr('font-size', '11px').attr('fill', '#8a8c98')
+      .text('灰 = 初始方向，藍 = 訓練後');
+  }
+
+  // === Route D: High-dim orthogonality ===
+  const routeD = g.append('g').attr('class', 'route-panel').attr('visibility', 'hidden');
+
+  function drawRouteD() {
+    routeD.selectAll('*').remove();
+
+    // Show random vectors nearly orthogonal to target in high-d
+    const cx = innerW / 2, cy = drawH / 2;
+    const arrowLen = Math.min(innerW, drawH) * 0.35;
+
+    // Target direction w* (horizontal, to the right)
+    routeD.append('line')
+      .attr('x1', cx).attr('y1', cy)
+      .attr('x2', cx + arrowLen).attr('y2', cy)
+      .attr('stroke', '#1e8050').attr('stroke-width', 3);
+    routeD.append('polygon')
+      .attr('points', `${cx + arrowLen},${cy - 5} ${cx + arrowLen + 10},${cy} ${cx + arrowLen},${cy + 5}`)
+      .attr('fill', '#1e8050');
+    routeD.append('text')
+      .attr('x', cx + arrowLen + 15).attr('y', cy + 5)
+      .attr('font-size', '14px').attr('font-weight', '700').attr('fill', '#1e8050')
+      .text('w*');
+
+    // Random vectors — nearly orthogonal (small cos angle, almost vertical)
+    const nVec = 8;
+    for (let i = 0; i < nVec; i++) {
+      // In high-d, cos(random, w*) ≈ 0, so angle ≈ 90 degrees
+      // Show them spread around 90 degrees with small perturbation
+      const angle = Math.PI / 2 + (Math.random() - 0.5) * 0.3;
+      const sign = (i % 2 === 0) ? 1 : -1;
+      const x2 = cx + arrowLen * 0.7 * Math.cos(sign * angle);
+      const y2 = cy - arrowLen * 0.7 * Math.sin(sign * angle);
+
+      routeD.append('line')
+        .attr('x1', cx).attr('y1', cy)
+        .attr('x2', x2).attr('y2', y2)
+        .attr('stroke', '#c93135').attr('stroke-width', 1.5).attr('opacity', 0.5);
+      routeD.append('circle')
+        .attr('cx', x2).attr('cy', y2)
+        .attr('r', 3).attr('fill', '#c93135').attr('opacity', 0.6);
+    }
+
+    // Right angle indicator
+    routeD.append('rect')
+      .attr('x', cx + 3).attr('y', cy - 12)
+      .attr('width', 9).attr('height', 9)
+      .attr('fill', 'none').attr('stroke', '#8a8c98').attr('stroke-width', 1);
+
+    // Labels
+    routeD.append('text').attr('x', innerW / 2).attr('y', 18)
+      .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+      .text('高維隨機向量幾乎正交於 w*');
+    routeD.append('text').attr('x', innerW / 2).attr('y', 38)
+      .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#5e6070')
+      .text('cos(w_rand, w*) ≈ 0 — 只有 FL 能突破');
+    routeD.append('text').attr('x', cx - arrowLen * 0.5).attr('y', cy - arrowLen * 0.5)
+      .attr('font-size', '11px').attr('fill', '#c93135')
+      .text('隨機初始方向');
+  }
+
+  // Initialize all routes
+  drawRouteA();
+  drawRouteB();
+  drawRouteC();
+  drawRouteD();
+
+  const panels = { A: routeA, B: routeB, C: routeC, D: routeD };
+
+  function switchRoute(route) {
+    activeRoute = route;
+    Object.entries(panels).forEach(([key, panel]) => {
+      panel.attr('visibility', key === route ? 'visible' : 'hidden');
+    });
+  }
+
+  // Button bindings
+  const btnA = container.querySelector('#chart14-routeA');
+  const btnB = container.querySelector('#chart14-routeB');
+  const btnC = container.querySelector('#chart14-routeC');
+  const btnD = container.querySelector('#chart14-routeD');
+  const allBtns = [btnA, btnB, btnC, btnD];
+  const routes = ['A', 'B', 'C', 'D'];
+
+  allBtns.forEach((btn, i) => {
+    btn?.addEventListener('click', () => {
+      allBtns.forEach(b => b?.classList.remove('active'));
+      btn.classList.add('active');
+      switchRoute(routes[i]);
+    });
+  });
+
+  return {
+    update: () => {},
+    getState: () => ({ activeRoute }),
+    setState: (s) => {
+      activeRoute = s.activeRoute;
+      allBtns.forEach(b => b?.classList.remove('active'));
+      const idx = routes.indexOf(activeRoute);
+      if (idx >= 0) allBtns[idx]?.classList.add('active');
+      switchRoute(activeRoute);
+    }
+  };
 });
 
 // === Boot ===
