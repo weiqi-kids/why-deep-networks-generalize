@@ -2105,7 +2105,7 @@ chartInitFns['chart-9'] = () => createChart('chart-9', ({ g, innerW, innerH, con
 // === Chart #10: Spherical Harmonic Coefficient Decay (polar bar chart) ===
 chartInitFns['chart-10'] = () => createChart('chart-10', ({ svg, g, innerW, innerH, container }) => {
   let mode = 'ntk'; // 'ntk' or 'fl'
-  const dVal = 10;
+  const dVal = 4; // 用 d=4 讓數值可視化（d=10 時重數 ℓ^8 和特徵值 ℓ^{-11} 數值太極端）
   const maxL = 8;
   const orders = d3.range(1, maxL + 1);
 
@@ -2116,8 +2116,8 @@ chartInitFns['chart-10'] = () => createChart('chart-10', ({ svg, g, innerW, inne
   // Move drawing group to center
   const polarG = g.append('g').attr('transform', `translate(${cx},${cy})`);
 
-  // Radial scale for eigenvalue magnitude
-  const rScale = d3.scaleLinear().domain([0, 1]).range([0, maxRadius]);
+  // Radial scale: sqrt for eigenvalue magnitude (讓高階也可見)
+  const rScale = d3.scaleSqrt().domain([0, 1]).range([0, maxRadius]);
 
   // Reference circles
   [0.25, 0.5, 0.75, 1.0].forEach(r => {
@@ -2132,13 +2132,13 @@ chartInitFns['chart-10'] = () => createChart('chart-10', ({ svg, g, innerW, inne
 
   function getMultiplicity(ell, isNTK) {
     if (!isNTK) return 1;
-    // N(d, ell) ~ ell^(d-2), normalized to something visible
+    // N(d, ell) ~ ell^(d-2)，d=4 時 = ell^2
     return Math.pow(ell, dVal - 2);
   }
 
   function getEigenvalue(ell) {
-    // lambda_ell ~ ell^{-(d+1)}, normalized so ell=1 is 1
-    return Math.pow(ell, -(dVal + 1)) / Math.pow(1, -(dVal + 1));
+    // lambda_ell ~ ell^{-(d+1)}，d=4 時 = ell^{-5}
+    return Math.pow(ell, -(dVal + 1));
   }
 
   function computeArcs(isNTK) {
