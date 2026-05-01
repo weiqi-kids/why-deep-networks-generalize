@@ -405,7 +405,47 @@ footer {
   </section>
 
   <!-- Sections will be filled in subsequent tasks -->
-  <section id="sec-noise-operator" class="theorem-section" data-nav="opM"></section>
+  <section id="sec-noise-operator" class="theorem-section" data-nav="opM">
+  <h2>噪聲傳播算子 M</h2>
+  <div class="layer-intuition">
+    <p>訓練數據裡的雜音（$\xi$）像是在山谷裡喊的話。$M$ 衡量這些雜音會有多少迴聲傳到新地點（測試點）。Jacobian 的奇異值小的方向像狹窄的峽谷——迴聲被放大；奇異值大的方向像開闊的平原——迴聲很快消散。$\operatorname{tr}(M)$ 就是所有方向的迴聲總量。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定義</summary>
+    <div class="layer-content">
+      <p>設 $f(\cdot;\theta)$ 為參數化預測器，Jacobian $J \in \mathbb{R}^{n \times p}$，$J_{ij} = \partial f(x_i;\theta)/\partial\theta_j$。</p>
+      <p>SVD: $J = U\Sigma V^T$，奇異值 $\sigma_1 \geq \cdots \geq \sigma_r > 0$。</p>
+      <p>定義測試梯度投影：$\psi_j(x) = \nabla_\theta f(x;\theta)^T v_j$</p>
+      <p>定義交叉相關矩陣：$\Gamma_{jl} = \mathbb{E}_x[\psi_j(x)\psi_l(x)]$</p>
+      <p><strong>噪聲傳播算子</strong>：$$M = \Sigma^{-1} \Gamma \Sigma^{-1}$$</p>
+    </div>
+  </details>
+  <details class="layer">
+    <summary>完整推導</summary>
+    <div class="layer-content">
+      <p>$M$ 量化了訓練噪聲如何通過 Jacobian 的譜結構傳播到測試預測：</p>
+      <ul>
+        <li>$\Sigma^{-1}$ 放大小奇異值方向的噪聲</li>
+        <li>$\Gamma$ 決定這些方向在測試點上是否「可見」</li>
+        <li>$\operatorname{tr}(M)$ 是噪聲洩漏的總量</li>
+      </ul>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-1">
+      <h3>Jacobian SVD 視覺化</h3>
+      <div class="chart-controls">
+        <label>奇異值分布 <input type="range" id="chart1-decay" min="0.3" max="2" step="0.1" value="1"><span class="value-display" id="chart1-decay-val">1.0</span></label>
+      </div>
+    </div>
+    <div class="chart-container" id="chart-2">
+      <h3>噪聲迴聲傳播</h3>
+      <div class="chart-controls">
+        <button id="chart2-inject">注入噪聲</button>
+      </div>
+    </div>
+  </div>
+</section>
   <section id="sec-thm1" class="theorem-section" data-nav="thm1"></section>
   <section id="sec-thm2" class="theorem-section" data-nav="thm2"></section>
   <section id="sec-thm4" class="theorem-section" data-nav="thm4"></section>
@@ -784,6 +824,100 @@ function renderMobileBreadcrumb(nav) {
 
 renderDAG();
 window.addEventListener('resize', () => { renderDAG(); });
+
+// === Chart #1: Jacobian SVD ===
+chartInitFns['chart-1'] = () => createChart('chart-1', ({ g, innerW, innerH, container }) => {
+  const n = 10;
+  let decay = 1.0;
+  const x = d3.scaleBand().domain(d3.range(n)).range([0, innerW]).padding(0.2);
+  const y = d3.scaleLinear().domain([0, 1]).range([innerH, 0]);
+  const colorScale = d3.scaleLinear().domain([0, 1]).range(['#c93135', '#1e8050']);
+
+  g.append('g').attr('class', 'axis-x').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(x).tickFormat(i => `σ${i+1}`)).selectAll('text').style('font-size', '14px');
+  const axisY = g.append('g').attr('class', 'axis-y');
+  const bars = g.append('g').attr('class', 'bars');
+
+  function getData() {
+    return d3.range(n).map(i => Math.pow((i + 1), -decay));
+  }
+
+  function update() {
+    const data = getData();
+    y.domain([0, d3.max(data) * 1.1]);
+    axisY.transition().duration(300).call(d3.axisLeft(y).ticks(5));
+    const sel = bars.selectAll('rect').data(data);
+    sel.enter().append('rect').merge(sel)
+      .transition().duration(300)
+      .attr('x', (_, i) => x(i))
+      .attr('y', d => y(d))
+      .attr('width', x.bandwidth())
+      .attr('height', d => innerH - y(d))
+      .attr('fill', d => colorScale(d / d3.max(data)))
+      .attr('rx', 3);
+    sel.exit().remove();
+  }
+
+  update();
+
+  const slider = container.querySelector('#chart1-decay');
+  const valDisplay = container.querySelector('#chart1-decay-val');
+  slider.addEventListener('input', () => {
+    decay = +slider.value;
+    valDisplay.textContent = decay.toFixed(1);
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ decay }),
+    setState: (s) => { decay = s.decay; slider.value = decay; valDisplay.textContent = decay.toFixed(1); update(); }
+  };
+});
+
+// === Chart #2: Noise Echo ===
+chartInitFns['chart-2'] = () => createChart('chart-2', ({ g, innerW, innerH, container }) => {
+  const stages = ['ξ (噪聲)', 'Σ⁻¹', 'Γ', 'Σ⁻¹', '測試預測'];
+  const stageX = stages.map((_, i) => (i / (stages.length - 1)) * innerW);
+  const nChannels = 5;
+  const channelY = d3.range(nChannels).map(i => 20 + i * (innerH - 40) / (nChannels - 1));
+
+  // Draw pipeline stages
+  stages.forEach((s, i) => {
+    g.append('rect').attr('x', stageX[i] - 30).attr('y', 0).attr('width', 60).attr('height', innerH)
+      .attr('fill', 'none').attr('stroke', '#d5d6da').attr('stroke-width', 1).attr('rx', 4);
+    g.append('text').attr('x', stageX[i]).attr('y', innerH + 25).attr('text-anchor', 'middle')
+      .attr('font-size', '13px').attr('fill', '#5e6070').text(s);
+  });
+
+  // Channel lines
+  channelY.forEach(cy => {
+    g.append('line').attr('x1', stageX[0]).attr('y1', cy).attr('x2', stageX[4]).attr('y2', cy)
+      .attr('stroke', '#d5d6da').attr('stroke-width', 0.5).attr('stroke-dasharray', '4');
+  });
+
+  function injectNoise() {
+    // Particles flowing through pipeline
+    channelY.forEach((cy, ci) => {
+      const amplification = 1 / (ci + 1); // small singular values amplify more
+      const r = 3 + amplification * 8;
+      const color = d3.interpolateRgb('#1e8050', '#c93135')(amplification);
+      const particle = g.append('circle').attr('cx', stageX[0]).attr('cy', cy).attr('r', 3).attr('fill', color).attr('opacity', 0.8);
+      particle.transition().duration(500).attr('cx', stageX[1]).attr('r', r * 0.5)
+        .transition().duration(500).attr('cx', stageX[2]).attr('r', r * 0.7)
+        .transition().duration(500).attr('cx', stageX[3]).attr('r', r)
+        .transition().duration(500).attr('cx', stageX[4])
+        .transition().duration(300).attr('opacity', 0).remove();
+    });
+  }
+
+  container.querySelector('#chart2-inject').addEventListener('click', injectNoise);
+
+  return { update: () => {}, getState: () => ({}), setState: () => {} };
+});
+
+// === Boot ===
+observeAllCharts();
 </script>
 </body>
 </html>
