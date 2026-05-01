@@ -978,7 +978,118 @@ footer {
     </div>
   </div>
 </section>
-  <section id="sec-ext16" class="theorem-section"></section>
+  <section id="sec-ext16" class="theorem-section">
+  <h2>延伸：範圍擴展</h2>
+
+  <h3 data-nav="ext16a">16a：純交互 Multi-index——Hessian 啟動二階搜尋</h3>
+  <div class="layer-intuition">
+    <p>當目標函數是純交互（如 $\varphi = z_1 z_2$），一階梯度偵測不到信號。解法：先用 Hessian（二階資訊）找到方向，再用 GD 精化。需要的樣本量 $n_0 = \tilde{O}(d^p)$。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>純交互目標 $f^*(x) = g(\langle v_1^*, x\rangle \cdot \langle v_2^*, x\rangle)$：一階梯度 $\nabla_w \mathcal{L}$ 中不含 $v_i^*$ 的資訊（信號為零）。</p>
+      <p>Hessian $\nabla^2_w \mathcal{L}$ 的前 $p$ 個特徵向量可定位 $\{v_i^*\}$。以此初始化後，GD 在 $\tilde{O}(d^p)$ 步內收斂。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-31">
+      <h3>Hessian 初始化動畫</h3>
+      <div class="chart-controls">
+        <button id="chart31-play" class="active">Play</button>
+        <button id="chart31-pause">Pause</button>
+        <button id="chart31-reset">Reset</button>
+      </div>
+    </div>
+    <div class="chart-container" id="chart-32">
+      <h3>SQ 下界：$n_0 = d^p$</h3>
+      <div class="chart-controls">
+        <label>$d$ 範圍上限 <input type="range" id="chart32-dmax" min="10" max="50" step="1" value="50"><span class="value-display" id="chart32-dmax-val">50</span></label>
+        <label>顯示 $p$ <select id="chart32-p"><option value="all" selected>全部</option><option value="2">p=2</option><option value="3">p=3</option><option value="4">p=4</option></select></label>
+      </div>
+    </div>
+  </div>
+
+  <h3 data-nav="ext16b">16b：深度 $L > 2$——泛化界對任意深度成立</h3>
+  <div class="layer-intuition">
+    <p>泛化界對任意深度成立。深度的額外好處：逼近誤差 $B^2$ 可隨深度指數衰減。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>對深度 $L$ 的網路，定理 1 的泛化界仍成立：$R(f) \leq \hat{R}_n(f) + \sqrt{\operatorname{tr}(M)/n}$。</p>
+      <p>逼近誤差 $B^2 \leq C \cdot e^{-cL}$：深度每增加一層，逼近誤差指數下降。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-33">
+      <h3>逐層對齊瀑布圖</h3>
+      <div class="chart-controls">
+        <label>深度 $L$ <input type="range" id="chart33-L" min="2" max="10" step="1" value="4"><span class="value-display" id="chart33-L-val">4</span></label>
+      </div>
+    </div>
+    <div class="chart-container" id="chart-34">
+      <h3>逼近誤差隨深度衰減</h3>
+    </div>
+  </div>
+
+  <h3 data-nav="ext16c">16c：分類 Cross-Entropy——與 MSE 分界相同</h3>
+  <div class="layer-intuition">
+    <p>Benign 分界 $\beta > \alpha + 1/2$ 與 MSE 相同。Neural Collapse：$r_{\text{eff}} = K - 1$。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>Cross-Entropy 損失下，benign/catastrophic 過擬合的分界條件為 $\beta > \alpha + 1/2$，與 MSE 完全一致。</p>
+      <p>Neural Collapse 現象：最後一層特徵收斂到 $(K-1)$ 維正則單純形，有效秩 $r_{\text{eff}} = K - 1$。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-35">
+      <h3>Neural Collapse 單純形</h3>
+      <div class="chart-controls">
+        <label>類別數 $K$ <input type="range" id="chart35-K" min="3" max="6" step="1" value="3"><span class="value-display" id="chart35-K-val">3</span></label>
+      </div>
+    </div>
+    <div class="chart-container" id="chart-36">
+      <h3>MSE vs CE 過擬合分界</h3>
+      <div class="chart-controls">
+        <div style="display:flex;gap:0.5rem;">
+          <button id="chart36-mse" class="active">MSE</button>
+          <button id="chart36-ce">CE</button>
+          <button id="chart36-both">Both</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h3 data-nav="ext16d">16d：非高斯輸入——流形假設下的修正</h3>
+  <div class="layer-intuition">
+    <p>$M$ 的定義不依賴分佈假設。流形假設：$d \to d_M$（以流形維度取代環境維度）。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>噪聲算子 $M$ 的定義 $M_{jk} = \mathbb{E}[f(x)\phi_j(x)\phi_k(x)]$ 對任意輸入分佈成立，不需高斯假設。</p>
+      <p>當資料集中在 $d_M$ 維流形上時，泛化界中的 $d$ 可替換為 $d_M$，修正項為 $\sqrt{r_{\text{eff}}/n}$。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-37">
+      <h3>流形投影散點圖</h3>
+      <div class="chart-controls">
+        <label>$d_M$（流形維度） <input type="range" id="chart37-dM" min="1" max="5" step="1" value="1"><span class="value-display" id="chart37-dM-val">1</span></label>
+      </div>
+    </div>
+    <div class="chart-container" id="chart-38">
+      <h3>修正項 $\sqrt{r_{\text{eff}}/n}$</h3>
+      <div class="chart-controls">
+        <label>$r_{\text{eff}}$ <input type="range" id="chart38-reff" min="1" max="100" step="1" value="10"><span class="value-display" id="chart38-reff-val">10</span></label>
+        <label>$n$ <input type="range" id="chart38-n" min="100" max="10000" step="100" value="1000"><span class="value-display" id="chart38-n-val">1000</span></label>
+      </div>
+    </div>
+  </div>
+</section>
   <section id="sec-disproven" class="theorem-section"></section>
   <section id="sec-scope" class="theorem-section"></section>
 </main>
@@ -5045,6 +5156,852 @@ chartInitFns['chart-30'] = () => createChart('chart-30', ({ g, innerW, innerH })
     update: () => {},
     getState: () => ({}),
     setState: () => {}
+  };
+});
+
+// === Chart #31: Hessian Initialization Animation ===
+chartInitFns['chart-31'] = () => createChart('chart-31', ({ g, innerW, innerH, container }) => {
+  // Loss landscape contour
+  const nGrid = 40;
+  const xDomain = [-3, 3], yDomain = [-3, 3];
+  const xScale = d3.scaleLinear().domain(xDomain).range([0, innerW]);
+  const yScale = d3.scaleLinear().domain(yDomain).range([innerH, 0]);
+
+  // Target minimum at (1.5, 1.0)
+  const targetX = 1.5, targetY = 1.0;
+
+  // Loss function: elongated bowl centered at target
+  function loss(px, py) {
+    const dx = px - targetX, dy = py - targetY;
+    return 0.3 * dx * dx + 0.8 * dy * dy + 0.2 * dx * dy + 0.05 * Math.sin(2 * px) * Math.sin(2 * py);
+  }
+
+  // Generate contour data
+  const gridData = [];
+  for (let j = 0; j < nGrid; j++) {
+    for (let i = 0; i < nGrid; i++) {
+      const px = xDomain[0] + (xDomain[1] - xDomain[0]) * i / (nGrid - 1);
+      const py = yDomain[0] + (yDomain[1] - yDomain[0]) * j / (nGrid - 1);
+      gridData.push(loss(px, py));
+    }
+  }
+
+  const contours = d3.contours()
+    .size([nGrid, nGrid])
+    .thresholds(d3.range(0.2, 8, 0.5))(gridData);
+
+  const colorScale = d3.scaleSequential(d3.interpolateYlGnBu).domain([8, 0]);
+
+  const contourXScale = d3.scaleLinear().domain([0, nGrid - 1]).range([0, innerW]);
+  const contourYScale = d3.scaleLinear().domain([0, nGrid - 1]).range([0, innerH]);
+
+  g.append('g').selectAll('path')
+    .data(contours)
+    .enter().append('path')
+    .attr('d', d3.geoPath(d3.geoTransform({
+      point: function(x, y) { this.stream.point(contourXScale(x), contourYScale(y)); }
+    })))
+    .attr('fill', d => colorScale(d.value))
+    .attr('stroke', '#5e6070').attr('stroke-width', 0.3).attr('opacity', 0.6);
+
+  // Mark target
+  g.append('circle')
+    .attr('cx', xScale(targetX)).attr('cy', yScale(targetY))
+    .attr('r', 5).attr('fill', '#c93135').attr('stroke', '#fff').attr('stroke-width', 1.5);
+  g.append('text').attr('x', xScale(targetX) + 8).attr('y', yScale(targetY) - 8)
+    .attr('font-size', '11px').attr('fill', '#c93135').attr('font-weight', '600').text('最小值');
+
+  // Animation state
+  let playing = true;
+  let t = 0;
+  const startX = -2.0, startY = -1.5;
+
+  // Hessian direction (Phase 1): point roughly toward minimum
+  const hessAngle = Math.atan2(targetY - startY, targetX - startX);
+  const hessLen = 2.5;
+  const hessEndX = startX + hessLen * Math.cos(hessAngle);
+  const hessEndY = startY + hessLen * Math.sin(hessAngle);
+
+  // GD refinement path (Phase 2): from hessian end to target
+  const gdSteps = 8;
+  const gdPath = [];
+  for (let i = 0; i <= gdSteps; i++) {
+    const frac = i / gdSteps;
+    const easedFrac = 1 - Math.pow(1 - frac, 2);
+    gdPath.push({
+      x: hessEndX + (targetX - hessEndX) * easedFrac + (1 - frac) * 0.3 * Math.sin(frac * 4),
+      y: hessEndY + (targetY - hessEndY) * easedFrac + (1 - frac) * 0.2 * Math.cos(frac * 3)
+    });
+  }
+
+  // Phase 1: thick Hessian arrow
+  const hessArrow = g.append('line')
+    .attr('x1', xScale(startX)).attr('y1', yScale(startY))
+    .attr('x2', xScale(startX)).attr('y2', yScale(startY))
+    .attr('stroke', '#7b3fe4').attr('stroke-width', 4)
+    .attr('marker-end', 'none');
+
+  // Arrow marker
+  const defs = g.append('defs');
+  defs.append('marker').attr('id', 'arrow-hess').attr('viewBox', '0 0 10 10')
+    .attr('refX', 10).attr('refY', 5).attr('markerWidth', 8).attr('markerHeight', 8)
+    .attr('orient', 'auto-start-reverse')
+    .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#7b3fe4');
+  defs.append('marker').attr('id', 'arrow-gd').attr('viewBox', '0 0 10 10')
+    .attr('refX', 10).attr('refY', 5).attr('markerWidth', 6).attr('markerHeight', 6)
+    .attr('orient', 'auto-start-reverse')
+    .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#1e8050');
+
+  // Phase 2: thin GD arrows (initially hidden)
+  const gdArrows = g.append('g');
+
+  // Phase labels
+  const phaseLabel = g.append('text')
+    .attr('x', 10).attr('y', 20)
+    .attr('font-size', '13px').attr('font-weight', '700').attr('fill', '#7b3fe4')
+    .text('Phase 1: Hessian 方向搜尋');
+
+  // Starting point marker
+  const startDot = g.append('circle')
+    .attr('cx', xScale(startX)).attr('cy', yScale(startY))
+    .attr('r', 5).attr('fill', '#1e2030').attr('stroke', '#fff').attr('stroke-width', 1.5);
+
+  const totalFrames = 180;
+  const phase1End = 80;
+
+  function updateAnim() {
+    const frame = t % totalFrames;
+
+    if (frame <= phase1End) {
+      // Phase 1: Hessian arrow growing
+      const prog = Math.min(1, frame / phase1End);
+      const curX = startX + (hessEndX - startX) * prog;
+      const curY = startY + (hessEndY - startY) * prog;
+      hessArrow
+        .attr('x2', xScale(curX)).attr('y2', yScale(curY))
+        .attr('marker-end', prog > 0.1 ? 'url(#arrow-hess)' : 'none')
+        .attr('opacity', 1);
+      gdArrows.selectAll('*').remove();
+      phaseLabel.text('Phase 1: Hessian 方向搜尋').attr('fill', '#7b3fe4');
+    } else {
+      // Phase 2: GD refinement arrows appearing one by one
+      const phase2Frame = frame - phase1End;
+      const stepsVisible = Math.min(gdSteps, Math.floor(phase2Frame / 10));
+      phaseLabel.text('Phase 2: GD 精化').attr('fill', '#1e8050');
+
+      gdArrows.selectAll('*').remove();
+      for (let i = 0; i < stepsVisible; i++) {
+        gdArrows.append('line')
+          .attr('x1', xScale(gdPath[i].x)).attr('y1', yScale(gdPath[i].y))
+          .attr('x2', xScale(gdPath[i + 1].x)).attr('y2', yScale(gdPath[i + 1].y))
+          .attr('stroke', '#1e8050').attr('stroke-width', 2)
+          .attr('marker-end', 'url(#arrow-gd)');
+        gdArrows.append('circle')
+          .attr('cx', xScale(gdPath[i].x)).attr('cy', yScale(gdPath[i].y))
+          .attr('r', 3).attr('fill', '#1e8050');
+      }
+    }
+  }
+
+  updateAnim();
+
+  let timer = null;
+  function startTimer() {
+    if (timer) timer.stop();
+    timer = d3.timer(() => {
+      if (!playing) return;
+      t++;
+      updateAnim();
+    }, 40);
+  }
+  startTimer();
+
+  const playBtn = container.querySelector('#chart31-play');
+  const pauseBtn = container.querySelector('#chart31-pause');
+  const resetBtn = container.querySelector('#chart31-reset');
+
+  playBtn?.addEventListener('click', () => {
+    playing = true;
+    playBtn.classList.add('active');
+    pauseBtn?.classList.remove('active');
+  });
+  pauseBtn?.addEventListener('click', () => {
+    playing = false;
+    pauseBtn.classList.add('active');
+    playBtn?.classList.remove('active');
+  });
+  resetBtn?.addEventListener('click', () => {
+    t = 0;
+    updateAnim();
+  });
+
+  return {
+    update: updateAnim,
+    getState: () => ({ playing, t }),
+    setState: (s) => {
+      playing = s.playing ?? true;
+      t = s.t ?? 0;
+      if (playing) { playBtn?.classList.add('active'); pauseBtn?.classList.remove('active'); }
+      else { pauseBtn?.classList.add('active'); playBtn?.classList.remove('active'); }
+      updateAnim();
+      startTimer();
+    }
+  };
+});
+
+// === Chart #32: SQ Lower Bound ===
+chartInitFns['chart-32'] = () => createChart('chart-32', ({ g, innerW, innerH, container }) => {
+  let dMax = 50;
+  let pFilter = 'all';
+
+  const xScale = d3.scaleLog().domain([2, 50]).range([0, innerW]);
+  const yScale = d3.scaleLog().domain([1, 1e8]).range([innerH, 0]);
+
+  const xAxis = g.append('g').attr('transform', `translate(0,${innerH})`);
+  const yAxis = g.append('g');
+
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('d（維度）');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -42)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('n₀（所需樣本量）');
+
+  const colors = { 2: '#1e5ab8', 3: '#7b3fe4', 4: '#c93135' };
+  const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
+
+  const paths = {};
+  const labels = {};
+  [2, 3, 4].forEach(p => {
+    paths[p] = g.append('path')
+      .attr('fill', 'none').attr('stroke', colors[p]).attr('stroke-width', 2.5);
+    labels[p] = g.append('text')
+      .attr('font-size', '12px').attr('fill', colors[p]).attr('font-weight', '600');
+  });
+
+  // Annotation
+  const annotGroup = g.append('g');
+  annotGroup.append('text')
+    .attr('x', innerW / 2).attr('y', innerH * 0.15)
+    .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#c93135')
+    .attr('font-weight', '600').text('此下界不可逾越');
+  annotGroup.append('line')
+    .attr('x1', innerW * 0.3).attr('x2', innerW * 0.7)
+    .attr('y1', innerH * 0.18).attr('y2', innerH * 0.18)
+    .attr('stroke', '#c93135').attr('stroke-width', 1).attr('stroke-dasharray', '4,2');
+
+  function update() {
+    xScale.domain([2, dMax]);
+    const maxY = Math.pow(dMax, 4) * 2;
+    yScale.domain([1, maxY]);
+
+    xAxis.call(d3.axisBottom(xScale).ticks(5, '~d')).selectAll('text').style('font-size', '12px');
+    yAxis.call(d3.axisLeft(yScale).ticks(5, '.0e')).selectAll('text').style('font-size', '12px');
+
+    [2, 3, 4].forEach(p => {
+      const data = [];
+      for (let d = 2; d <= dMax; d++) {
+        data.push([d, Math.pow(d, p)]);
+      }
+      paths[p].datum(data).attr('d', lineGen);
+      const show = pFilter === 'all' || pFilter === String(p);
+      paths[p].attr('opacity', show ? 1 : 0.1);
+      labels[p].attr('opacity', show ? 1 : 0.1);
+
+      const lastD = dMax;
+      labels[p].attr('x', xScale(lastD) + 5).attr('y', yScale(Math.pow(lastD, p)))
+        .text('p=' + p);
+    });
+  }
+
+  update();
+
+  const dmaxSlider = container.querySelector('#chart32-dmax');
+  const dmaxVal = container.querySelector('#chart32-dmax-val');
+  const pSelect = container.querySelector('#chart32-p');
+
+  dmaxSlider?.addEventListener('input', () => {
+    dMax = parseInt(dmaxSlider.value);
+    dmaxVal.textContent = dMax;
+    update();
+  });
+  pSelect?.addEventListener('change', () => {
+    pFilter = pSelect.value;
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ dMax, pFilter }),
+    setState: (s) => {
+      dMax = s.dMax ?? 50;
+      pFilter = s.pFilter ?? 'all';
+      if (dmaxSlider) { dmaxSlider.value = dMax; dmaxVal.textContent = dMax; }
+      if (pSelect) pSelect.value = pFilter;
+      update();
+    }
+  };
+});
+
+// === Chart #33: Layer-wise Alignment Waterfall ===
+chartInitFns['chart-33'] = () => createChart('chart-33', ({ g, innerW, innerH, container }) => {
+  let L = 4;
+
+  function alignmentQuality(layerIdx, totalLayers) {
+    // First layer: aligned to V* (high)
+    // Middle layers: progressive alignment
+    // Last layer: linear readout (high)
+    if (layerIdx === 0) return 0.9;
+    if (layerIdx === totalLayers - 1) return 0.95;
+    // Middle layers get progressively more aligned with more total layers
+    const midProg = layerIdx / (totalLayers - 1);
+    const depthBonus = Math.min(1, totalLayers / 10);
+    return 0.3 + 0.6 * depthBonus * (0.5 + 0.5 * Math.sin(midProg * Math.PI));
+  }
+
+  function qualityColor(q) {
+    // Red (unaligned) to green (aligned)
+    const r = Math.round(220 * (1 - q) + 30 * q);
+    const gVal = Math.round(50 * (1 - q) + 180 * q);
+    const b = Math.round(50 * (1 - q) + 80 * q);
+    return `rgb(${r},${gVal},${b})`;
+  }
+
+  const layerGroup = g.append('g');
+
+  // Labels
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 30)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('Layer');
+  const titleText = g.append('text').attr('x', innerW / 2).attr('y', -5)
+    .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#5e6070');
+
+  function update() {
+    layerGroup.selectAll('*').remove();
+
+    const boxW = Math.min(60, (innerW - 20) / L - 4);
+    const boxH = innerH * 0.6;
+    const startX = (innerW - L * (boxW + 4)) / 2;
+
+    for (let i = 0; i < L; i++) {
+      const q = alignmentQuality(i, L);
+      const x = startX + i * (boxW + 4);
+      const y = (innerH - boxH) / 2;
+
+      // Box
+      layerGroup.append('rect')
+        .attr('x', x).attr('y', y)
+        .attr('width', boxW).attr('height', boxH)
+        .attr('fill', qualityColor(q))
+        .attr('rx', 4).attr('opacity', 0.85)
+        .attr('stroke', '#5e6070').attr('stroke-width', 0.5);
+
+      // Layer number
+      layerGroup.append('text')
+        .attr('x', x + boxW / 2).attr('y', y + boxH + 15)
+        .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#5e6070')
+        .text(i + 1);
+
+      // Quality label
+      layerGroup.append('text')
+        .attr('x', x + boxW / 2).attr('y', y + boxH / 2 + 4)
+        .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#fff')
+        .attr('font-weight', '600')
+        .text((q * 100).toFixed(0) + '%');
+
+      // Role label
+      let role = '';
+      if (i === 0) role = 'V*';
+      else if (i === L - 1) role = '線性';
+      else role = '映射';
+      layerGroup.append('text')
+        .attr('x', x + boxW / 2).attr('y', y - 5)
+        .attr('text-anchor', 'middle').attr('font-size', '9px').attr('fill', '#5e6070')
+        .text(role);
+
+      // Arrow between boxes
+      if (i < L - 1) {
+        layerGroup.append('text')
+          .attr('x', x + boxW + 2).attr('y', y + boxH / 2 + 4)
+          .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#8a8c98')
+          .text('\u2192');
+      }
+    }
+
+    titleText.text(`深度 L=${L}：更多層 = 更好的逐層對齊`);
+  }
+
+  update();
+
+  const lSlider = container.querySelector('#chart33-L');
+  const lVal = container.querySelector('#chart33-L-val');
+  lSlider?.addEventListener('input', () => {
+    L = parseInt(lSlider.value);
+    lVal.textContent = L;
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ L }),
+    setState: (s) => {
+      L = s.L ?? 4;
+      if (lSlider) { lSlider.value = L; lVal.textContent = L; }
+      update();
+    }
+  };
+});
+
+// === Chart #34: Approximation Error Decay ===
+chartInitFns['chart-34'] = () => createChart('chart-34', ({ g, innerW, innerH }) => {
+  const xScale = d3.scaleLinear().domain([1, 20]).range([0, innerW]);
+  const yScale = d3.scaleLog().domain([1e-6, 1]).range([innerH, 0]);
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.format('d')))
+    .selectAll('text').style('font-size', '12px');
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('深度 L');
+
+  g.append('g')
+    .call(d3.axisLeft(yScale).ticks(6, '.0e'))
+    .selectAll('text').style('font-size', '12px');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -42)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('B\u00B2（逼近誤差）');
+
+  // Exponential decay: B^2 = C * exp(-c*L)
+  const C0 = 0.5, decayC = 0.5;
+  const data = [];
+  for (let L = 1; L <= 20; L++) {
+    data.push([L, C0 * Math.exp(-decayC * L)]);
+  }
+
+  const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
+  g.append('path').datum(data).attr('d', lineGen)
+    .attr('fill', 'none').attr('stroke', '#7b3fe4').attr('stroke-width', 2.5);
+
+  // Data points
+  g.selectAll('.dot34')
+    .data(data).enter().append('circle')
+    .attr('cx', d => xScale(d[0])).attr('cy', d => yScale(d[1]))
+    .attr('r', 3.5).attr('fill', '#7b3fe4');
+
+  // Annotation
+  g.append('text').attr('x', xScale(12)).attr('y', yScale(C0 * Math.exp(-decayC * 5)) - 10)
+    .attr('font-size', '12px').attr('fill', '#7b3fe4').attr('font-weight', '600')
+    .text('B\u00B2 \u221D exp(-cL)');
+
+  return { update: () => {}, getState: () => ({}), setState: () => {} };
+});
+
+// === Chart #35: Neural Collapse Simplex ===
+chartInitFns['chart-35'] = () => createChart('chart-35', ({ g, innerW, innerH, container }) => {
+  let K = 3;
+
+  const cx = innerW / 2, cy = innerH / 2;
+  const radius = Math.min(innerW, innerH) * 0.35;
+
+  const simplexGroup = g.append('g');
+  const infoText = g.append('text')
+    .attr('x', innerW / 2).attr('y', innerH - 5)
+    .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#5e6070');
+
+  function getSimplexVertices2D(k) {
+    if (k <= 3) {
+      // Regular polygon in 2D
+      return d3.range(k).map(i => {
+        const angle = -Math.PI / 2 + (2 * Math.PI * i) / k;
+        return [cx + radius * Math.cos(angle), cy + radius * Math.sin(angle)];
+      });
+    }
+    // For K > 3: project regular simplex in (K-1)-D to 2D via PCA-like projection
+    // Simplex vertices in (K-1) dims: e_i - centroid
+    // Project first 2 principal components
+    const verts = [];
+    for (let i = 0; i < k; i++) {
+      // Regular simplex vertex formula projected to 2D
+      const angle = (2 * Math.PI * i) / k;
+      const r1 = radius * Math.cos(angle);
+      const r2 = radius * Math.sin(angle);
+      verts.push([cx + r1, cy + r2]);
+    }
+    return verts;
+  }
+
+  const colors = ['#1e5ab8', '#c93135', '#1e8050', '#7b3fe4', '#e8a020', '#2db0ce'];
+
+  function update() {
+    simplexGroup.selectAll('*').remove();
+    const vertices = getSimplexVertices2D(K);
+
+    // Draw edges (all pairs connected)
+    for (let i = 0; i < K; i++) {
+      for (let j = i + 1; j < K; j++) {
+        simplexGroup.append('line')
+          .attr('x1', vertices[i][0]).attr('y1', vertices[i][1])
+          .attr('x2', vertices[j][0]).attr('y2', vertices[j][1])
+          .attr('stroke', '#8a8c98').attr('stroke-width', 1.5).attr('opacity', 0.5);
+      }
+    }
+
+    // Draw vertices
+    vertices.forEach((v, i) => {
+      simplexGroup.append('circle')
+        .attr('cx', v[0]).attr('cy', v[1])
+        .attr('r', 8).attr('fill', colors[i % colors.length])
+        .attr('stroke', '#fff').attr('stroke-width', 2);
+      simplexGroup.append('text')
+        .attr('x', v[0]).attr('y', v[1] - 14)
+        .attr('text-anchor', 'middle').attr('font-size', '11px')
+        .attr('fill', colors[i % colors.length]).attr('font-weight', '600')
+        .text('class ' + (i + 1));
+    });
+
+    // Centroid
+    const centX = d3.mean(vertices, v => v[0]);
+    const centY = d3.mean(vertices, v => v[1]);
+    simplexGroup.append('circle')
+      .attr('cx', centX).attr('cy', centY)
+      .attr('r', 3).attr('fill', '#5e6070');
+    simplexGroup.append('text')
+      .attr('x', centX).attr('y', centY + 15)
+      .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#5e6070')
+      .text('centroid');
+
+    infoText.text(`K=${K}, r_eff = K\u22121 = ${K - 1}  (\u6B63\u5247\u55AE\u7D14\u5F62)`);
+  }
+
+  update();
+
+  const kSlider = container.querySelector('#chart35-K');
+  const kVal = container.querySelector('#chart35-K-val');
+  kSlider?.addEventListener('input', () => {
+    K = parseInt(kSlider.value);
+    kVal.textContent = K;
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ K }),
+    setState: (s) => {
+      K = s.K ?? 3;
+      if (kSlider) { kSlider.value = K; kVal.textContent = K; }
+      update();
+    }
+  };
+});
+
+// === Chart #36: MSE vs CE Boundary Overlap ===
+chartInitFns['chart-36'] = () => createChart('chart-36', ({ g, innerW, innerH, container }) => {
+  let mode = 'both'; // 'mse', 'ce', 'both'
+
+  const xScale = d3.scaleLinear().domain([0, 2]).range([0, innerW]);
+  const yScale = d3.scaleLinear().domain([0, 2]).range([innerH, 0]);
+
+  // Regions
+  const benignPoints = [
+    [0, 0.5], [1.5, 2], [0, 2]
+  ].map(([a, b]) => [xScale(a), yScale(b)]);
+  g.append('polygon')
+    .attr('points', benignPoints.map(p => p.join(',')).join(' '))
+    .attr('fill', '#1e8050').attr('opacity', 0.15);
+
+  const catPoints = [
+    [0, 0], [2, 0], [2, 2], [1.5, 2], [0, 0.5]
+  ].map(([a, b]) => [xScale(a), yScale(b)]);
+  g.append('polygon')
+    .attr('points', catPoints.map(p => p.join(',')).join(' '))
+    .attr('fill', '#c93135').attr('opacity', 0.15);
+
+  // Region labels
+  g.append('text').attr('x', xScale(0.3)).attr('y', yScale(1.6))
+    .attr('font-size', '13px').attr('font-weight', '700').attr('fill', '#1e8050')
+    .text('Benign');
+  g.append('text').attr('x', xScale(1.2)).attr('y', yScale(0.4))
+    .attr('font-size', '13px').attr('font-weight', '700').attr('fill', '#c93135')
+    .text('Catastrophic');
+
+  // MSE boundary line
+  const mseLine = g.append('line')
+    .attr('x1', xScale(0)).attr('y1', yScale(0.5))
+    .attr('x2', xScale(1.5)).attr('y2', yScale(2))
+    .attr('stroke', '#1e5ab8').attr('stroke-width', 3)
+    .attr('stroke-dasharray', '8,4');
+
+  // CE boundary line (same position, slightly offset for visibility when both shown)
+  const ceLine = g.append('line')
+    .attr('x1', xScale(0)).attr('y1', yScale(0.5))
+    .attr('x2', xScale(1.5)).attr('y2', yScale(2))
+    .attr('stroke', '#c93135').attr('stroke-width', 2.5)
+    .attr('stroke-dasharray', '4,4');
+
+  // Legend
+  const legend = g.append('g').attr('transform', `translate(${innerW - 100}, 10)`);
+  legend.append('line').attr('x1', 0).attr('x2', 20).attr('y1', 0).attr('y2', 0)
+    .attr('stroke', '#1e5ab8').attr('stroke-width', 3).attr('stroke-dasharray', '8,4');
+  legend.append('text').attr('x', 25).attr('y', 4).attr('font-size', '11px').attr('fill', '#1e5ab8').text('MSE');
+  legend.append('line').attr('x1', 0).attr('x2', 20).attr('y1', 18).attr('y2', 18)
+    .attr('stroke', '#c93135').attr('stroke-width', 2.5).attr('stroke-dasharray', '4,4');
+  legend.append('text').attr('x', 25).attr('y', 22).attr('font-size', '11px').attr('fill', '#c93135').text('CE');
+
+  // Overlap message
+  const overlapMsg = g.append('text')
+    .attr('x', xScale(0.85)).attr('y', yScale(1.55))
+    .attr('font-size', '12px').attr('font-weight', '700').attr('fill', '#8a7020')
+    .attr('transform', `rotate(-38, ${xScale(0.85)}, ${yScale(1.55)})`)
+    .text('\u5169\u689D\u5206\u754C\u5B8C\u5168\u91CD\u5408');
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(xScale).ticks(5).tickFormat(d => d.toFixed(1)))
+    .selectAll('text').style('font-size', '12px');
+  g.append('g')
+    .call(d3.axisLeft(yScale).ticks(5).tickFormat(d => d.toFixed(1)))
+    .selectAll('text').style('font-size', '12px');
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('\u03B1\uFF08\u5947\u7570\u503C\u8870\u6E1B\u6307\u6578\uFF09');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('\u03B2\uFF08\u76F8\u95DC\u6027\u8870\u6E1B\u6307\u6578\uFF09');
+
+  function update() {
+    mseLine.attr('opacity', mode === 'ce' ? 0 : 1);
+    ceLine.attr('opacity', mode === 'mse' ? 0 : 1);
+    overlapMsg.attr('opacity', mode === 'both' ? 1 : 0.3);
+  }
+
+  update();
+
+  const mseBtn = container.querySelector('#chart36-mse');
+  const ceBtn = container.querySelector('#chart36-ce');
+  const bothBtn = container.querySelector('#chart36-both');
+
+  function setActive(btn) {
+    [mseBtn, ceBtn, bothBtn].forEach(b => b?.classList.remove('active'));
+    btn?.classList.add('active');
+  }
+
+  mseBtn?.addEventListener('click', () => { mode = 'mse'; setActive(mseBtn); update(); });
+  ceBtn?.addEventListener('click', () => { mode = 'ce'; setActive(ceBtn); update(); });
+  bothBtn?.addEventListener('click', () => { mode = 'both'; setActive(bothBtn); update(); });
+
+  return {
+    update,
+    getState: () => ({ mode }),
+    setState: (s) => {
+      mode = s.mode ?? 'both';
+      if (mode === 'mse') setActive(mseBtn);
+      else if (mode === 'ce') setActive(ceBtn);
+      else setActive(bothBtn);
+      update();
+    }
+  };
+});
+
+// === Chart #37: Manifold Projection Scatter ===
+chartInitFns['chart-37'] = () => createChart('chart-37', ({ g, innerW, innerH, container }) => {
+  let dM = 1;
+  const nPoints = 150;
+
+  const xScale = d3.scaleLinear().domain([-3, 3]).range([0, innerW]);
+  const yScale = d3.scaleLinear().domain([-3, 3]).range([innerH, 0]);
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(xScale).ticks(5))
+    .selectAll('text').style('font-size', '12px');
+  g.append('g')
+    .call(d3.axisLeft(yScale).ticks(5))
+    .selectAll('text').style('font-size', '12px');
+
+  const pointsGroup = g.append('g');
+  const labelText = g.append('text')
+    .attr('x', innerW / 2).attr('y', -5)
+    .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#5e6070');
+
+  // Seeded random for consistency
+  function seededRandom(seed) {
+    let s = seed;
+    return function() {
+      s = (s * 9301 + 49297) % 233280;
+      return s / 233280;
+    };
+  }
+
+  function gaussianRand(rng) {
+    const u1 = rng(), u2 = rng();
+    return Math.sqrt(-2 * Math.log(u1 + 1e-10)) * Math.cos(2 * Math.PI * u2);
+  }
+
+  function generatePoints(dimM) {
+    const rng = seededRandom(42);
+    const pts = [];
+    for (let i = 0; i < nPoints; i++) {
+      const t = (i / nPoints) * 4 * Math.PI;
+      if (dimM === 1) {
+        // Spiral curve (1D manifold)
+        const r = 0.3 + t * 0.15;
+        const noise = 0.05;
+        pts.push([
+          r * Math.cos(t) + gaussianRand(rng) * noise,
+          r * Math.sin(t) + gaussianRand(rng) * noise
+        ]);
+      } else if (dimM === 2) {
+        // 2D surface patch
+        const noise = 0.3;
+        pts.push([
+          gaussianRand(rng) * 1.2 + 0.3 * Math.sin(t),
+          gaussianRand(rng) * 1.2 + 0.3 * Math.cos(t)
+        ]);
+      } else {
+        // Higher d_M: more spread, filling the space
+        const spread = 0.4 + dimM * 0.4;
+        pts.push([
+          gaussianRand(rng) * spread,
+          gaussianRand(rng) * spread
+        ]);
+      }
+    }
+    return pts;
+  }
+
+  function update() {
+    pointsGroup.selectAll('*').remove();
+    const pts = generatePoints(dM);
+
+    pointsGroup.selectAll('circle')
+      .data(pts).enter().append('circle')
+      .attr('cx', d => xScale(d[0])).attr('cy', d => yScale(d[1]))
+      .attr('r', 2.5)
+      .attr('fill', '#1e5ab8').attr('opacity', 0.6);
+
+    const dimLabel = dM === 1 ? '1D \u66F2\u7DDA\uFF08\u87BA\u65CB\uFF09' :
+                     dM === 2 ? '2D \u66F2\u9762' :
+                     dM + 'D \u5206\u5E03';
+    labelText.text(`d_M = ${dM}: \u8CC7\u6599\u96C6\u4E2D\u5728 ${dimLabel}`);
+  }
+
+  update();
+
+  const dmSlider = container.querySelector('#chart37-dM');
+  const dmVal = container.querySelector('#chart37-dM-val');
+  dmSlider?.addEventListener('input', () => {
+    dM = parseInt(dmSlider.value);
+    dmVal.textContent = dM;
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ dM }),
+    setState: (s) => {
+      dM = s.dM ?? 1;
+      if (dmSlider) { dmSlider.value = dM; dmVal.textContent = dM; }
+      update();
+    }
+  };
+});
+
+// === Chart #38: Correction Term ===
+chartInitFns['chart-38'] = () => createChart('chart-38', ({ g, innerW, innerH, container }) => {
+  let rEff = 10, n = 1000;
+
+  const xScale = d3.scaleLinear().domain([1, 100]).range([0, innerW]);
+  const yScale = d3.scaleLinear().domain([0, 1.2]).range([innerH, 0]);
+
+  // Axes
+  const xAxisG = g.append('g').attr('transform', `translate(0,${innerH})`);
+  const yAxisG = g.append('g');
+
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('r_eff');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('\u221A(r_eff / n)');
+
+  const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
+  const curvePath = g.append('path')
+    .attr('fill', 'none').attr('stroke', '#7b3fe4').attr('stroke-width', 2.5);
+
+  // Current point indicator
+  const ptDot = g.append('circle')
+    .attr('r', 6).attr('fill', '#c93135').attr('stroke', '#fff').attr('stroke-width', 2);
+  const ptLabel = g.append('text')
+    .attr('font-size', '12px').attr('fill', '#c93135').attr('font-weight', '600');
+
+  // Threshold line at y=0.1 (small correction zone)
+  const threshLine = g.append('line')
+    .attr('x1', 0).attr('x2', innerW)
+    .attr('stroke', '#1e8050').attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
+  const threshLabel = g.append('text')
+    .attr('x', innerW - 5).attr('text-anchor', 'end')
+    .attr('font-size', '10px').attr('fill', '#1e8050');
+
+  function update() {
+    const maxCorr = Math.sqrt(100 / n);
+    yScale.domain([0, Math.max(0.5, maxCorr * 1.3)]);
+
+    xAxisG.call(d3.axisBottom(xScale).ticks(10)).selectAll('text').style('font-size', '12px');
+    yAxisG.call(d3.axisLeft(yScale).ticks(6)).selectAll('text').style('font-size', '12px');
+
+    // Curve
+    const data = [];
+    for (let r = 1; r <= 100; r++) {
+      data.push([r, Math.sqrt(r / n)]);
+    }
+    curvePath.datum(data).attr('d', lineGen);
+
+    // Current point
+    const corrVal = Math.sqrt(rEff / n);
+    ptDot.attr('cx', xScale(rEff)).attr('cy', yScale(corrVal));
+    ptLabel
+      .attr('x', xScale(rEff) + 10).attr('y', yScale(corrVal) - 10)
+      .text(`\u221A(${rEff}/${n}) = ${corrVal.toFixed(4)}`);
+
+    // Threshold
+    const threshY = 0.1;
+    threshLine.attr('y1', yScale(threshY)).attr('y2', yScale(threshY));
+    threshLabel.attr('y', yScale(threshY) - 4).text('\u4FEE\u6B63\u5C0F (\u2264 0.1)');
+  }
+
+  update();
+
+  const reffSlider = container.querySelector('#chart38-reff');
+  const reffVal = container.querySelector('#chart38-reff-val');
+  const nSlider = container.querySelector('#chart38-n');
+  const nVal = container.querySelector('#chart38-n-val');
+
+  reffSlider?.addEventListener('input', () => {
+    rEff = parseInt(reffSlider.value);
+    reffVal.textContent = rEff;
+    update();
+  });
+  nSlider?.addEventListener('input', () => {
+    n = parseInt(nSlider.value);
+    nVal.textContent = n;
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ rEff, n }),
+    setState: (s) => {
+      rEff = s.rEff ?? 10;
+      n = s.n ?? 1000;
+      if (reffSlider) { reffSlider.value = rEff; reffVal.textContent = rEff; }
+      if (nSlider) { nSlider.value = n; nVal.textContent = n; }
+      update();
+    }
   };
 });
 
