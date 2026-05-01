@@ -705,7 +705,99 @@ footer {
     </div>
   </div>
 </section>
-  <section id="sec-aux" class="theorem-section"></section>
+  <section id="sec-aux" class="theorem-section">
+  <h2>輔助定理</h2>
+
+  <h3>8a：Balanced Conservation（支撐定理 3, 5）</h3>
+  <div class="layer-intuition">
+    <p>蹺蹺板守恆——權重的「大小」和「方向」此消彼長，總量守恆。這保證了訓練過程中 Jacobian 結構的穩定性。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>在 2-homogeneous ReLU 網路中，$\frac{d}{dt}(a_j^2 - \|w_j\|^2) = 0$。</p>
+      <p><strong>證明</strong>：由 Euler 定理，2-homogeneous 函數滿足 $f(\lambda\theta) = \lambda^2 f(\theta)$，對 $\lambda$ 微分後代入 $\lambda=1$，得到 $a_j \dot{a}_j = w_j^T \dot{w}_j$，進而 $\frac{d}{dt}(a_j^2 - \|w_j\|^2) = 0$。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-17">
+      <h3>Balanced Conservation 動畫</h3>
+      <div class="chart-controls">
+        <button id="chart17-play" class="active">Play</button>
+        <button id="chart17-pause">Pause</button>
+      </div>
+    </div>
+  </div>
+
+  <h3>8b：矩陣集中不等式（支撐定理 1）</h3>
+  <div class="layer-intuition">
+    <p>定理 1 假設各方向的噪聲互不干擾（$\Gamma$ 近似對角）。這個輔助定理告訴你：樣本夠多時，抽樣估計會收斂到真實值，對角近似是安全的。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p><strong>Matrix Bernstein bound</strong>：$\|\hat{J}^T\hat{J}/n - K_{\text{pop}}\|_{\text{op}}$ 隨 $n$ 增大以 $O(1/\sqrt{n})$ 速率收斂到 0。</p>
+      <p>具體地，以高機率 $\|\hat{J}^T\hat{J}/n - K_{\text{pop}}\|_{\text{op}} \leq C\sqrt{\frac{\log p}{n}}$。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-18">
+      <h3>矩陣集中收斂</h3>
+      <div class="chart-controls">
+        <label>n（樣本數） <input type="range" id="chart18-n" min="10" max="10000" step="10" value="100"><span class="value-display" id="chart18-n-val">100</span></label>
+      </div>
+    </div>
+  </div>
+
+  <h3>8c：深度乘法上界（支撐定理 6）</h3>
+  <div class="layer-intuition">
+    <p>每多一層，衰減疊乘——但疊乘效果有上界，不是想像中的精確相乘。這代表不能天真地把每層的過濾效果直接相乘來估算總效果——實際過濾比預期弱。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p><strong>Weyl 不等式上界</strong>：$\sigma_j(J_{\text{total}}) \leq C \cdot j^{-L\alpha_0}$。</p>
+      <p><strong>2×2 反例</strong>：存在矩陣 $A, B$ 使得 $\sigma(AB) \neq \sigma(A) \cdot \sigma(B)$，乘積的奇異值可大於各因子奇異值的乘積。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-19">
+      <h3>奇異值乘法反例</h3>
+      <p style="font-size:0.85rem;color:#5e6070;margin:0.25rem 0 0.5rem;">每個矩陣代表一層的 Jacobian，乘積代表端對端 Jacobian</p>
+      <div class="chart-controls">
+        <label>A₁₁ <input type="range" id="chart19-a11" min="-2" max="2" step="0.1" value="1"><span class="value-display" id="chart19-a11-val">1.0</span></label>
+        <label>A₁₂ <input type="range" id="chart19-a12" min="-2" max="2" step="0.1" value="2"><span class="value-display" id="chart19-a12-val">2.0</span></label>
+        <label>A₂₁ <input type="range" id="chart19-a21" min="-2" max="2" step="0.1" value="0"><span class="value-display" id="chart19-a21-val">0.0</span></label>
+        <label>A₂₂ <input type="range" id="chart19-a22" min="-2" max="2" step="0.1" value="0.5"><span class="value-display" id="chart19-a22-val">0.5</span></label>
+        <label>B₁₁ <input type="range" id="chart19-b11" min="-2" max="2" step="0.1" value="0.5"><span class="value-display" id="chart19-b11-val">0.5</span></label>
+        <label>B₁₂ <input type="range" id="chart19-b12" min="-2" max="2" step="0.1" value="0"><span class="value-display" id="chart19-b12-val">0.0</span></label>
+        <label>B₂₁ <input type="range" id="chart19-b21" min="-2" max="2" step="0.1" value="1"><span class="value-display" id="chart19-b21-val">1.0</span></label>
+        <label>B₂₂ <input type="range" id="chart19-b22" min="-2" max="2" step="0.1" value="1"><span class="value-display" id="chart19-b22-val">1.0</span></label>
+      </div>
+    </div>
+  </div>
+
+  <h3>8d：Weight Decay 反例（修正常見誤解）</h3>
+  <div class="layer-intuition">
+    <p>Weight decay 讓參數變小，但不保證 Jacobian 的跡也變小——這是兩件不同的事。有嚴格反例證明。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>Weight decay 嚴格降低 $\|\theta\|^2$，但 <strong>不一定</strong>降低 $\operatorname{tr}(J^T J)$。</p>
+      <p><strong>反例</strong>：2-neuron、2-datapoint 的情境中，$\operatorname{tr}(J^T J)$ 可增加高達 49%。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-20">
+      <h3>Weight Decay 反例動畫</h3>
+      <div class="chart-controls">
+        <button id="chart20-play" class="active">Play</button>
+        <button id="chart20-pause">Pause</button>
+      </div>
+    </div>
+  </div>
+</section>
   <section id="sec-ext14" class="theorem-section"></section>
   <section id="sec-ext16" class="theorem-section"></section>
   <section id="sec-disproven" class="theorem-section"></section>
@@ -3099,6 +3191,617 @@ chartInitFns['chart-16'] = () => createChart('chart-16', ({ g, innerW, innerH, c
       const idx = archNames.indexOf(activeArch);
       if (idx >= 0) allBtns[idx]?.classList.add('active');
       updateHighlight();
+    }
+  };
+});
+
+// === Chart #17: 8a Balanced Conservation ===
+chartInitFns['chart-17'] = () => createChart('chart-17', ({ g, innerW, innerH, container }) => {
+  const totalSteps = 200;
+  let step = 0;
+  let playing = true;
+  let timer = null;
+
+  // Generate balanced conservation data
+  // a² and ||w||² change over time but a² - ||w||² = 0 always
+  // We model: a²(t) = 1 + 0.8*sin(t/30) + 0.4*sin(t/15), ||w||²(t) = same
+  // Both start at the same value and their difference is always 0
+  const initVal = 1.0;
+  function aSquared(t) {
+    return initVal + 0.8 * Math.sin(t * Math.PI / 30) + 0.4 * Math.sin(t * Math.PI / 15) + 0.3 * t / totalSteps;
+  }
+  function wSquared(t) {
+    return aSquared(t); // conservation: difference is always 0
+  }
+
+  // Generate all data points
+  function genData(maxStep) {
+    const aData = [], wData = [], diffData = [];
+    for (let i = 0; i <= maxStep; i++) {
+      aData.push({ t: i, v: aSquared(i) });
+      wData.push({ t: i, v: wSquared(i) });
+      diffData.push({ t: i, v: 0 });
+    }
+    return { aData, wData, diffData };
+  }
+
+  const xScale = d3.scaleLinear().domain([0, totalSteps]).range([0, innerW]);
+  const yScale = d3.scaleLinear().domain([-0.5, 3]).range([innerH, 0]);
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.format('d')))
+    .selectAll('text').style('font-size', '12px');
+  g.append('g').call(d3.axisLeft(yScale).ticks(6))
+    .selectAll('text').style('font-size', '12px');
+
+  // Axis labels
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('訓練步數');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('值');
+
+  const line = d3.line().x(d => xScale(d.t)).y(d => yScale(d.v)).curve(d3.curveMonotoneX);
+
+  // Paths
+  const aPath = g.append('path').attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2.5);
+  const wPath = g.append('path').attr('fill', 'none').attr('stroke', '#c05020').attr('stroke-width', 2.5).attr('stroke-dasharray', '6,3');
+  const diffPath = g.append('path').attr('fill', 'none').attr('stroke', '#1e8050').attr('stroke-width', 3);
+
+  // Legend
+  const legendData = [
+    { label: 'a²', color: '#1e5ab8', dash: '' },
+    { label: '||w||²', color: '#c05020', dash: '6,3' },
+    { label: 'a² − ||w||² = 0', color: '#1e8050', dash: '' }
+  ];
+  legendData.forEach((d, i) => {
+    const lx = innerW - 140;
+    const ly = 10 + i * 18;
+    g.append('line').attr('x1', lx).attr('x2', lx + 20).attr('y1', ly).attr('y2', ly)
+      .attr('stroke', d.color).attr('stroke-width', 2.5).attr('stroke-dasharray', d.dash);
+    g.append('text').attr('x', lx + 25).attr('y', ly + 4)
+      .attr('font-size', '12px').attr('fill', d.color).text(d.label);
+  });
+
+  // Step indicator
+  const stepText = g.append('text').attr('x', 10).attr('y', 15)
+    .attr('font-size', '13px').attr('fill', '#5e6070');
+
+  function draw() {
+    const { aData, wData, diffData } = genData(step);
+    aPath.datum(aData).attr('d', line);
+    wPath.datum(wData).attr('d', line);
+    diffPath.datum(diffData).attr('d', line);
+    stepText.text('步數: ' + step);
+  }
+
+  draw();
+
+  function startTimer() {
+    if (timer) timer.stop();
+    timer = d3.timer(() => {
+      if (!playing) return;
+      step++;
+      if (step > totalSteps) { step = 0; }
+      draw();
+    }, 40);
+  }
+  startTimer();
+
+  // Button bindings
+  const playBtn = container.querySelector('#chart17-play');
+  const pauseBtn = container.querySelector('#chart17-pause');
+  playBtn?.addEventListener('click', () => {
+    playing = true;
+    playBtn.classList.add('active');
+    pauseBtn?.classList.remove('active');
+    if (step >= totalSteps) step = 0;
+  });
+  pauseBtn?.addEventListener('click', () => {
+    playing = false;
+    pauseBtn.classList.add('active');
+    playBtn?.classList.remove('active');
+  });
+
+  return {
+    update: draw,
+    getState: () => ({ step, playing }),
+    setState: (s) => {
+      step = s.step; playing = s.playing;
+      if (playing) { playBtn?.classList.add('active'); pauseBtn?.classList.remove('active'); }
+      else { pauseBtn?.classList.add('active'); playBtn?.classList.remove('active'); }
+      draw();
+      startTimer();
+    }
+  };
+});
+
+// === Chart #18: 8b Matrix Concentration ===
+chartInitFns['chart-18'] = () => createChart('chart-18', ({ g, innerW, innerH, container }) => {
+  const gridSize = 5;
+  const cellSize = Math.min(innerW / (gridSize * 2 + 3), innerH / (gridSize + 2));
+  let nVal = 100;
+
+  // K_pop: a fixed 5x5 positive-definite matrix (population kernel)
+  const K_pop = [
+    [5.0, 1.2, 0.3, 0.1, 0.0],
+    [1.2, 4.0, 0.8, 0.2, 0.1],
+    [0.3, 0.8, 3.0, 0.5, 0.1],
+    [0.1, 0.2, 0.5, 2.5, 0.3],
+    [0.0, 0.1, 0.1, 0.3, 2.0]
+  ];
+
+  // Seed random for reproducibility
+  let seed = 42;
+  function seededRandom() {
+    seed = (seed * 16807) % 2147483647;
+    return (seed - 1) / 2147483646;
+  }
+
+  // Generate noisy estimate: K_pop + noise/sqrt(n)
+  function genEstimate(n) {
+    seed = 42; // Reset seed for consistency
+    const est = [];
+    for (let i = 0; i < gridSize; i++) {
+      est[i] = [];
+      for (let j = 0; j < gridSize; j++) {
+        const noise = (seededRandom() - 0.5) * 2 * 3.0 / Math.sqrt(n);
+        est[i][j] = K_pop[i][j] + noise;
+      }
+    }
+    return est;
+  }
+
+  // Compute operator norm of difference (approximate: max abs element as proxy)
+  function opNorm(est) {
+    let maxVal = 0;
+    for (let i = 0; i < gridSize; i++) {
+      for (let j = 0; j < gridSize; j++) {
+        maxVal = Math.max(maxVal, Math.abs(est[i][j] - K_pop[i][j]));
+      }
+    }
+    return maxVal * gridSize; // Scale for display
+  }
+
+  // Color scale: deviation from K_pop
+  const maxKVal = 5.5;
+  const colorPop = d3.scaleSequential(d3.interpolateBlues).domain([0, maxKVal]);
+  const colorDiv = d3.scaleDiverging(d3.interpolateRdBu).domain([-2, 0, 2]);
+
+  // Layout
+  const leftX = innerW * 0.05;
+  const rightX = innerW * 0.55;
+  const topY = 30;
+
+  // Labels
+  g.append('text').attr('x', leftX + cellSize * gridSize / 2).attr('y', topY - 10)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+    .text('Ĵ^TĴ/n（估計值）');
+  g.append('text').attr('x', rightX + cellSize * gridSize / 2).attr('y', topY - 10)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+    .text('K_pop（真實值）');
+
+  // Draw K_pop heatmap (static)
+  for (let i = 0; i < gridSize; i++) {
+    for (let j = 0; j < gridSize; j++) {
+      g.append('rect')
+        .attr('x', rightX + j * cellSize).attr('y', topY + i * cellSize)
+        .attr('width', cellSize - 2).attr('height', cellSize - 2)
+        .attr('fill', colorPop(K_pop[i][j]))
+        .attr('rx', 2);
+      g.append('text')
+        .attr('x', rightX + j * cellSize + cellSize / 2 - 1)
+        .attr('y', topY + i * cellSize + cellSize / 2 + 4)
+        .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#fff')
+        .text(K_pop[i][j].toFixed(1));
+    }
+  }
+
+  // Estimated heatmap cells (will be updated)
+  const estCells = [];
+  const estTexts = [];
+  for (let i = 0; i < gridSize; i++) {
+    estCells[i] = [];
+    estTexts[i] = [];
+    for (let j = 0; j < gridSize; j++) {
+      estCells[i][j] = g.append('rect')
+        .attr('x', leftX + j * cellSize).attr('y', topY + i * cellSize)
+        .attr('width', cellSize - 2).attr('height', cellSize - 2)
+        .attr('rx', 2);
+      estTexts[i][j] = g.append('text')
+        .attr('x', leftX + j * cellSize + cellSize / 2 - 1)
+        .attr('y', topY + i * cellSize + cellSize / 2 + 4)
+        .attr('text-anchor', 'middle').attr('font-size', '10px');
+    }
+  }
+
+  // Op-norm display
+  const normText = g.append('text')
+    .attr('x', innerW / 2).attr('y', topY + gridSize * cellSize + 30)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('font-weight', '600').attr('fill', '#1e2030');
+
+  function update() {
+    const est = genEstimate(nVal);
+    const norm = opNorm(est);
+
+    for (let i = 0; i < gridSize; i++) {
+      for (let j = 0; j < gridSize; j++) {
+        const dev = est[i][j] - K_pop[i][j];
+        estCells[i][j].attr('fill', colorDiv(dev));
+        estTexts[i][j].text(est[i][j].toFixed(1))
+          .attr('fill', Math.abs(dev) > 0.5 ? '#c05020' : '#1e2030');
+      }
+    }
+
+    normText.text(`||Ĵ^TĴ/n − K_pop||_op ≈ ${norm.toFixed(3)}    (n = ${nVal})`);
+  }
+
+  update();
+
+  // Slider binding
+  const nSlider = container.querySelector('#chart18-n');
+  const nValDisp = container.querySelector('#chart18-n-val');
+  nSlider?.addEventListener('input', () => {
+    nVal = parseInt(nSlider.value);
+    nValDisp.textContent = nVal;
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ nVal }),
+    setState: (s) => {
+      nVal = s.nVal;
+      if (nSlider) { nSlider.value = nVal; nValDisp.textContent = nVal; }
+      update();
+    }
+  };
+});
+
+// === Chart #19: 8c Depth Multiplication Counterexample ===
+chartInitFns['chart-19'] = () => createChart('chart-19', ({ g, innerW, innerH, container }) => {
+  // Read slider values
+  function getMatrix(prefix) {
+    const get = (id) => parseFloat(container.querySelector('#chart19-' + id)?.value || 0);
+    return [
+      [get(prefix + '11'), get(prefix + '12')],
+      [get(prefix + '21'), get(prefix + '22')]
+    ];
+  }
+
+  // Compute singular values of a 2x2 matrix
+  function svd2x2(m) {
+    const a = m[0][0], b = m[0][1], c = m[1][0], d = m[1][1];
+    // M^T M
+    const p = a * a + c * c;
+    const q = a * b + c * d;
+    const r = b * b + d * d;
+    // Eigenvalues of M^T M
+    const tr = p + r;
+    const det = p * r - q * q;
+    const disc = Math.sqrt(Math.max(0, tr * tr - 4 * det));
+    const l1 = (tr + disc) / 2;
+    const l2 = (tr - disc) / 2;
+    return [Math.sqrt(Math.max(0, l1)), Math.sqrt(Math.max(0, l2))];
+  }
+
+  // Matrix multiply 2x2
+  function matMul(a, b) {
+    return [
+      [a[0][0] * b[0][0] + a[0][1] * b[1][0], a[0][0] * b[0][1] + a[0][1] * b[1][1]],
+      [a[1][0] * b[0][0] + a[1][1] * b[1][0], a[1][0] * b[0][1] + a[1][1] * b[1][1]]
+    ];
+  }
+
+  const barWidth = 40;
+  const groupGap = 80;
+  const barAreaTop = 40;
+  const barAreaH = innerH - 60;
+
+  // Title labels
+  g.append('text').attr('x', innerW * 0.25).attr('y', 20)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+    .text('σ(A·B) — 實際');
+  g.append('text').attr('x', innerW * 0.75).attr('y', 20)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+    .text('σ(A)·σ(B) — 天真估計');
+
+  const yScale = d3.scaleLinear().domain([0, 5]).range([barAreaH, 0]);
+
+  // Axis
+  const yAxisG = g.append('g').attr('transform', `translate(${innerW * 0.1},${barAreaTop})`);
+
+  // Bars for actual
+  const actualBars = [0, 1].map(i => {
+    return g.append('rect')
+      .attr('x', innerW * 0.25 - barWidth + i * (barWidth + 5))
+      .attr('width', barWidth - 3)
+      .attr('fill', '#1e5ab8').attr('rx', 3);
+  });
+  const actualLabels = [0, 1].map(i => {
+    return g.append('text')
+      .attr('x', innerW * 0.25 - barWidth + i * (barWidth + 5) + barWidth / 2 - 1)
+      .attr('text-anchor', 'middle').attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#1e2030');
+  });
+  // Sigma labels
+  [0, 1].forEach(i => {
+    g.append('text')
+      .attr('x', innerW * 0.25 - barWidth + i * (barWidth + 5) + barWidth / 2 - 1)
+      .attr('y', barAreaTop + barAreaH + 15)
+      .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#5e6070')
+      .text('σ' + (i + 1));
+  });
+
+  // Bars for naive
+  const naiveBars = [0, 1].map(i => {
+    return g.append('rect')
+      .attr('x', innerW * 0.75 - barWidth + i * (barWidth + 5))
+      .attr('width', barWidth - 3)
+      .attr('fill', '#8a7020').attr('rx', 3);
+  });
+  const naiveLabels = [0, 1].map(i => {
+    return g.append('text')
+      .attr('x', innerW * 0.75 - barWidth + i * (barWidth + 5) + barWidth / 2 - 1)
+      .attr('text-anchor', 'middle').attr('font-size', '12px').attr('font-weight', '600');
+  });
+  [0, 1].forEach(i => {
+    g.append('text')
+      .attr('x', innerW * 0.75 - barWidth + i * (barWidth + 5) + barWidth / 2 - 1)
+      .attr('y', barAreaTop + barAreaH + 15)
+      .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#5e6070')
+      .text('σ' + (i + 1));
+  });
+
+  // Difference text
+  const diffText = g.append('text')
+    .attr('x', innerW / 2).attr('y', barAreaTop + barAreaH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600');
+
+  function update() {
+    const A = getMatrix('a');
+    const B = getMatrix('b');
+    const AB = matMul(A, B);
+
+    const svAB = svd2x2(AB).sort((a, b) => b - a);
+    const svA = svd2x2(A).sort((a, b) => b - a);
+    const svB = svd2x2(B).sort((a, b) => b - a);
+    const naive = [svA[0] * svB[0], svA[1] * svB[1]].sort((a, b) => b - a);
+
+    const maxVal = Math.max(d3.max(svAB), d3.max(naive), 0.1);
+    yScale.domain([0, maxVal * 1.2]);
+    yAxisG.call(d3.axisLeft(yScale).ticks(5));
+
+    // Update bars
+    svAB.forEach((v, i) => {
+      actualBars[i]
+        .transition().duration(200)
+        .attr('y', barAreaTop + yScale(v))
+        .attr('height', barAreaH - yScale(v));
+      actualLabels[i]
+        .attr('y', barAreaTop + yScale(v) - 5)
+        .text(v.toFixed(3));
+    });
+    naive.forEach((v, i) => {
+      naiveBars[i]
+        .transition().duration(200)
+        .attr('y', barAreaTop + yScale(v))
+        .attr('height', barAreaH - yScale(v));
+      naiveLabels[i]
+        .attr('y', barAreaTop + yScale(v) - 5)
+        .text(v.toFixed(3));
+    });
+
+    // Check if they differ significantly
+    const relDiff1 = naive[0] > 0.001 ? Math.abs(svAB[0] - naive[0]) / naive[0] : 0;
+    const relDiff2 = naive[1] > 0.001 ? Math.abs(svAB[1] - naive[1]) / naive[1] : 0;
+    const maxRelDiff = Math.max(relDiff1, relDiff2);
+
+    if (maxRelDiff > 0.1) {
+      diffText.text(`差異達 ${(maxRelDiff * 100).toFixed(0)}% — 天真估計失效！`).attr('fill', '#c05020');
+      naiveLabels.forEach(l => l.attr('fill', '#c05020'));
+    } else {
+      diffText.text(`差異 ${(maxRelDiff * 100).toFixed(0)}%`).attr('fill', '#1e8050');
+      naiveLabels.forEach(l => l.attr('fill', '#1e2030'));
+    }
+  }
+
+  update();
+
+  // Bind all 8 sliders
+  ['a11', 'a12', 'a21', 'a22', 'b11', 'b12', 'b21', 'b22'].forEach(id => {
+    const slider = container.querySelector('#chart19-' + id);
+    const valDisp = container.querySelector('#chart19-' + id + '-val');
+    slider?.addEventListener('input', () => {
+      valDisp.textContent = parseFloat(slider.value).toFixed(1);
+      update();
+    });
+  });
+
+  return {
+    update,
+    getState: () => {
+      const vals = {};
+      ['a11', 'a12', 'a21', 'a22', 'b11', 'b12', 'b21', 'b22'].forEach(id => {
+        vals[id] = parseFloat(container.querySelector('#chart19-' + id)?.value || 0);
+      });
+      return vals;
+    },
+    setState: (s) => {
+      ['a11', 'a12', 'a21', 'a22', 'b11', 'b12', 'b21', 'b22'].forEach(id => {
+        const slider = container.querySelector('#chart19-' + id);
+        const valDisp = container.querySelector('#chart19-' + id + '-val');
+        if (slider && s[id] !== undefined) {
+          slider.value = s[id];
+          valDisp.textContent = parseFloat(s[id]).toFixed(1);
+        }
+      });
+      update();
+    }
+  };
+});
+
+// === Chart #20: 8d Weight Decay Counterexample ===
+chartInitFns['chart-20'] = () => createChart('chart-20', ({ svg, g, innerW, innerH, container }) => {
+  const totalSteps = 100;
+  let step = 0;
+  let playing = true;
+  let timer = null;
+
+  // Model: 2-neuron, 2-datapoint counterexample
+  // ||theta||² strictly decreases under WD
+  // tr(J^TJ) increases up to +49% before decreasing
+  const initTheta2 = 4.0;
+  const initTrJTJ = 1.0;
+
+  function thetaSquared(t) {
+    // Strictly decreasing exponential decay
+    return initTheta2 * Math.exp(-0.03 * t);
+  }
+
+  function trJTJ(t) {
+    // Increases to +49% at peak around t=30, then decreases
+    // Use a bump function: 1 + 0.49 * (t/30)^2 * exp(1 - (t/30)^2) for rise
+    const tau = t / 30;
+    const bump = tau * tau * Math.exp(1 - tau * tau);
+    return initTrJTJ * (1 + 0.49 * bump);
+  }
+
+  // Find peak
+  let peakStep = 0, peakVal = 0;
+  for (let t = 0; t <= totalSteps; t++) {
+    if (trJTJ(t) > peakVal) { peakVal = trJTJ(t); peakStep = t; }
+  }
+  const peakPct = ((peakVal / initTrJTJ - 1) * 100).toFixed(0);
+
+  const xScale = d3.scaleLinear().domain([0, totalSteps]).range([0, innerW]);
+
+  // Dual y-axes
+  const yScaleLeft = d3.scaleLinear().domain([0, initTheta2 * 1.1]).range([innerH, 0]);
+  const yScaleRight = d3.scaleLinear().domain([0.5, initTrJTJ * 1.6]).range([innerH, 0]);
+
+  // Left Y axis (blue)
+  g.append('g').call(d3.axisLeft(yScaleLeft).ticks(5))
+    .selectAll('text').style('font-size', '12px').style('fill', '#1e5ab8');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#1e5ab8')
+    .text('||θ||²');
+
+  // Right Y axis (red)
+  g.append('g').attr('transform', `translate(${innerW},0)`)
+    .call(d3.axisRight(yScaleRight).ticks(5))
+    .selectAll('text').style('font-size', '12px').style('fill', '#c05020');
+  g.append('text').attr('transform', 'rotate(90)')
+    .attr('x', innerH / 2).attr('y', -innerW - 38)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#c05020')
+    .text('tr(J^TJ)');
+
+  // X axis
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.format('d')))
+    .selectAll('text').style('font-size', '12px');
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('訓練步數');
+
+  // Reference line: initial tr(J^TJ)
+  g.append('line')
+    .attr('x1', 0).attr('x2', innerW)
+    .attr('y1', yScaleRight(initTrJTJ)).attr('y2', yScaleRight(initTrJTJ))
+    .attr('stroke', '#c05020').attr('stroke-width', 1).attr('stroke-dasharray', '6,4').attr('opacity', 0.5);
+  g.append('text').attr('x', innerW - 5).attr('y', yScaleRight(initTrJTJ) - 5)
+    .attr('text-anchor', 'end').attr('font-size', '10px').attr('fill', '#c05020').attr('opacity', 0.7)
+    .text('初始 tr(J^TJ)');
+
+  // Lines
+  const lineLeft = d3.line().x(d => xScale(d.t)).y(d => yScaleLeft(d.v)).curve(d3.curveMonotoneX);
+  const lineRight = d3.line().x(d => xScale(d.t)).y(d => yScaleRight(d.v)).curve(d3.curveMonotoneX);
+
+  const thetaPath = g.append('path').attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2.5);
+  const trPath = g.append('path').attr('fill', 'none').attr('stroke', '#c05020').attr('stroke-width', 2.5);
+
+  // Peak annotation
+  const peakAnnotG = g.append('g').attr('opacity', 0);
+  peakAnnotG.append('circle')
+    .attr('cx', xScale(peakStep)).attr('cy', yScaleRight(peakVal))
+    .attr('r', 5).attr('fill', 'none').attr('stroke', '#c05020').attr('stroke-width', 2);
+  peakAnnotG.append('text')
+    .attr('x', xScale(peakStep) + 8).attr('y', yScaleRight(peakVal) - 8)
+    .attr('font-size', '13px').attr('font-weight', '700').attr('fill', '#c05020')
+    .text('+' + peakPct + '%');
+
+  // Legend
+  const legendItems = [
+    { label: '||θ||² (左軸)', color: '#1e5ab8' },
+    { label: 'tr(J^TJ) (右軸)', color: '#c05020' }
+  ];
+  legendItems.forEach((d, i) => {
+    const lx = 10;
+    const ly = 10 + i * 18;
+    g.append('line').attr('x1', lx).attr('x2', lx + 20).attr('y1', ly).attr('y2', ly)
+      .attr('stroke', d.color).attr('stroke-width', 2.5);
+    g.append('text').attr('x', lx + 25).attr('y', ly + 4)
+      .attr('font-size', '12px').attr('fill', d.color).text(d.label);
+  });
+
+  // Step indicator
+  const stepText = g.append('text').attr('x', 10).attr('y', innerH - 5)
+    .attr('font-size', '13px').attr('fill', '#5e6070');
+
+  function draw() {
+    const thetaData = [], trData = [];
+    for (let t = 0; t <= step; t++) {
+      thetaData.push({ t, v: thetaSquared(t) });
+      trData.push({ t, v: trJTJ(t) });
+    }
+    thetaPath.datum(thetaData).attr('d', lineLeft);
+    trPath.datum(trData).attr('d', lineRight);
+    stepText.text('步數: ' + step);
+
+    // Show peak annotation when step passes peak
+    peakAnnotG.attr('opacity', step >= peakStep ? 1 : 0);
+  }
+
+  draw();
+
+  function startTimer() {
+    if (timer) timer.stop();
+    timer = d3.timer(() => {
+      if (!playing) return;
+      step++;
+      if (step > totalSteps) { step = 0; }
+      draw();
+    }, 50);
+  }
+  startTimer();
+
+  // Button bindings
+  const playBtn = container.querySelector('#chart20-play');
+  const pauseBtn = container.querySelector('#chart20-pause');
+  playBtn?.addEventListener('click', () => {
+    playing = true;
+    playBtn.classList.add('active');
+    pauseBtn?.classList.remove('active');
+    if (step >= totalSteps) step = 0;
+  });
+  pauseBtn?.addEventListener('click', () => {
+    playing = false;
+    pauseBtn.classList.add('active');
+    playBtn?.classList.remove('active');
+  });
+
+  return {
+    update: draw,
+    getState: () => ({ step, playing }),
+    setState: (s) => {
+      step = s.step; playing = s.playing;
+      if (playing) { playBtn?.classList.add('active'); pauseBtn?.classList.remove('active'); }
+      else { pauseBtn?.classList.add('active'); playBtn?.classList.remove('active'); }
+      draw();
+      startTimer();
     }
   };
 });
