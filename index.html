@@ -6086,6 +6086,16 @@ chartInitFns['chart-38'] = () => createChart('chart-38', ({ g, innerW, innerH, c
   };
 });
 
+// === Resize Handler ===
+window.addEventListener('resize', () => {
+  Object.keys(chartRegistry).forEach(id => {
+    const state = chartRegistry[id].getState();
+    chartRegistry[id].destroy();
+    delete chartRegistry[id];
+    chartStates[id] = state;
+  });
+});
+
 // === Boot ===
 observeAllCharts();
 </script>
