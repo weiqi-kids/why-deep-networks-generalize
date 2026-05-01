@@ -4,6 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>深度網路為何泛化</title>
+<meta name="description" content="深度網路為何泛化？從第一性原理出發，用高中生能懂的語言解釋過參數化神經網路的泛化機制。包含 38 個互動 D3.js 圖表，涵蓋噪聲傳播算子、Benign Overfitting、Feature Learning、Jacobian 譜分離等完整數學證明。">
+<meta name="keywords" content="深度學習,泛化,過參數化,神經網路,Jacobian,Feature Learning,Benign Overfitting,互動教學">
+<meta name="author" content="weiqi.kids">
+<link rel="canonical" href="https://why-deep-networks-generalize.proof.weiqi.kids/">
+
+<!-- Open Graph -->
+<meta property="og:type" content="article">
+<meta property="og:title" content="深度網路為何泛化——從第一性原理到完整證明">
+<meta property="og:description" content="用高中生能懂的語言，搭配 38 個互動圖表，解釋過參數化深度網路為何能泛化。涵蓋噪聲傳播算子、Benign Overfitting、Feature Learning 等完整數學證明。">
+<meta property="og:url" content="https://why-deep-networks-generalize.proof.weiqi.kids/">
+<meta property="og:site_name" content="weiqi.kids">
+<meta property="og:locale" content="zh_TW">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="深度網路為何泛化——從第一性原理到完整證明">
+<meta name="twitter:description" content="38 個互動 D3.js 圖表，從高中生直覺到完整數學證明。">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <style>
 /* === Design Tokens === */
@@ -394,7 +411,119 @@ footer {
 @media (max-height: 600px) {
   #logic-map { height: 80px; }
 }
+
+/* === AEO Share Button === */
+.share-ai-btn {
+  display: inline-block;
+  margin-left: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.25rem;
+  background: var(--bg-base);
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  cursor: pointer;
+  vertical-align: middle;
+}
+.share-ai-btn:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
 </style>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "Article",
+  "headline": "深度網路為何泛化——從第一性原理到完整證明",
+  "description": "用高中生能懂的語言，搭配 38 個互動圖表，完整解釋過參數化深度網路的泛化機制。",
+  "author": {"@type": "Organization", "name": "weiqi.kids", "url": "https://github.com/weiqi-kids"},
+  "datePublished": "2026-05-01",
+  "url": "https://why-deep-networks-generalize.proof.weiqi.kids/",
+  "inLanguage": "zh-Hant",
+  "isAccessibleForFree": true,
+  "keywords": ["深度學習", "泛化", "過參數化", "Jacobian", "Feature Learning", "Benign Overfitting"]
+}
+</script>
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "什麼是噪聲傳播算子 M？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "M = Σ⁻¹ΓΣ⁻¹，衡量訓練噪聲通過 Jacobian 結構傳播到測試預測的量。奇異值小的方向噪聲被放大，大的方向噪聲消散。tr(M) 是噪聲洩漏總量。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "深度網路的統一泛化界是什麼？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "MSE_test ≤ B²_signal + σ²·tr(M) + C·σ²·||M||_F·√(log(1/δ)) + δ²_lin。四項分別是信號偏差、噪聲洩漏、集中餘項和線性化誤差。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "什麼是 Benign Overfitting？什麼條件下會發生？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Benign Overfitting 指模型完美擬合訓練數據（含噪聲）卻仍能泛化。發生條件：β > α + 1/2，其中 α 是奇異值衰減速率，β 是測試相關性衰減速率。此時 tr(M) 收斂。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Feature Learning 如何消除維度詛咒？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "NTK regime 的誤差 E_NTK = Θ(n^{-2s/(2s+d)}) 受維度 d 詛咒。Feature Learning 後等價核坍縮到一維，誤差 E_FL = Θ(n^{-2s/(2s+1)})，完全不依賴 d。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "為什麼 Feature Learning 必然發生？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "四條獨立證明路線：(A) 景觀分析——所有全局最小值都對齊，非對齊臨界點是嚴格鞍點；(B) 兩階段動力學——先偵測信號再指數對齊；(C) Mean-field 支撐集坍縮——正則化淘汰未對齊神經元；(D) 高維幾何——隨機方向幾乎必然正交於目標。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "什麼是 Jacobian 譜分離？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "在 2 層 ReLU teacher-student 設定中，Jacobian 的前 k(d+1) 個奇異值 ≥ c√n（對應教師方向），其餘 ≤ Cα（趨近零）。有效秩 r_eff ≤ k(d+1)，與總參數量無關。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "架構如何影響泛化所需的最小深度？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "臨界深度 L* 因架構而異：全連接 ReLU 需要 ⌈(d-1)/2⌉ 層；ResNet 的 skip connection 使深度影響脫鉤，L*=1；Transformer 的 attention 提供 +1/2 的 β₀ 增益，L* ≈ 1-4。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "什麼是 Double Descent 現象？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "當模型參數量 p 等於樣本量 n（γ=p/n=1）時，Jacobian 最小奇異值趨近零，tr(M) 發散——測試誤差激增。超過此插值閾值（γ>1），最小範數約束改善條件數，測試誤差反而下降。"
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Grokking 現象的數學解釋是什麼？",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Grokking 分兩個 phase：Phase I（記憶）Jacobian 條件數極差，tr(M) 極大；Phase II（壓縮）weight decay 配合齊次性使 tr(M) 指數衰減。相變發生在 κ(J_t) 穿越臨界值 κ_crit 的時刻。"
+      }
+    }
+  ]
+}
+</script>
 </head>
 <body>
 
@@ -6067,6 +6196,28 @@ window.addEventListener('resize', () => {
     delete chartRegistry[id];
     chartStates[id] = state;
   });
+});
+
+// === AEO Share Buttons ===
+document.querySelectorAll('.theorem-section h2').forEach(h2 => {
+  const section = h2.closest('.theorem-section');
+  const id = section.id;
+  if (!id) return;
+  const intuition = section.querySelector('.layer-intuition')?.textContent?.trim()?.slice(0, 200) || '';
+  const btn = document.createElement('button');
+  btn.className = 'share-ai-btn';
+  btn.textContent = '複製到 AI';
+  btn.title = '複製此段落摘要與連結，可貼到 ChatGPT 或 Claude 討論';
+  btn.addEventListener('click', (e) => {
+    e.preventDefault();
+    const url = `${location.origin}${location.pathname}#${id}`;
+    const text = `${h2.textContent.replace('複製到 AI', '').trim()}\n\n${intuition}\n\n${url}`;
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '已複製';
+      setTimeout(() => { btn.textContent = '複製到 AI'; }, 2000);
+    });
+  });
+  h2.appendChild(btn);
 });
 
 // === Boot ===
