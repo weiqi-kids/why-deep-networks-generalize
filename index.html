@@ -484,7 +484,45 @@ footer {
     </div>
   </div>
 </section>
-  <section id="sec-thm2" class="theorem-section" data-nav="thm2"></section>
+  <section id="sec-thm2" class="theorem-section" data-nav="thm2">
+  <h2>定理 2：Benign Overfitting 分界</h2>
+  <div class="layer-intuition">
+    <p>水龍頭漏水。$\alpha$ 控制水龍頭開多大（奇異值衰減慢 = 水量大），$\beta$ 控制排水管有多粗（測試相關性衰減快 = 排水快）。$\beta > \alpha + 1/2$ 意味排水比進水快，水不會滿出來（benign）；$\beta < \alpha + 1/2$ 意味水無限累積（catastrophic）；$\beta = \alpha + 1/2$ 剛好臨界，水會慢慢累積但速度越來越慢（tempered，對數修正）。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p><strong>冪律假設</strong>：$\sigma_j \sim j^{-\alpha}$，$\rho_j \sim j^{-\beta}$</p>
+      <p><strong>結論</strong>：</p>
+      <ul>
+        <li>$\beta > \alpha + 1/2$：benign — $\operatorname{tr}(M) < \infty$（噪聲收斂）</li>
+        <li>$\beta < \alpha + 1/2$：catastrophic — $\operatorname{tr}(M) = \infty$（噪聲發散）</li>
+        <li>$\beta = \alpha + 1/2$：tempered — 對數修正（logarithmic correction）</li>
+      </ul>
+    </div>
+  </details>
+  <details class="layer">
+    <summary>完整證明</summary>
+    <div class="layer-content">
+      <p>尾部噪聲洩漏：</p>
+      <p>$$L_{\text{tail}} = \sum_{j>k} \frac{\rho_j^2}{\sigma_j^2} \sim \sum_{j>k} j^{2(\alpha - \beta)}$$</p>
+      <p>此級數收斂 $\iff 2(\alpha - \beta) < -1 \iff \beta > \alpha + 1/2$。</p>
+      <p>當 $\beta = \alpha + 1/2$ 時，$j^{2(\alpha-\beta)} = j^{-1}$，級數為調和級數 $\sim \log(n)$，給出對數修正。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-5">
+      <h3>$\alpha$-$\beta$ 相圖</h3>
+    </div>
+    <div class="chart-container" id="chart-6">
+      <h3>冪律衰減曲線</h3>
+      <div class="chart-controls">
+        <label>$\alpha$ <input type="range" id="chart6-alpha" min="0.3" max="2" step="0.1" value="1"><span class="value-display" id="chart6-alpha-val">1.0</span></label>
+        <label>$\beta$ <input type="range" id="chart6-beta" min="0.3" max="2" step="0.1" value="1.2"><span class="value-display" id="chart6-beta-val">1.2</span></label>
+      </div>
+    </div>
+  </div>
+</section>
   <section id="sec-thm4" class="theorem-section" data-nav="thm4"></section>
   <section id="sec-thm5" class="theorem-section" data-nav="thm5"></section>
   <section id="sec-thm3" class="theorem-section" data-nav="thm3"></section>
@@ -1061,6 +1099,281 @@ chartInitFns['chart-4'] = () => createChart('chart-4', ({ g, innerW, innerH, con
     update,
     getState: () => ({ noiseLevel }),
     setState: (s) => { noiseLevel = s.noiseLevel; if(sl) sl.value = noiseLevel; update(); }
+  };
+});
+
+// === Chart #5: α-β Phase Diagram ===
+chartInitFns['chart-5'] = () => createChart('chart-5', ({ g, innerW, innerH, container }) => {
+  let pointAlpha = 1.0, pointBeta = 1.0;
+
+  const xScale = d3.scaleLinear().domain([0, 2]).range([0, innerW]);
+  const yScale = d3.scaleLinear().domain([0, 2]).range([innerH, 0]);
+
+  // Regions via clip-paths
+  // Benign region: β > α + 0.5
+  const benignPoints = [
+    [0, 0.5], [1.5, 2], [0, 2]
+  ].map(([a, b]) => [xScale(a), yScale(b)]);
+  g.append('polygon')
+    .attr('points', benignPoints.map(p => p.join(',')).join(' '))
+    .attr('fill', '#1e8050').attr('opacity', 0.2);
+
+  // Catastrophic region: β < α + 0.5
+  const catPoints = [
+    [0, 0], [2, 0], [2, 2], [1.5, 2], [0, 0.5]
+  ].map(([a, b]) => [xScale(a), yScale(b)]);
+  g.append('polygon')
+    .attr('points', catPoints.map(p => p.join(',')).join(' '))
+    .attr('fill', '#c93135').attr('opacity', 0.2);
+
+  // Boundary line β = α + 0.5
+  g.append('line')
+    .attr('x1', xScale(0)).attr('y1', yScale(0.5))
+    .attr('x2', xScale(1.5)).attr('y2', yScale(2))
+    .attr('stroke', '#8a7020').attr('stroke-width', 2.5)
+    .attr('stroke-dasharray', '6,3');
+
+  // Region labels
+  g.append('text').attr('x', xScale(0.3)).attr('y', yScale(1.6))
+    .attr('font-size', '14px').attr('font-weight', '700').attr('fill', '#1e8050')
+    .text('Benign');
+  g.append('text').attr('x', xScale(1.2)).attr('y', yScale(0.4))
+    .attr('font-size', '14px').attr('font-weight', '700').attr('fill', '#c93135')
+    .text('Catastrophic');
+  g.append('text')
+    .attr('x', xScale(1.05)).attr('y', yScale(1.7))
+    .attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#8a7020')
+    .attr('transform', `rotate(-38, ${xScale(1.05)}, ${yScale(1.7)})`)
+    .text('Tempered');
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(xScale).ticks(5).tickFormat(d => d.toFixed(1)))
+    .selectAll('text').style('font-size', '13px');
+  g.append('g')
+    .call(d3.axisLeft(yScale).ticks(5).tickFormat(d => d.toFixed(1)))
+    .selectAll('text').style('font-size', '13px');
+
+  // Axis labels
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('α（奇異值衰減指數）');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('β（相關性衰減指數）');
+
+  // Status text
+  const statusText = g.append('text')
+    .attr('x', innerW - 10).attr('y', 20)
+    .attr('text-anchor', 'end').attr('font-size', '14px').attr('font-weight', '600');
+
+  // Draggable point
+  const dragPoint = g.append('circle')
+    .attr('cx', xScale(pointAlpha)).attr('cy', yScale(pointBeta))
+    .attr('r', 8).attr('fill', '#1e2030').attr('stroke', 'white').attr('stroke-width', 2)
+    .attr('cursor', 'grab');
+
+  // Coord display
+  const coordText = g.append('text')
+    .attr('font-size', '13px').attr('fill', '#5e6070');
+
+  function updateStatus() {
+    const diff = pointBeta - pointAlpha - 0.5;
+    let label, color;
+    if (Math.abs(diff) < 0.05) {
+      label = 'tr(M) ~ log(n) (臨界)';
+      color = '#8a7020';
+    } else if (diff > 0) {
+      label = 'tr(M) < ∞ (收斂)';
+      color = '#1e8050';
+    } else {
+      label = 'tr(M) = ∞ (發散)';
+      color = '#c93135';
+    }
+    statusText.text(label).attr('fill', color);
+    coordText
+      .attr('x', xScale(pointAlpha) + 12)
+      .attr('y', yScale(pointBeta) - 12)
+      .text(`(α=${pointAlpha.toFixed(2)}, β=${pointBeta.toFixed(2)})`);
+  }
+
+  updateStatus();
+
+  const drag = d3.drag()
+    .on('start', function() { d3.select(this).attr('cursor', 'grabbing'); })
+    .on('drag', function(event) {
+      const newA = Math.max(0, Math.min(2, xScale.invert(event.x)));
+      const newB = Math.max(0, Math.min(2, yScale.invert(event.y)));
+      pointAlpha = newA;
+      pointBeta = newB;
+      d3.select(this).attr('cx', xScale(pointAlpha)).attr('cy', yScale(pointBeta));
+      updateStatus();
+    })
+    .on('end', function() { d3.select(this).attr('cursor', 'grab'); });
+
+  dragPoint.call(drag);
+
+  return {
+    update: updateStatus,
+    getState: () => ({ pointAlpha, pointBeta }),
+    setState: (s) => {
+      pointAlpha = s.pointAlpha;
+      pointBeta = s.pointBeta;
+      dragPoint.attr('cx', xScale(pointAlpha)).attr('cy', yScale(pointBeta));
+      updateStatus();
+    }
+  };
+});
+
+// === Chart #6: Power-law Decay Curves (log-log) ===
+chartInitFns['chart-6'] = () => createChart('chart-6', ({ g, innerW, innerH, container }) => {
+  let alpha = 1.0, beta = 1.2;
+  const jMax = 50;
+  const kThreshold = 5;
+
+  const xScale = d3.scaleLog().domain([1, jMax]).range([0, innerW]);
+  const yScale = d3.scaleLog().domain([1e-4, 1]).range([innerH, 0]);
+
+  // Axes
+  const axisX = g.append('g').attr('transform', `translate(0,${innerH})`);
+  const axisY = g.append('g');
+
+  // Axis labels
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('j（分量索引）');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -40)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('值');
+
+  // Shaded area between curves for j > k
+  const shadedArea = g.append('path').attr('fill', '#8a7020').attr('opacity', 0.15);
+
+  // Lines
+  const sigmaLine = g.append('path').attr('fill', 'none').attr('stroke', '#2a6bb8').attr('stroke-width', 2.5);
+  const rhoLine = g.append('path').attr('fill', 'none').attr('stroke', '#1e8050').attr('stroke-width', 2.5);
+
+  // k threshold line
+  const kLine = g.append('line')
+    .attr('y1', 0).attr('y2', innerH)
+    .attr('stroke', '#8a8c98').attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
+  const kLabel = g.append('text')
+    .attr('font-size', '12px').attr('fill', '#8a8c98').attr('text-anchor', 'middle');
+
+  // Legend
+  const legend = g.append('g').attr('transform', `translate(${innerW - 160}, 10)`);
+  [['σ_j = j^{-α}', '#2a6bb8'], ['ρ_j = j^{-β}', '#1e8050'], ['尾部 (j > k)', '#8a7020']].forEach(([l, c], i) => {
+    if (i < 2) {
+      legend.append('line').attr('x1', 0).attr('x2', 20).attr('y1', i * 20).attr('y2', i * 20).attr('stroke', c).attr('stroke-width', 2.5);
+    } else {
+      legend.append('rect').attr('x', 0).attr('y', i * 20 - 6).attr('width', 20).attr('height', 12).attr('fill', c).attr('opacity', 0.3);
+    }
+    legend.append('text').attr('x', 25).attr('y', i * 20 + 4).attr('font-size', '12px').attr('fill', '#5e6070').text(l);
+  });
+
+  // Sum annotation
+  const sumText = g.append('text')
+    .attr('x', innerW - 10).attr('y', innerH - 10)
+    .attr('text-anchor', 'end').attr('font-size', '13px').attr('font-weight', '600');
+
+  const line = d3.line().x(d => d[0]).y(d => d[1]);
+
+  function getData() {
+    const js = d3.range(1, jMax + 1);
+    const sigmas = js.map(j => Math.pow(j, -alpha));
+    const rhos = js.map(j => Math.pow(j, -beta));
+    return { js, sigmas, rhos };
+  }
+
+  function update() {
+    const { js, sigmas, rhos } = getData();
+
+    // Compute y-domain from data
+    const allVals = sigmas.concat(rhos).filter(v => v > 0);
+    const yMin = Math.max(1e-6, d3.min(allVals) * 0.5);
+    const yMax = d3.max(allVals) * 2;
+    yScale.domain([yMin, yMax]);
+
+    axisX.call(d3.axisBottom(xScale).ticks(5, '~s')).selectAll('text').style('font-size', '13px');
+    axisY.call(d3.axisLeft(yScale).ticks(5, '.0e')).selectAll('text').style('font-size', '13px');
+
+    // Sigma line
+    const sigmaPoints = js.map((j, i) => [xScale(j), yScale(Math.max(yMin, sigmas[i]))]);
+    sigmaLine.attr('d', line(sigmaPoints));
+
+    // Rho line
+    const rhoPoints = js.map((j, i) => [xScale(j), yScale(Math.max(yMin, rhos[i]))]);
+    rhoLine.attr('d', line(rhoPoints));
+
+    // k threshold
+    kLine.attr('x1', xScale(kThreshold)).attr('x2', xScale(kThreshold));
+    kLabel.attr('x', xScale(kThreshold)).attr('y', -5).text(`k = ${kThreshold}`);
+
+    // Shaded area between curves for j > k
+    const tailJs = js.filter(j => j > kThreshold);
+    if (tailJs.length > 0) {
+      const upperPoints = tailJs.map(j => {
+        const idx = j - 1;
+        const upper = Math.max(sigmas[idx], rhos[idx]);
+        return [xScale(j), yScale(Math.max(yMin, upper))];
+      });
+      const lowerPoints = tailJs.map(j => {
+        const idx = j - 1;
+        const lower = Math.min(sigmas[idx], rhos[idx]);
+        return [xScale(j), yScale(Math.max(yMin, lower))];
+      }).reverse();
+      shadedArea.attr('d', line(upperPoints.concat(lowerPoints)) + 'Z');
+    }
+
+    // Compute tail sum Σ ρ_j² / σ_j²
+    let tailSum = 0;
+    tailJs.forEach(j => {
+      const idx = j - 1;
+      tailSum += (rhos[idx] * rhos[idx]) / (sigmas[idx] * sigmas[idx]);
+    });
+
+    const diff = beta - alpha - 0.5;
+    let sumLabel;
+    if (Math.abs(diff) < 0.05) {
+      sumLabel = `Σ ρ²/σ² ≈ ${tailSum.toFixed(2)} (~ log, 臨界)`;
+    } else if (diff > 0) {
+      sumLabel = `Σ ρ²/σ² ≈ ${tailSum.toFixed(2)} (收斂)`;
+    } else {
+      sumLabel = `Σ ρ²/σ² ≈ ${tailSum.toFixed(2)} (發散趨勢)`;
+    }
+    sumText.text(sumLabel).attr('fill', diff > 0.05 ? '#1e8050' : diff < -0.05 ? '#c93135' : '#8a7020');
+  }
+
+  update();
+
+  const alphaSlider = container.querySelector('#chart6-alpha');
+  const betaSlider = container.querySelector('#chart6-beta');
+  const alphaVal = container.querySelector('#chart6-alpha-val');
+  const betaVal = container.querySelector('#chart6-beta-val');
+
+  alphaSlider?.addEventListener('input', () => {
+    alpha = +alphaSlider.value;
+    alphaVal.textContent = alpha.toFixed(1);
+    update();
+  });
+  betaSlider?.addEventListener('input', () => {
+    beta = +betaSlider.value;
+    betaVal.textContent = beta.toFixed(1);
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ alpha, beta }),
+    setState: (s) => {
+      alpha = s.alpha;
+      beta = s.beta;
+      if (alphaSlider) { alphaSlider.value = alpha; alphaVal.textContent = alpha.toFixed(1); }
+      if (betaSlider) { betaSlider.value = beta; betaVal.textContent = beta.toFixed(1); }
+      update();
+    }
   };
 });
 
