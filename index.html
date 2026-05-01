@@ -582,6 +582,208 @@ function chartEmit(eventName, detail) {
 function chartOn(eventName, handler) {
   document.addEventListener('chart:' + eventName, e => handler(e.detail));
 }
+
+// === DAG Navigation Map ===
+const logicChain = {
+  nodes: [
+    { id: "opM", label: "M", fullLabel: "噪聲傳播算子 M", type: "core", rank: 0 },
+    { id: "thm1", label: "Thm1", fullLabel: "統一泛化界", type: "main", rank: 1 },
+    { id: "thm2", label: "Thm2", fullLabel: "Benign 分界", type: "main", rank: 2 },
+    { id: "thm4", label: "Thm4", fullLabel: "Feature Learning", type: "main", rank: 3 },
+    { id: "thm5", label: "Thm5", fullLabel: "FL 必然發生", type: "main", rank: 3 },
+    { id: "thm3", label: "Thm3", fullLabel: "Jacobian 譜分離", type: "main", rank: 4 },
+    { id: "thm6", label: "Thm6", fullLabel: "架構臨界深度", type: "main", rank: 5 },
+    { id: "aux8a", label: "8a", fullLabel: "Balanced 守恆", type: "aux", rank: 2 },
+    { id: "aux8b", label: "8b", fullLabel: "非對角控制", type: "aux", rank: 1 },
+    { id: "aux8c", label: "8c", fullLabel: "深度乘法", type: "aux", rank: 5 },
+    { id: "aux8d", label: "8d", fullLabel: "WD 修正", type: "aux", rank: 5 },
+    { id: "ext14a", label: "14a", fullLabel: "Tame function", type: "ext", rank: 3 },
+    { id: "ext14b", label: "14b", fullLabel: "Pop→SGD", type: "ext", rank: 3 },
+    { id: "ext14c", label: "14c", fullLabel: "光滑 φ", type: "ext", rank: 3 },
+    { id: "ext14d", label: "14d", fullLabel: "κ≥2", type: "ext", rank: 3 },
+    { id: "ext14e", label: "14e", fullLabel: "正交 MI", type: "ext", rank: 3 },
+    { id: "ext14f", label: "14f", fullLabel: "非正交 MI", type: "ext", rank: 3 },
+    { id: "ext14g", label: "14g", fullLabel: "Double Descent", type: "ext", rank: 2 },
+    { id: "ext14h", label: "14h", fullLabel: "Grokking", type: "ext", rank: 1 },
+    { id: "ext16a", label: "16a", fullLabel: "純交互 MI", type: "ext", rank: 3 },
+    { id: "ext16b", label: "16b", fullLabel: "深度 L>2", type: "ext", rank: 1 },
+    { id: "ext16c", label: "16c", fullLabel: "Cross-Entropy", type: "ext", rank: 1 },
+    { id: "ext16d", label: "16d", fullLabel: "非高斯", type: "ext", rank: 1 },
+  ],
+  links: [
+    { source: "opM", target: "thm1" },
+    { source: "thm1", target: "thm2" },
+    { source: "thm2", target: "thm4" },
+    { source: "thm5", target: "thm4" },
+    { source: "thm5", target: "thm3" },
+    { source: "thm3", target: "thm6" },
+    { source: "aux8a", target: "thm3" },
+    { source: "aux8a", target: "thm5" },
+    { source: "aux8b", target: "thm1" },
+    { source: "aux8c", target: "thm6" },
+    { source: "aux8d", target: "thm6" },
+    { source: "ext14a", target: "thm5" },
+    { source: "ext14b", target: "thm5" },
+    { source: "ext14c", target: "thm5" },
+    { source: "ext14d", target: "thm5" },
+    { source: "ext14e", target: "thm5" },
+    { source: "ext14f", target: "thm5" },
+    { source: "ext14g", target: "thm2" },
+    { source: "ext14h", target: "thm1" },
+    { source: "ext16a", target: "thm5" },
+    { source: "ext16b", target: "thm1" },
+    { source: "ext16c", target: "thm1" },
+    { source: "ext16d", target: "thm1" },
+  ]
+};
+
+let currentNavId = null;
+
+function highlightNavNode(id) {
+  if (id === currentNavId) return;
+  currentNavId = id;
+  d3.select('#logic-map').selectAll('.nav-node')
+    .attr('transform', d => {
+      const scale = d.id === id ? 1.5 : 1;
+      return `translate(${d.x},${d.y}) scale(${scale})`;
+    })
+    .select('.node-shape')
+    .attr('stroke-width', d => d.id === id ? 3 : 1.5);
+}
+
+function renderDAG() {
+  const nav = d3.select('#logic-map');
+  nav.selectAll('*').remove();
+  const isMobile = window.innerWidth < 768;
+
+  if (isMobile) {
+    renderMobileBreadcrumb(nav);
+    return;
+  }
+
+  const w = nav.node().clientWidth;
+  const h = nav.node().clientHeight;
+  const svg = nav.append('svg').attr('viewBox', `0 0 ${w} ${h}`).attr('preserveAspectRatio', 'xMidYMid meet');
+
+  // Arrow marker
+  svg.append('defs').append('marker')
+    .attr('id', 'arrow').attr('viewBox', '0 0 10 6').attr('refX', 10).attr('refY', 3)
+    .attr('markerWidth', 8).attr('markerHeight', 6).attr('orient', 'auto')
+    .append('path').attr('d', 'M0,0L10,3L0,6Z').attr('fill', '#8a8c98');
+
+  // Position nodes by rank
+  const ranks = {};
+  logicChain.nodes.forEach(n => {
+    if (!ranks[n.rank]) ranks[n.rank] = [];
+    ranks[n.rank].push(n);
+  });
+  const maxRank = Math.max(...Object.keys(ranks).map(Number));
+  const xStep = (w - 100) / (maxRank + 1);
+
+  Object.entries(ranks).forEach(([rank, nodes]) => {
+    const r = Number(rank);
+    const yStep = (h - 20) / (nodes.length + 1);
+    nodes.forEach((n, i) => {
+      n.x = 50 + r * xStep;
+      n.y = 10 + (i + 1) * yStep;
+    });
+  });
+
+  const nodeMap = {};
+  logicChain.nodes.forEach(n => { nodeMap[n.id] = n; });
+
+  // Draw edges
+  svg.selectAll('.nav-link').data(logicChain.links).enter()
+    .append('line')
+    .attr('class', 'nav-link')
+    .attr('x1', d => nodeMap[d.source].x)
+    .attr('y1', d => nodeMap[d.source].y)
+    .attr('x2', d => nodeMap[d.target].x)
+    .attr('y2', d => nodeMap[d.target].y)
+    .attr('stroke', '#8a8c98')
+    .attr('stroke-width', 1)
+    .attr('marker-end', 'url(#arrow)');
+
+  // Draw nodes
+  const colorMap = { core: '#1e5ab8', main: '#1e5ab8', aux: '#8a8c98', ext: '#2a6bb8' };
+  const radiusMap = { core: 14, main: 14, aux: 8, ext: 8 };
+
+  const nodeGroups = svg.selectAll('.nav-node').data(logicChain.nodes).enter()
+    .append('g')
+    .attr('class', 'nav-node')
+    .attr('transform', d => `translate(${d.x},${d.y})`)
+    .attr('cursor', 'pointer')
+    .on('click', (_, d) => {
+      const target = document.querySelector(`[data-nav="${d.id}"]`);
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+
+  nodeGroups.each(function(d) {
+    const g = d3.select(this);
+    const r = radiusMap[d.type];
+    if (d.type === 'core') {
+      g.append('rect')
+        .attr('class', 'node-shape')
+        .attr('x', -r).attr('y', -r).attr('width', r*2).attr('height', r*2)
+        .attr('transform', 'rotate(45)')
+        .attr('fill', colorMap[d.type]).attr('stroke', 'white').attr('stroke-width', 1.5);
+    } else {
+      g.append('circle')
+        .attr('class', 'node-shape')
+        .attr('r', r)
+        .attr('fill', colorMap[d.type]).attr('stroke', 'white').attr('stroke-width', 1.5);
+    }
+  });
+
+  nodeGroups.append('text')
+    .attr('text-anchor', 'middle').attr('dy', d => radiusMap[d.type] + 14)
+    .attr('font-size', '11px').attr('fill', '#5e6070')
+    .text(d => d.label);
+
+  // Tooltip
+  nodeGroups.append('title').text(d => d.fullLabel);
+}
+
+function renderMobileBreadcrumb(nav) {
+  const mainNodes = ['opM','thm1','thm2','thm4','thm5','thm3','thm6'];
+  const nodeMap = {};
+  logicChain.nodes.forEach(n => { nodeMap[n.id] = n; });
+
+  const container = nav.append('div')
+    .style('display', 'flex')
+    .style('align-items', 'center')
+    .style('height', '100%')
+    .style('overflow-x', 'auto')
+    .style('padding', '0 1rem')
+    .style('gap', '0.5rem');
+
+  mainNodes.forEach((id, i) => {
+    const n = nodeMap[id];
+    if (i > 0) {
+      container.append('span')
+        .style('color', '#8a8c98').style('font-size', '14px')
+        .text('→');
+    }
+    container.append('button')
+      .attr('class', 'nav-breadcrumb')
+      .style('background', currentNavId === id ? '#1e5ab8' : '#ecedf0')
+      .style('color', currentNavId === id ? 'white' : '#1e2030')
+      .style('border', 'none')
+      .style('border-radius', '0.25rem')
+      .style('padding', '0.25rem 0.5rem')
+      .style('font-size', '14px')
+      .style('white-space', 'nowrap')
+      .style('cursor', 'pointer')
+      .text(n.label)
+      .on('click', () => {
+        const target = document.querySelector(`[data-nav="${id}"]`);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+  });
+}
+
+renderDAG();
+window.addEventListener('resize', () => { renderDAG(); });
 </script>
 </body>
 </html>
