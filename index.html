@@ -446,7 +446,44 @@ footer {
     </div>
   </div>
 </section>
-  <section id="sec-thm1" class="theorem-section" data-nav="thm1"></section>
+  <section id="sec-thm1" class="theorem-section" data-nav="thm1">
+  <h2>定理 1：統一泛化界</h2>
+  <div class="layer-intuition">
+    <p>你在新考題上的表現 = 真正學會的東西造成的偏差 + 訓練雜音的迴聲 + 運氣成分 + 簡化誤差（我們用直尺量曲線時多出來的小偏差）。四項加起來就是你跟「真正懂」之間的距離。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p><strong>設定</strong>：插值條件 $f(x_i;\theta^*) = y_i$，噪聲 $y_i = g^*(x_i) + \xi_i$，$\xi_i \sim \text{subGaussian}(0, \sigma^2)$</p>
+      <p><strong>結論</strong>（以機率 $\geq 1-\delta$）：</p>
+      <p>$$\text{MSE}_{\text{test}} \leq B^2_{\text{signal}} + \sigma^2 \cdot \operatorname{tr}(M) + C\sigma^2\|M\|_F\sqrt{\log(1/\delta)} + \delta^2_{\text{lin}}$$</p>
+    </div>
+  </details>
+  <details class="layer">
+    <summary>完整證明</summary>
+    <div class="layer-content">
+      <p><strong>Step 1.</strong> 分解測試預測為信號 + 噪聲：$f(x;\theta^*) - g^*(x) = S(x) + N(x)$</p>
+      <p><strong>Step 2.</strong> 噪聲洩漏的期望：$\mathbb{E}_\xi[\mathbb{E}_x[N(x)^2]] = \sigma^2 \cdot \operatorname{tr}(M)$</p>
+      <p><strong>Step 3.</strong> 集中性（Hanson-Wright）：$P[|Z - \mathbb{E}[Z]| > t] \leq 2\exp(-c\min(t^2/\|M\|_F^2, t/\|M\|_{\text{op}}))$</p>
+      <p><strong>Step 4.</strong> 合併信號偏差 + 噪聲方差 + 集中餘項。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-3">
+      <h3>泛化界拆解</h3>
+      <div class="chart-controls">
+        <label>σ (噪聲) <input type="range" id="chart3-sigma" min="0.1" max="2" step="0.1" value="0.5"><span class="value-display" id="chart3-sigma-val">0.5</span></label>
+        <label>tr(M) <input type="range" id="chart3-trm" min="0.1" max="5" step="0.1" value="1.0"><span class="value-display" id="chart3-trm-val">1.0</span></label>
+      </div>
+    </div>
+    <div class="chart-container" id="chart-4">
+      <h3>信號 vs 噪聲分離</h3>
+      <div class="chart-controls">
+        <label>噪聲強度 σ <input type="range" id="chart4-noise" min="0" max="2" step="0.1" value="0.5"><span class="value-display" id="chart4-noise-val">0.5</span></label>
+      </div>
+    </div>
+  </div>
+</section>
   <section id="sec-thm2" class="theorem-section" data-nav="thm2"></section>
   <section id="sec-thm4" class="theorem-section" data-nav="thm4"></section>
   <section id="sec-thm5" class="theorem-section" data-nav="thm5"></section>
@@ -914,6 +951,117 @@ chartInitFns['chart-2'] = () => createChart('chart-2', ({ g, innerW, innerH, con
   container.querySelector('#chart2-inject').addEventListener('click', injectNoise);
 
   return { update: () => {}, getState: () => ({}), setState: () => {} };
+});
+
+// === Chart #3: Generalization Bound Stacked Bar ===
+chartInitFns['chart-3'] = () => createChart('chart-3', ({ g, innerW, innerH, container }) => {
+  let sigma = 0.5, trM = 1.0;
+  const terms = () => [
+    { label: 'B²_signal', value: 0.1, color: '#1e5ab8' },
+    { label: 'σ²·tr(M)', value: sigma * sigma * trM, color: '#c93135' },
+    { label: '集中餘項', value: 0.3 * sigma * sigma * Math.sqrt(trM), color: '#8a7020' },
+    { label: 'δ²_lin', value: 0.05, color: '#2a6bb8' },
+  ];
+
+  const x = d3.scaleBand().domain(['MSE_test 上界']).range([innerW * 0.2, innerW * 0.8]).padding(0.3);
+  const y = d3.scaleLinear().range([innerH, 0]);
+
+  g.append('g').attr('class', 'axis-x').attr('transform', `translate(0,${innerH})`).call(d3.axisBottom(x)).selectAll('text').style('font-size', '14px');
+  const axisY = g.append('g').attr('class', 'axis-y');
+  const barsG = g.append('g');
+  const labelsG = g.append('g');
+
+  function update() {
+    const data = terms();
+    const total = d3.sum(data, d => d.value);
+    y.domain([0, total * 1.2]);
+    axisY.transition().duration(300).call(d3.axisLeft(y).ticks(5));
+
+    let cumY = 0;
+    data.forEach(d => { d.y0 = cumY; cumY += d.value; d.y1 = cumY; });
+
+    const rects = barsG.selectAll('rect').data(data);
+    rects.enter().append('rect').merge(rects).transition().duration(300)
+      .attr('x', x('MSE_test 上界')).attr('width', x.bandwidth())
+      .attr('y', d => y(d.y1)).attr('height', d => y(d.y0) - y(d.y1))
+      .attr('fill', d => d.color).attr('rx', 2);
+    rects.exit().remove();
+
+    const labels = labelsG.selectAll('text').data(data);
+    labels.enter().append('text').merge(labels).transition().duration(300)
+      .attr('x', x('MSE_test 上界') + x.bandwidth() + 10)
+      .attr('y', d => y((d.y0 + d.y1) / 2) + 5)
+      .attr('font-size', '13px').attr('fill', '#5e6070')
+      .text(d => `${d.label}: ${d.value.toFixed(3)}`);
+    labels.exit().remove();
+  }
+  update();
+
+  const sSl = container.querySelector('#chart3-sigma');
+  const tSl = container.querySelector('#chart3-trm');
+  sSl?.addEventListener('input', () => { sigma = +sSl.value; container.querySelector('#chart3-sigma-val').textContent = sigma.toFixed(1); update(); });
+  tSl?.addEventListener('input', () => { trM = +tSl.value; container.querySelector('#chart3-trm-val').textContent = trM.toFixed(1); update(); });
+
+  return {
+    update,
+    getState: () => ({ sigma, trM }),
+    setState: (s) => { sigma = s.sigma; trM = s.trM; if(sSl) sSl.value = sigma; if(tSl) tSl.value = trM; update(); }
+  };
+});
+
+// === Chart #4: Signal vs Noise ===
+chartInitFns['chart-4'] = () => createChart('chart-4', ({ g, innerW, innerH, container }) => {
+  let noiseLevel = 0.5;
+  const nPoints = 100;
+  const xScale = d3.scaleLinear().domain([0, 2 * Math.PI]).range([0, innerW]);
+  const yScale = d3.scaleLinear().domain([-2, 2]).range([innerH, 0]);
+
+  g.append('g').attr('transform', `translate(0,${innerH})`).call(d3.axisBottom(xScale).ticks(5)).selectAll('text').style('font-size', '14px');
+  g.append('g').call(d3.axisLeft(yScale).ticks(5));
+
+  const signalLine = d3.line().x(d => xScale(d.x)).y(d => yScale(d.s)).curve(d3.curveMonotoneX);
+  const noiseLine = d3.line().x(d => xScale(d.x)).y(d => yScale(d.n)).curve(d3.curveMonotoneX);
+  const totalLine = d3.line().x(d => xScale(d.x)).y(d => yScale(d.t)).curve(d3.curveMonotoneX);
+
+  const pathS = g.append('path').attr('fill', 'none').attr('stroke', '#1e8050').attr('stroke-width', 2);
+  const pathN = g.append('path').attr('fill', 'none').attr('stroke', '#c93135').attr('stroke-width', 2).attr('stroke-dasharray', '5,3');
+  const pathT = g.append('path').attr('fill', 'none').attr('stroke', '#1e2030').attr('stroke-width', 2);
+
+  // Legend
+  const legend = g.append('g').attr('transform', `translate(${innerW - 120}, 10)`);
+  [['S(x) 信號', '#1e8050'], ['N(x) 噪聲', '#c93135'], ['總和', '#1e2030']].forEach(([l, c], i) => {
+    legend.append('line').attr('x1', 0).attr('x2', 20).attr('y1', i * 18).attr('y2', i * 18).attr('stroke', c).attr('stroke-width', 2);
+    legend.append('text').attr('x', 25).attr('y', i * 18 + 4).attr('font-size', '12px').attr('fill', '#5e6070').text(l);
+  });
+
+  // Precompute random noise seed
+  const noiseSeed = d3.range(nPoints).map(() => (Math.random() - 0.5) * 2);
+
+  function update() {
+    const data = d3.range(nPoints).map(i => {
+      const x = (i / nPoints) * 2 * Math.PI;
+      const s = Math.sin(x);
+      const n = noiseSeed[i] * noiseLevel;
+      return { x, s, n, t: s + n };
+    });
+    pathS.datum(data).attr('d', signalLine);
+    pathN.datum(data).attr('d', noiseLine);
+    pathT.datum(data).attr('d', totalLine);
+  }
+  update();
+
+  const sl = container.querySelector('#chart4-noise');
+  sl?.addEventListener('input', () => {
+    noiseLevel = +sl.value;
+    container.querySelector('#chart4-noise-val').textContent = noiseLevel.toFixed(1);
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ noiseLevel }),
+    setState: (s) => { noiseLevel = s.noiseLevel; if(sl) sl.value = noiseLevel; update(); }
+  };
 });
 
 // === Boot ===
