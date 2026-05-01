@@ -1090,11 +1090,92 @@ footer {
     </div>
   </div>
 </section>
-  <section id="sec-disproven" class="theorem-section"></section>
-  <section id="sec-scope" class="theorem-section"></section>
+  <section id="sec-disproven" class="theorem-section">
+  <h2>已嚴格否證的主張</h2>
+  <div class="layer-intuition">
+    <p>科學進步不只來自證明什麼是對的，也來自否證什麼是錯的。以下四個看似合理的直覺，都有嚴格的反例推翻。</p>
+  </div>
+
+  <div class="disproven-card">
+    <span class="disproven-badge">已否證</span>
+    <h3 style="font-size:var(--text-sm);font-weight:700;">α = Lα₀ 精確成立</h3>
+    <p>每層衰減疊乘不像想的那麼精確——2×2 矩陣就能找到反例。精確乘法需層間奇異向量完全對齊，一般不成立。</p>
+  </div>
+
+  <div class="disproven-card">
+    <span class="disproven-badge">已否證</span>
+    <h3 style="font-size:var(--text-sm);font-weight:700;">tr(J^TJ) 在 weight decay 下單調遞減</h3>
+    <p>Weight decay 壓縮的是參數大小，不是 Jacobian 的跡。有具體反例：2 神經元 2 資料點的網路中，tr(J^TJ) 上升了 49%。</p>
+  </div>
+
+  <div class="disproven-card">
+    <span class="disproven-badge">已否證</span>
+    <h3 style="font-size:var(--text-sm);font-weight:700;">SGD 直接最小化 tr(J^TJ)</h3>
+    <p>SGD 最小化的是 ||θ||²（Lyapunov 函數），對 tr(J^TJ) 只有間接效應。兩者是不同的二次型。</p>
+  </div>
+
+  <div class="disproven-card">
+    <span class="disproven-badge">已否證</span>
+    <h3 style="font-size:var(--text-sm);font-weight:700;">三視角（體積/頻譜/平坦）精確等價</h3>
+    <p>體積、頻譜、平坦三個視角只在插值解處通過 Jacobian 的 SVD 近似統一，有結構性不對稱。</p>
+  </div>
+</section>
+  <section id="sec-scope" class="theorem-section">
+  <h2>適用範圍與擴展方向</h2>
+  <div class="layer-intuition">
+    <p>上面所有定理在什麼條件下成立？還有哪些方向可以繼續走？</p>
+  </div>
+  <div class="scope-grid">
+    <div class="scope-card">
+      <h3>已證明的範圍</h3>
+      <ul>
+        <li>模型：2 層 ReLU</li>
+        <li>目標：single-index, CPL φ, κ=1</li>
+        <li>訓練：population GD / GF, rich regime</li>
+        <li>資料：Gaussian inputs</li>
+      </ul>
+    </div>
+    <div class="scope-card">
+      <h3>自然擴展（路徑清晰）</h3>
+      <ul>
+        <li>κ ≥ 2：Phase 1 從 O(d) 變為 O(d^κ)</li>
+        <li>一般光滑 φ：加弱 norm 正則化即可</li>
+        <li>有限樣本 SGD：標準集中不等式</li>
+        <li>Multi-index（正交）：Boursier &amp; Flammarion</li>
+        <li>Multi-index（非正交）：需處理虛假極小值</li>
+        <li>深度 L &gt; 2：需逐層對齊理論</li>
+      </ul>
+    </div>
+  </div>
+</section>
 </main>
 
-<footer id="methodology"></footer>
+<footer id="methodology">
+  <h2 style="font-size:var(--text-xl);font-weight:700;margin-bottom:1rem;">方法論筆記</h2>
+  <div class="method-cards">
+    <div class="method-card">
+      <div class="number">1</div>
+      <p>每個主張必須標記「嚴格/條件/猜想」</p>
+    </div>
+    <div class="method-card">
+      <div class="number">2</div>
+      <p>主動構造反例否證自己的主張</p>
+    </div>
+    <div class="method-card">
+      <div class="number">3</div>
+      <p>多路線獨立攻克同一問題以交叉驗證</p>
+    </div>
+    <div class="method-card">
+      <div class="number">4</div>
+      <p>從最簡設定出發，逐步推廣</p>
+    </div>
+    <div class="method-card">
+      <div class="number">5</div>
+      <p>數值實驗驗證理論預測</p>
+    </div>
+  </div>
+  <p style="color:var(--text-muted);margin-top:1.5rem;font-size:var(--text-xs);">本文經 12 輪 Opus subagent 迭代審查與修正。</p>
+</footer>
 
 <button id="glossary-btn" aria-label="名詞表">?</button>
 <div id="glossary-overlay" hidden>
