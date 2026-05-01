@@ -1403,13 +1403,22 @@ let currentNavId = null;
 function highlightNavNode(id) {
   if (id === currentNavId) return;
   currentNavId = id;
+  // Desktop: update SVG nodes
   d3.select('#logic-map').selectAll('.nav-node')
     .attr('transform', d => {
-      const scale = d.id === id ? 1.5 : 1;
+      const scale = d.id === id ? 1.3 : 1;
       return `translate(${d.x},${d.y}) scale(${scale})`;
     })
     .select('.node-shape')
     .attr('stroke-width', d => d.id === id ? 3 : 1.5);
+  // Mobile: update breadcrumb buttons
+  d3.select('#logic-map').selectAll('.nav-breadcrumb')
+    .style('background', function() {
+      return d3.select(this).attr('data-nav-id') === id ? '#1e5ab8' : '#ecedf0';
+    })
+    .style('color', function() {
+      return d3.select(this).attr('data-nav-id') === id ? 'white' : '#1e2030';
+    });
 }
 
 function renderDAG() {
@@ -1432,44 +1441,87 @@ function renderDAG() {
     .attr('markerWidth', 8).attr('markerHeight', 6).attr('orient', 'auto')
     .append('path').attr('d', 'M0,0L10,3L0,6Z').attr('fill', '#8a8c98');
 
-  // Position nodes by rank
-  const ranks = {};
-  logicChain.nodes.forEach(n => {
-    if (!ranks[n.rank]) ranks[n.rank] = [];
-    ranks[n.rank].push(n);
-  });
-  const maxRank = Math.max(...Object.keys(ranks).map(Number));
-  const xStep = (w - 100) / (maxRank + 1);
+  // Only show 7 main-axis nodes
+  const mainAxisIds = ['opM', 'thm1', 'thm2', 'thm4', 'thm5', 'thm3', 'thm6'];
+  const mainLabels = {
+    opM:  'M',
+    thm1: '泛化界',
+    thm2: 'Benign',
+    thm4: 'FL',
+    thm5: 'FL必然',
+    thm3: '譜分離',
+    thm6: '臨界深度'
+  };
+  const mainFullLabels = {
+    opM:  '噪聲傳播算子 M',
+    thm1: '統一泛化界',
+    thm2: 'Benign 分界',
+    thm4: 'Feature Learning',
+    thm5: 'FL 必然發生',
+    thm3: 'Jacobian 譜分離',
+    thm6: '架構臨界深度'
+  };
 
-  Object.entries(ranks).forEach(([rank, nodes]) => {
-    const r = Number(rank);
-    const yStep = (h - 20) / (nodes.length + 1);
-    nodes.forEach((n, i) => {
-      n.x = 50 + r * xStep;
-      n.y = 10 + (i + 1) * yStep;
-    });
-  });
+  // Hand-coded positions
+  const nodePositions = [
+    { id: 'opM',  x: w * 0.05,  y: h / 2 },
+    { id: 'thm1', x: w * 0.18,  y: h / 2 },
+    { id: 'thm2', x: w * 0.32,  y: h / 2 },
+    { id: 'thm4', x: w * 0.50,  y: h / 2 + 25 },
+    { id: 'thm5', x: w * 0.50,  y: h / 2 - 25 },
+    { id: 'thm3', x: w * 0.68,  y: h / 2 },
+    { id: 'thm6', x: w * 0.85,  y: h / 2 },
+  ];
 
   const nodeMap = {};
-  logicChain.nodes.forEach(n => { nodeMap[n.id] = n; });
+  nodePositions.forEach(n => { nodeMap[n.id] = n; });
 
-  // Draw edges
-  svg.selectAll('.nav-link').data(logicChain.links).enter()
+  // Main-axis edges only
+  const mainEdges = [
+    { source: 'opM',  target: 'thm1' },
+    { source: 'thm1', target: 'thm2' },
+    { source: 'thm2', target: 'thm4' },
+    { source: 'thm5', target: 'thm4' },
+    { source: 'thm5', target: 'thm3' },
+    { source: 'thm3', target: 'thm6' },
+  ];
+
+  // Draw edges as lines with arrows
+  // Shorten lines so arrows don't overlap node shapes
+  const nodeRadius = 20;
+  svg.selectAll('.nav-link').data(mainEdges).enter()
     .append('line')
     .attr('class', 'nav-link')
-    .attr('x1', d => nodeMap[d.source].x)
-    .attr('y1', d => nodeMap[d.source].y)
-    .attr('x2', d => nodeMap[d.target].x)
-    .attr('y2', d => nodeMap[d.target].y)
+    .attr('x1', d => {
+      const s = nodeMap[d.source], t = nodeMap[d.target];
+      const dx = t.x - s.x, dy = t.y - s.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      return s.x + (dx / dist) * nodeRadius;
+    })
+    .attr('y1', d => {
+      const s = nodeMap[d.source], t = nodeMap[d.target];
+      const dx = t.x - s.x, dy = t.y - s.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      return s.y + (dy / dist) * nodeRadius;
+    })
+    .attr('x2', d => {
+      const s = nodeMap[d.source], t = nodeMap[d.target];
+      const dx = t.x - s.x, dy = t.y - s.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      return t.x - (dx / dist) * (nodeRadius + 6);
+    })
+    .attr('y2', d => {
+      const s = nodeMap[d.source], t = nodeMap[d.target];
+      const dx = t.x - s.x, dy = t.y - s.y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      return t.y - (dy / dist) * (nodeRadius + 6);
+    })
     .attr('stroke', '#8a8c98')
-    .attr('stroke-width', 1)
+    .attr('stroke-width', 1.5)
     .attr('marker-end', 'url(#arrow)');
 
   // Draw nodes
-  const colorMap = { core: '#1e5ab8', main: '#1e5ab8', aux: '#8a8c98', ext: '#2a6bb8' };
-  const radiusMap = { core: 14, main: 14, aux: 8, ext: 8 };
-
-  const nodeGroups = svg.selectAll('.nav-node').data(logicChain.nodes).enter()
+  const nodeGroups = svg.selectAll('.nav-node').data(nodePositions).enter()
     .append('g')
     .attr('class', 'nav-node')
     .attr('transform', d => `translate(${d.x},${d.y})`)
@@ -1479,36 +1531,48 @@ function renderDAG() {
       if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
 
+  // Node shapes: diamond for opM, circle for others
   nodeGroups.each(function(d) {
     const g = d3.select(this);
-    const r = radiusMap[d.type];
-    if (d.type === 'core') {
+    if (d.id === 'opM') {
       g.append('rect')
         .attr('class', 'node-shape')
-        .attr('x', -r).attr('y', -r).attr('width', r*2).attr('height', r*2)
+        .attr('x', -14).attr('y', -14).attr('width', 28).attr('height', 28)
         .attr('transform', 'rotate(45)')
-        .attr('fill', colorMap[d.type]).attr('stroke', 'white').attr('stroke-width', 1.5);
+        .attr('fill', '#1e5ab8').attr('stroke', 'white').attr('stroke-width', 1.5);
     } else {
       g.append('circle')
         .attr('class', 'node-shape')
-        .attr('r', r)
-        .attr('fill', colorMap[d.type]).attr('stroke', 'white').attr('stroke-width', 1.5);
+        .attr('r', nodeRadius)
+        .attr('fill', '#1e5ab8').attr('stroke', 'white').attr('stroke-width', 1.5);
     }
   });
 
+  // Labels below nodes
   nodeGroups.append('text')
-    .attr('text-anchor', 'middle').attr('dy', d => radiusMap[d.type] + 14)
-    .attr('font-size', '18px').attr('fill', '#5e6070')
-    .text(d => d.label);
+    .attr('text-anchor', 'middle')
+    .attr('dy', nodeRadius + 18)
+    .attr('font-size', '18px')
+    .attr('fill', '#5e6070')
+    .text(d => mainLabels[d.id]);
 
-  // Tooltip
-  nodeGroups.append('title').text(d => d.fullLabel);
+  // Tooltips with full Chinese names
+  nodeGroups.append('title').text(d => mainFullLabels[d.id]);
+
+  // Apply highlight if a node is already active
+  if (currentNavId) {
+    const savedId = currentNavId;
+    currentNavId = null;
+    highlightNavNode(savedId);
+  }
 }
 
 function renderMobileBreadcrumb(nav) {
   const mainNodes = ['opM','thm1','thm2','thm4','thm5','thm3','thm6'];
-  const nodeMap = {};
-  logicChain.nodes.forEach(n => { nodeMap[n.id] = n; });
+  const mobileLabels = {
+    opM: 'M', thm1: '泛化界', thm2: 'Benign',
+    thm4: 'FL', thm5: 'FL必然', thm3: '譜分離', thm6: '臨界深度'
+  };
 
   const container = nav.append('div')
     .style('display', 'flex')
@@ -1519,7 +1583,6 @@ function renderMobileBreadcrumb(nav) {
     .style('gap', '0.5rem');
 
   mainNodes.forEach((id, i) => {
-    const n = nodeMap[id];
     if (i > 0) {
       container.append('span')
         .style('color', '#8a8c98').style('font-size', '18px')
@@ -1527,6 +1590,7 @@ function renderMobileBreadcrumb(nav) {
     }
     container.append('button')
       .attr('class', 'nav-breadcrumb')
+      .attr('data-nav-id', id)
       .style('background', currentNavId === id ? '#1e5ab8' : '#ecedf0')
       .style('color', currentNavId === id ? 'white' : '#1e2030')
       .style('border', 'none')
@@ -1535,7 +1599,7 @@ function renderMobileBreadcrumb(nav) {
       .style('font-size', '18px')
       .style('white-space', 'nowrap')
       .style('cursor', 'pointer')
-      .text(n.label)
+      .text(mobileLabels[id])
       .on('click', () => {
         const target = document.querySelector(`[data-nav="${id}"]`);
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
