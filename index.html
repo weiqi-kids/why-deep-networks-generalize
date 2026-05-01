@@ -663,7 +663,48 @@ footer {
     </div>
   </div>
 </section>
-  <section id="sec-thm6" class="theorem-section" data-nav="thm6"></section>
+  <section id="sec-thm6" class="theorem-section" data-nav="thm6">
+  <h2>定理 6：架構臨界深度</h2>
+  <div class="layer-intuition">
+    <p>疊濾鏡。每多一層，噪聲就多被過濾一次。全連接網路需要疊 $\lceil(d-1)/2\rceil$ 層才夠；ResNet 有捷徑跳過濾鏡，所以深度影響不大；Transformer 的 attention 自帶強力濾鏡，幾層就夠了。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p><strong>定義</strong>：$L^* = \min\{L : \beta > \alpha + \tfrac{1}{2}\}$，即使泛化界從 trivial 變為 non-trivial 的最小深度。</p>
+      <p><strong>FC ReLU</strong>：$\alpha_0 = \frac{1}{d-1}$，$\beta_0 = \frac{2}{d-1}$。每層累積 $\beta_0$，需要 $L^* = \lceil(d-1)/2\rceil$ 層。</p>
+      <p><strong>ResNet</strong>：skip connection 使 $\alpha$ 不隨深度累積，$L^*$ 與深度解耦，$L^* = 1$（常數）。</p>
+      <p><strong>Transformer</strong>：softmax attention 提供 $+\tfrac{1}{2}\beta_0$ 的加成，$L^* \approx 1\text{-}4$。</p>
+    </div>
+  </details>
+  <details class="layer">
+    <summary>完整證明</summary>
+    <div class="layer-content">
+      <p><strong>FC ReLU 推導</strong>：</p>
+      <p>每層 ReLU 提供噪聲衰減率 $\beta_0 = 2/(d-1)$。$L$ 層後累積衰減為 $L \cdot \beta_0$。要求 $L \cdot \beta_0 > \alpha + 1/2$，其中 $\alpha = 1/(d-1)$。解得 $L > (d-1)/2$，故 $L^* = \lceil(d-1)/2\rceil$。</p>
+      <p><strong>ResNet 推導</strong>：</p>
+      <p>skip connection $h_{l+1} = h_l + f_l(h_l)$ 使殘差分支的噪聲不會疊加到主路徑。$\alpha$ 保持為單層量級，不隨深度累積。因此 $\beta > \alpha + 1/2$ 的條件與深度 $L$ 無關，$L^*$ 為常數。</p>
+      <p><strong>Transformer 推導</strong>：</p>
+      <p>softmax attention 的歸一化效應等同於額外的噪聲濾波器，為每層提供 $+1/2 \cdot \beta_0$ 的加成。等效衰減率為 $3/(2(d-1))$ per layer，故 $L^* \approx \lceil(d-1)/3\rceil$，在實際維度下約為 $1\text{-}4$ 層。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-15">
+      <h3>L* 比較</h3>
+      <div class="chart-controls">
+        <label>d（輸入維度） <input type="range" id="chart15-d" min="3" max="50" step="1" value="10"><span class="value-display" id="chart15-d-val">10</span></label>
+      </div>
+    </div>
+    <div class="chart-container" id="chart-16">
+      <h3>深度 vs 泛化曲線</h3>
+      <div class="chart-controls">
+        <button id="chart16-fc" class="active">FC</button>
+        <button id="chart16-resnet">ResNet</button>
+        <button id="chart16-transformer">Transformer</button>
+      </div>
+    </div>
+  </div>
+</section>
   <section id="sec-aux" class="theorem-section"></section>
   <section id="sec-ext14" class="theorem-section"></section>
   <section id="sec-ext16" class="theorem-section"></section>
@@ -2822,6 +2863,242 @@ chartInitFns['chart-8'] = () => createChart('chart-8', ({ g, innerW, innerH, con
       }
       updatePositions();
       startTimer();
+    }
+  };
+});
+
+// === Chart #15: L* Comparison (Grouped Bar Chart) ===
+chartInitFns['chart-15'] = () => createChart('chart-15', ({ g, innerW, innerH, container }) => {
+  let d = 10;
+
+  const archs = ['FC', 'ResNet', 'Transformer'];
+  const colors = { FC: '#1e5ab8', ResNet: '#1e8050', Transformer: '#8a7020' };
+
+  const xScale = d3.scaleBand().domain(archs).range([0, innerW]).padding(0.35);
+  const yScale = d3.scaleLinear().range([innerH, 0]);
+
+  const axisX = g.append('g').attr('transform', `translate(0,${innerH})`);
+  const axisY = g.append('g');
+
+  // Axis labels
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('架構');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('L*（臨界深度）');
+
+  const barsGroup = g.append('g');
+  const labelsGroup = g.append('g');
+
+  function computeLStar(dim) {
+    return {
+      FC: Math.ceil((dim - 1) / 2),
+      ResNet: 1,
+      Transformer: Math.min(4, Math.ceil((dim - 1) / 4))
+    };
+  }
+
+  function update() {
+    const lStars = computeLStar(d);
+    const yMax = Math.max(lStars.FC, 4) * 1.25;
+    yScale.domain([0, yMax]);
+
+    axisX.call(d3.axisBottom(xScale)).selectAll('text').style('font-size', '14px');
+    axisY.call(d3.axisLeft(yScale).ticks(Math.min(yMax, 10)).tickFormat(d3.format('d')))
+      .selectAll('text').style('font-size', '13px');
+
+    // Bars
+    const data = archs.map(a => ({ arch: a, lstar: lStars[a] }));
+    const bars = barsGroup.selectAll('rect').data(data, d => d.arch);
+    bars.enter().append('rect')
+      .attr('x', d => xScale(d.arch))
+      .attr('width', xScale.bandwidth())
+      .attr('rx', 3)
+      .merge(bars)
+      .transition().duration(300)
+      .attr('x', d => xScale(d.arch))
+      .attr('y', d => yScale(d.lstar))
+      .attr('width', xScale.bandwidth())
+      .attr('height', d => innerH - yScale(d.lstar))
+      .attr('fill', d => colors[d.arch]);
+    bars.exit().remove();
+
+    // Value labels on top of bars
+    const labels = labelsGroup.selectAll('text').data(data, d => d.arch);
+    labels.enter().append('text')
+      .attr('text-anchor', 'middle')
+      .attr('font-size', '15px').attr('font-weight', '700')
+      .merge(labels)
+      .transition().duration(300)
+      .attr('x', d => xScale(d.arch) + xScale.bandwidth() / 2)
+      .attr('y', d => yScale(d.lstar) - 6)
+      .attr('fill', d => colors[d.arch])
+      .text(d => d.lstar);
+    labels.exit().remove();
+  }
+
+  update();
+
+  // Slider binding
+  const dSlider = container.querySelector('#chart15-d');
+  const dVal = container.querySelector('#chart15-d-val');
+  dSlider?.addEventListener('input', () => {
+    d = parseInt(dSlider.value);
+    dVal.textContent = d;
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ d }),
+    setState: (s) => {
+      d = s.d;
+      if (dSlider) { dSlider.value = d; dVal.textContent = d; }
+      update();
+    }
+  };
+});
+
+// === Chart #16: Depth vs Generalization Error ===
+chartInitFns['chart-16'] = () => createChart('chart-16', ({ g, innerW, innerH, container }) => {
+  let activeArch = 'FC';
+  const d = 10;
+
+  const colors = { FC: '#1e5ab8', ResNet: '#1e8050', Transformer: '#8a7020' };
+  const maxDepth = 20;
+  const baseline = 0.01;
+  const baseError = 1.0;
+
+  const xScale = d3.scaleLinear().domain([1, maxDepth]).range([0, innerW]);
+  const yScale = d3.scaleLog().domain([0.005, 1.5]).range([innerH, 0]).clamp(true);
+
+  // Axes
+  const axisX = g.append('g').attr('transform', `translate(0,${innerH})`);
+  const axisY = g.append('g');
+
+  axisX.call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.format('d')))
+    .selectAll('text').style('font-size', '13px');
+  axisY.call(d3.axisLeft(yScale).ticks(5, '.2f'))
+    .selectAll('text').style('font-size', '13px');
+
+  // Axis labels
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('深度 L');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('泛化誤差');
+
+  const lStarFC = Math.ceil((d - 1) / 2);
+
+  // Generate curve data
+  function genFC() {
+    const pts = [];
+    for (let L = 1; L <= maxDepth; L++) {
+      const err = Math.max(0, 1 - L / lStarFC) * baseError + baseline;
+      pts.push({ L, err });
+    }
+    return pts;
+  }
+  function genResNet() {
+    const pts = [];
+    for (let L = 1; L <= maxDepth; L++) {
+      // Roughly constant low error
+      const err = baseline * (1.5 + 0.3 * Math.exp(-L * 0.2));
+      pts.push({ L, err });
+    }
+    return pts;
+  }
+  function genTransformer() {
+    const pts = [];
+    for (let L = 1; L <= maxDepth; L++) {
+      // Drops very quickly, near baseline by L=3-4
+      const err = baseError * Math.exp(-L * 1.2) + baseline;
+      pts.push({ L, err });
+    }
+    return pts;
+  }
+
+  const line = d3.line().x(dd => xScale(dd.L)).y(dd => yScale(dd.err)).curve(d3.curveMonotoneX);
+
+  // Draw all three curves
+  const fcPath = g.append('path').datum(genFC())
+    .attr('fill', 'none').attr('stroke', colors.FC).attr('stroke-width', 2.5).attr('d', line);
+  const resPath = g.append('path').datum(genResNet())
+    .attr('fill', 'none').attr('stroke', colors.ResNet).attr('stroke-width', 2.5).attr('d', line);
+  const transPath = g.append('path').datum(genTransformer())
+    .attr('fill', 'none').attr('stroke', colors.Transformer).attr('stroke-width', 2.5).attr('d', line);
+
+  // L* vertical dashed line for FC
+  const lStarLine = g.append('line')
+    .attr('x1', xScale(lStarFC)).attr('x2', xScale(lStarFC))
+    .attr('y1', 0).attr('y2', innerH)
+    .attr('stroke', colors.FC).attr('stroke-width', 1.5).attr('stroke-dasharray', '6,3');
+  const lStarLabel = g.append('text')
+    .attr('x', xScale(lStarFC) + 5).attr('y', 15)
+    .attr('font-size', '12px').attr('font-weight', '600').attr('fill', colors.FC)
+    .text('L*=' + lStarFC);
+
+  // Legend labels on curves
+  const fcLabel = g.append('text')
+    .attr('x', xScale(maxDepth) - 5).attr('y', yScale(genFC()[maxDepth - 1].err) - 8)
+    .attr('text-anchor', 'end').attr('font-size', '12px').attr('font-weight', '600').attr('fill', colors.FC)
+    .text('FC');
+  const resLabel = g.append('text')
+    .attr('x', xScale(maxDepth) - 5).attr('y', yScale(genResNet()[maxDepth - 1].err) - 8)
+    .attr('text-anchor', 'end').attr('font-size', '12px').attr('font-weight', '600').attr('fill', colors.ResNet)
+    .text('ResNet');
+  const transLabel = g.append('text')
+    .attr('x', xScale(maxDepth) - 5).attr('y', yScale(genTransformer()[maxDepth - 1].err) + 16)
+    .attr('text-anchor', 'end').attr('font-size', '12px').attr('font-weight', '600').attr('fill', colors.Transformer)
+    .text('Transformer');
+
+  const paths = { FC: fcPath, ResNet: resPath, Transformer: transPath };
+  const labels = { FC: fcLabel, ResNet: resLabel, Transformer: transLabel };
+
+  function updateHighlight() {
+    Object.entries(paths).forEach(([arch, path]) => {
+      const isActive = arch === activeArch;
+      path.attr('stroke-opacity', isActive ? 1 : 0.2).attr('stroke-width', isActive ? 3 : 1.5);
+    });
+    Object.entries(labels).forEach(([arch, label]) => {
+      label.attr('opacity', arch === activeArch ? 1 : 0.25);
+    });
+    // Show L* line only for FC
+    lStarLine.attr('visibility', activeArch === 'FC' ? 'visible' : 'hidden');
+    lStarLabel.attr('visibility', activeArch === 'FC' ? 'visible' : 'hidden');
+  }
+
+  updateHighlight();
+
+  // Button bindings
+  const btnFC = container.querySelector('#chart16-fc');
+  const btnRes = container.querySelector('#chart16-resnet');
+  const btnTrans = container.querySelector('#chart16-transformer');
+  const allBtns = [btnFC, btnRes, btnTrans];
+  const archNames = ['FC', 'ResNet', 'Transformer'];
+
+  allBtns.forEach((btn, i) => {
+    btn?.addEventListener('click', () => {
+      allBtns.forEach(b => b?.classList.remove('active'));
+      btn.classList.add('active');
+      activeArch = archNames[i];
+      updateHighlight();
+    });
+  });
+
+  return {
+    update: () => {},
+    getState: () => ({ activeArch }),
+    setState: (s) => {
+      activeArch = s.activeArch;
+      allBtns.forEach(b => b?.classList.remove('active'));
+      const idx = archNames.indexOf(activeArch);
+      if (idx >= 0) allBtns[idx]?.classList.add('active');
+      updateHighlight();
     }
   };
 });
