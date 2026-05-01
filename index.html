@@ -798,7 +798,134 @@ footer {
     </div>
   </div>
 </section>
-  <section id="sec-ext14" class="theorem-section"></section>
+  <section id="sec-ext14" class="theorem-section">
+  <h2>延伸：理論擴展與現象解釋</h2>
+  <h3>14a-14f：Feature Learning 證明的擴展</h3>
+  <div class="layer-intuition">
+    <p>以下六個延伸補齊了定理 5 的完整圖景——從 ReLU 不光滑性、有限樣本、光滑激活、高階目標、多方向學習到非正交情形。</p>
+  </div>
+
+  <h3 data-nav="ext14a">14a：Tame Function——ReLU 不光滑但梯度流仍安全</h3>
+  <div class="layer-intuition">
+    <p>ReLU 不光滑但屬 tame function，梯度流仍避開壞臨界點。在折角處 Clarke subdifferential 提供安全的下降方向集合。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>ReLU 網路的損失函數是 <strong>definable（tame）函數</strong>：雖然不可微分，但其 Clarke subdifferential 在折角處仍提供下降方向。</p>
+      <p>梯度流幾乎必然避開所有非光滑臨界點，收斂到光滑臨界點。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-21">
+      <h3>Tame Function 梯度流動畫</h3>
+    </div>
+  </div>
+
+  <h3 data-nav="ext14b">14b：Population → SGD——有限樣本的代價</h3>
+  <div class="layer-intuition">
+    <p>信號 $d^{-\kappa/2}$ vs 噪聲 $1/\sqrt{n}$ 的賽跑：要讓信號超越噪聲，需要 $n = \Theta(d^\kappa)$ 個樣本。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>Population gradient 中的信號項量級為 $d^{-\kappa/2}$，SGD 採樣噪聲量級為 $1/\sqrt{n}$。</p>
+      <p>要求信號 > 噪聲，即 $d^{-\kappa/2} > C/\sqrt{n}$，等價於 $n > C' \cdot d^\kappa$。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-22">
+      <h3>信號-噪聲交叉圖</h3>
+      <div class="chart-controls">
+        <label>$\kappa$ <input type="range" id="chart22-kappa" min="1" max="4" step="0.1" value="1"><span class="value-display" id="chart22-kappa-val">1.0</span></label>
+        <label>$n$（樣本數） <input type="range" id="chart22-n" min="100" max="50000" step="100" value="1000"><span class="value-display" id="chart22-n-val">1000</span></label>
+      </div>
+    </div>
+  </div>
+
+  <h3 data-nav="ext14c">14c：光滑 $\varphi$ 推廣——弱正則化擴展到所有非仿射光滑函數</h3>
+  <div class="layer-intuition">
+    <p>加弱正則化後，結論擴展到所有非仿射光滑函數。正則化使神經元方向坍縮到目標方向 $w^*$。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>對任意非仿射光滑激活函數 $\varphi$，加入 $\lambda$-正則化後，在 Phase 2 中神經元方向 support 坍縮到 $w^*$。</p>
+      <p>$\lambda = 0$：神經元方向保持分散。$\lambda > 0$：方向逐漸收斂。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-23">
+      <h3>Support Collapse 動畫</h3>
+      <div class="chart-controls">
+        <label>$\lambda$（正則化強度） <input type="range" id="chart23-lambda" min="0" max="1" step="0.01" value="0"><span class="value-display" id="chart23-lambda-val">0.00</span></label>
+      </div>
+    </div>
+  </div>
+
+  <h3 data-nav="ext14d">14d：$\kappa \geq 2$ 推廣——高階目標需要更多步</h3>
+  <div class="layer-intuition">
+    <p>$\kappa=1$ 只要 $O(d)$ 步，$\kappa \geq 2$ 要 $O(d^\kappa)$ 步。目標函數的非線性階數決定學習速度。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>Phase 1 的時間尺度為 $T_1 = \Theta(d^\kappa)$，其中 $\kappa$ 是目標函數 $f^*$ 的資訊指數。</p>
+      <p>$\kappa = 1$：$T_1 \sim d$（線性增長），$\kappa = 2$：$T_1 \sim d^2$（二次增長）。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-24">
+      <h3>Phase 1 時間 vs $\kappa$</h3>
+      <div class="chart-controls">
+        <label>$\kappa$ <input type="range" id="chart24-kappa" min="1" max="4" step="0.1" value="1"><span class="value-display" id="chart24-kappa-val">1.0</span></label>
+      </div>
+    </div>
+  </div>
+
+  <h3 data-nav="ext14e">14e：正交 Multi-index——多方向依序學習如爬階梯</h3>
+  <div class="layer-intuition">
+    <p>多方向依序學習如爬階梯：先學第一個方向，再學第二個，形成階梯式學習曲線。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>對正交 multi-index 模型 $f^*(x) = \sum_j g_j(\langle w_j^*, x\rangle)$，各方向 $w_j^*$ 依序在時間 $T_j$ 被學到。</p>
+      <p>$T_1 < T_2 < \cdots < T_r$，對齊度 $m_j(t) = |\langle \bar{w}_j(t), w_j^*\rangle|$ 依序從 0 升到 1。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-25">
+      <h3>階梯式學習動畫</h3>
+      <div class="chart-controls">
+        <button id="chart25-play" class="active">Play</button>
+        <button id="chart25-pause">Pause</button>
+      </div>
+    </div>
+  </div>
+
+  <h3 data-nav="ext14f">14f：非正交——條件數決定可行性</h3>
+  <div class="layer-intuition">
+    <p>條件數好時可 SVD 分離各方向，差時需二階方法。$\sigma_{\min}(V^*)$ 越大，問題越好解。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>當 $\sigma_{\min}(V^*) > c$ 時，可透過 SVD 將非正交問題分離為正交子問題。</p>
+      <p>當 $\sigma_{\min}(V^*)$ 接近 0 時（方向幾乎共線），一階方法失效，需要二階方法（如 Hessian-based）。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-26">
+      <h3>非正交可行性邊界</h3>
+      <div class="chart-controls">
+        <label>$\sigma_{\min}(V^*)$ <input type="range" id="chart26-sigma" min="0" max="1" step="0.01" value="0.5"><span class="value-display" id="chart26-sigma-val">0.50</span></label>
+      </div>
+    </div>
+  </div>
+
+  <!-- 14g-14h will be added here -->
+</section>
   <section id="sec-ext16" class="theorem-section"></section>
   <section id="sec-disproven" class="theorem-section"></section>
   <section id="sec-scope" class="theorem-section"></section>
@@ -3802,6 +3929,680 @@ chartInitFns['chart-20'] = () => createChart('chart-20', ({ svg, g, innerW, inne
       else { pauseBtn?.classList.add('active'); playBtn?.classList.remove('active'); }
       draw();
       startTimer();
+    }
+  };
+});
+
+// === Chart #21: 14a Tame Function Gradient Flow ===
+chartInitFns['chart-21'] = () => createChart('chart-21', ({ g, innerW, innerH, container }) => {
+  // Piecewise-linear "tame" function with kinks
+  const kinks = [0.2, 0.45, 0.7]; // x positions of kinks (normalized 0-1)
+  const segments = [
+    { x0: 0, y0: 0.3, x1: 0.2, y1: 0.7 },
+    { x0: 0.2, y0: 0.7, x1: 0.45, y1: 0.35 },
+    { x0: 0.45, y0: 0.35, x1: 0.7, y1: 0.8 },
+    { x0: 0.7, y0: 0.8, x1: 1.0, y1: 0.15 }
+  ];
+
+  function fVal(xNorm) {
+    for (const seg of segments) {
+      if (xNorm >= seg.x0 && xNorm <= seg.x1) {
+        const t = (xNorm - seg.x0) / (seg.x1 - seg.x0);
+        return seg.y0 + t * (seg.y1 - seg.y0);
+      }
+    }
+    return segments[segments.length - 1].y1;
+  }
+
+  function fSlope(xNorm) {
+    for (const seg of segments) {
+      if (xNorm >= seg.x0 && xNorm <= seg.x1) {
+        return (seg.y1 - seg.y0) / (seg.x1 - seg.x0);
+      }
+    }
+    return 0;
+  }
+
+  const xScale = d3.scaleLinear().domain([0, 1]).range([0, innerW]);
+  const yScale = d3.scaleLinear().domain([0, 1]).range([innerH, 0]);
+
+  // Draw the piecewise-linear function
+  const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1]));
+  const pts = [];
+  for (let i = 0; i <= 200; i++) {
+    const x = i / 200;
+    pts.push([x, fVal(x)]);
+  }
+  g.append('path').datum(pts).attr('d', lineGen)
+    .attr('fill', 'none').attr('stroke', '#5e6070').attr('stroke-width', 2);
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`).call(d3.axisBottom(xScale).ticks(5))
+    .selectAll('text').style('font-size', '12px');
+  g.append('g').call(d3.axisLeft(yScale).ticks(5))
+    .selectAll('text').style('font-size', '12px');
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('x');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('f(x)');
+
+  // Kink markers (red diamonds)
+  kinks.forEach(kx => {
+    g.append('path')
+      .attr('d', d3.symbol(d3.symbolDiamond, 80)())
+      .attr('transform', `translate(${xScale(kx)},${yScale(fVal(kx))})`)
+      .attr('fill', '#c93135').attr('stroke', '#c93135').attr('stroke-width', 1);
+  });
+
+  // Clarke subdifferential indicators (shown when particle is near a kink)
+  const subDiffLine = g.append('line')
+    .attr('stroke', '#c93135').attr('stroke-width', 3)
+    .attr('stroke-dasharray', '4,2').attr('opacity', 0);
+
+  // Gradient flow particle
+  let particleX = 0.9; // start near right side
+  const particle = g.append('circle')
+    .attr('r', 6).attr('fill', '#1e8050').attr('stroke', '#0a5030').attr('stroke-width', 1.5);
+
+  // Trail
+  const trail = g.append('path').attr('fill', 'none')
+    .attr('stroke', '#1e8050').attr('stroke-width', 1.5).attr('stroke-dasharray', '3,3').attr('opacity', 0.5);
+  const trailPts = [];
+
+  let timer = null;
+  const stepSize = 0.003;
+
+  function draw() {
+    particle.attr('cx', xScale(particleX)).attr('cy', yScale(fVal(particleX)));
+
+    // Show Clarke subdifferential near kinks
+    let nearKink = false;
+    for (const kx of kinks) {
+      if (Math.abs(particleX - kx) < 0.025) {
+        nearKink = true;
+        // Find slopes on both sides
+        const segIdx = kinks.indexOf(kx);
+        const slopeL = (segments[segIdx].y1 - segments[segIdx].y0) / (segments[segIdx].x1 - segments[segIdx].x0);
+        const slopeR = (segments[segIdx + 1].y1 - segments[segIdx + 1].y0) / (segments[segIdx + 1].x1 - segments[segIdx + 1].x0);
+        const minSlope = Math.min(slopeL, slopeR);
+        const maxSlope = Math.max(slopeL, slopeR);
+        // Show vertical segment representing subdifferential
+        const cy = yScale(fVal(kx));
+        const halfLen = 25;
+        subDiffLine
+          .attr('x1', xScale(kx)).attr('x2', xScale(kx))
+          .attr('y1', cy - halfLen).attr('y2', cy + halfLen)
+          .attr('opacity', 0.8);
+        break;
+      }
+    }
+    if (!nearKink) subDiffLine.attr('opacity', 0);
+
+    // Trail
+    trailPts.push([particleX, fVal(particleX)]);
+    if (trailPts.length > 1) {
+      trail.datum(trailPts).attr('d', lineGen);
+    }
+  }
+
+  function startTimer() {
+    if (timer) timer.stop();
+    timer = d3.timer(() => {
+      // Gradient descent: move in direction that decreases f
+      const slope = fSlope(particleX);
+      // We descend along x to minimize f, so dx = -stepSize * sign(slope)
+      particleX -= stepSize * Math.sign(slope) * 0.8;
+      particleX = Math.max(0.01, Math.min(0.99, particleX));
+
+      // Check if converged (near a local minimum)
+      if (Math.abs(fSlope(particleX)) < 0.01 || particleX <= 0.01 || particleX >= 0.99) {
+        // Reset after pause
+        setTimeout(() => {
+          particleX = 0.9;
+          trailPts.length = 0;
+          trail.attr('d', null);
+        }, 2000);
+      }
+
+      draw();
+    }, 40);
+  }
+
+  draw();
+  startTimer();
+
+  // Legend
+  const legendData = [
+    { label: '梯度流粒子', color: '#1e8050', type: 'circle' },
+    { label: '折角（kink）', color: '#c93135', type: 'diamond' },
+    { label: 'Clarke 次微分', color: '#c93135', type: 'line' }
+  ];
+  legendData.forEach((d, i) => {
+    const lx = innerW - 130, ly = 10 + i * 18;
+    if (d.type === 'circle') {
+      g.append('circle').attr('cx', lx + 5).attr('cy', ly).attr('r', 4).attr('fill', d.color);
+    } else if (d.type === 'diamond') {
+      g.append('path').attr('d', d3.symbol(d3.symbolDiamond, 40)())
+        .attr('transform', `translate(${lx + 5},${ly})`).attr('fill', d.color);
+    } else {
+      g.append('line').attr('x1', lx).attr('x2', lx + 10).attr('y1', ly).attr('y2', ly)
+        .attr('stroke', d.color).attr('stroke-width', 3).attr('stroke-dasharray', '4,2');
+    }
+    g.append('text').attr('x', lx + 15).attr('y', ly + 4)
+      .attr('font-size', '11px').attr('fill', '#5e6070').text(d.label);
+  });
+
+  return {
+    update: draw,
+    getState: () => ({ particleX }),
+    setState: (s) => { particleX = s.particleX; trailPts.length = 0; draw(); startTimer(); }
+  };
+});
+
+// === Chart #22: 14b Signal-Noise Crossover ===
+chartInitFns['chart-22'] = () => createChart('chart-22', ({ g, innerW, innerH, container }) => {
+  let kappa = 1.0;
+  let nSamples = 1000;
+
+  const xScale = d3.scaleLog().domain([5, 200]).range([0, innerW]);
+  const yScale = d3.scaleLog().domain([1e-4, 10]).range([innerH, 0]);
+
+  // Axes
+  const xAxis = g.append('g').attr('transform', `translate(0,${innerH})`);
+  const yAxis = g.append('g');
+
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('d（維度）');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -42)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('量級');
+
+  const signalPath = g.append('path').attr('fill', 'none').attr('stroke', '#1e8050').attr('stroke-width', 2.5);
+  const noisePath = g.append('path').attr('fill', 'none').attr('stroke', '#c93135').attr('stroke-width', 2.5).attr('stroke-dasharray', '6,3');
+
+  const crossDot = g.append('circle').attr('r', 6).attr('fill', '#e8a020').attr('stroke', '#5e6070').attr('stroke-width', 1.5);
+  const crossLabel = g.append('text').attr('font-size', '12px').attr('font-weight', '700').attr('fill', '#e8a020');
+
+  // Requirement annotation
+  const reqText = g.append('text').attr('font-size', '12px').attr('fill', '#5e6070')
+    .attr('x', innerW - 10).attr('y', 15).attr('text-anchor', 'end');
+
+  // Legend
+  const legendItems = [
+    { label: '信號 d^{-κ/2}', color: '#1e8050', dash: '' },
+    { label: '噪聲 1/√n', color: '#c93135', dash: '6,3' }
+  ];
+  legendItems.forEach((d, i) => {
+    const lx = 10, ly = 10 + i * 18;
+    g.append('line').attr('x1', lx).attr('x2', lx + 20).attr('y1', ly).attr('y2', ly)
+      .attr('stroke', d.color).attr('stroke-width', 2.5).attr('stroke-dasharray', d.dash);
+    g.append('text').attr('x', lx + 25).attr('y', ly + 4)
+      .attr('font-size', '11px').attr('fill', '#5e6070').text(d.label);
+  });
+
+  function update() {
+    xAxis.call(d3.axisBottom(xScale).ticks(5, '.0f')).selectAll('text').style('font-size', '12px');
+    yAxis.call(d3.axisLeft(yScale).ticks(5, '.0e')).selectAll('text').style('font-size', '12px');
+
+    const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1]));
+    const dValues = d3.range(5, 201, 1);
+
+    // Signal: d^{-κ/2}
+    const sigData = dValues.map(d => [d, Math.pow(d, -kappa / 2)]);
+    signalPath.datum(sigData).attr('d', lineGen);
+
+    // Noise: 1/√n (horizontal)
+    const noiseVal = 1 / Math.sqrt(nSamples);
+    const noiseData = dValues.map(d => [d, noiseVal]);
+    noisePath.datum(noiseData).attr('d', lineGen);
+
+    // Crossover: d^{-κ/2} = 1/√n → d = n^{1/κ}
+    const crossD = Math.pow(nSamples, 1 / kappa);
+    if (crossD >= 5 && crossD <= 200) {
+      crossDot.attr('cx', xScale(crossD)).attr('cy', yScale(noiseVal)).attr('opacity', 1);
+      crossLabel.attr('x', xScale(crossD) + 10).attr('y', yScale(noiseVal) - 10)
+        .text('d* = ' + crossD.toFixed(0)).attr('opacity', 1);
+    } else {
+      crossDot.attr('opacity', 0);
+      crossLabel.attr('opacity', crossD < 5 ? 0 : 1)
+        .attr('x', innerW - 10).attr('y', 50)
+        .text('d* = ' + crossD.toFixed(0) + '（超出範圍）');
+    }
+
+    reqText.text('需要 n ≥ d^' + kappa.toFixed(1));
+  }
+
+  update();
+
+  // Slider bindings
+  const kappaSlider = container.querySelector('#chart22-kappa');
+  const kappaVal = container.querySelector('#chart22-kappa-val');
+  const nSlider = container.querySelector('#chart22-n');
+  const nVal = container.querySelector('#chart22-n-val');
+
+  kappaSlider?.addEventListener('input', () => {
+    kappa = parseFloat(kappaSlider.value);
+    kappaVal.textContent = kappa.toFixed(1);
+    update();
+  });
+  nSlider?.addEventListener('input', () => {
+    nSamples = parseInt(nSlider.value);
+    nVal.textContent = nSamples;
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ kappa, nSamples }),
+    setState: (s) => {
+      kappa = s.kappa; nSamples = s.nSamples;
+      if (kappaSlider) kappaSlider.value = kappa;
+      if (kappaVal) kappaVal.textContent = kappa.toFixed(1);
+      if (nSlider) nSlider.value = nSamples;
+      if (nVal) nVal.textContent = nSamples;
+      update();
+    }
+  };
+});
+
+// === Chart #23: 14c Support Collapse ===
+chartInitFns['chart-23'] = () => createChart('chart-23', ({ g, innerW, innerH, container }) => {
+  let lambda = 0;
+  const numNeurons = 20;
+  const cx = innerW / 2, cy = innerH / 2;
+  const radius = Math.min(innerW, innerH) * 0.38;
+
+  // Target direction w* (angle = 0, pointing right)
+  const targetAngle = 0;
+
+  // Initial random angles for neurons (uniform on circle)
+  const initAngles = [];
+  for (let i = 0; i < numNeurons; i++) {
+    initAngles.push(Math.PI * 2 * i / numNeurons + (Math.random() - 0.5) * 0.4);
+  }
+
+  // Draw unit circle
+  g.append('circle').attr('cx', cx).attr('cy', cy).attr('r', radius)
+    .attr('fill', 'none').attr('stroke', '#ccc').attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
+
+  // Target direction marker (red diamond)
+  const targetX = cx + radius * Math.cos(targetAngle);
+  const targetY = cy - radius * Math.sin(targetAngle);
+  g.append('path').attr('d', d3.symbol(d3.symbolDiamond, 120)())
+    .attr('transform', `translate(${targetX},${targetY})`)
+    .attr('fill', '#c93135').attr('stroke', '#c93135');
+  g.append('text').attr('x', targetX + 12).attr('y', targetY + 4)
+    .attr('font-size', '12px').attr('font-weight', '700').attr('fill', '#c93135').text('w*');
+
+  // Neuron dots
+  const neuronColors = d3.scaleSequential(d3.interpolateBlues).domain([0, numNeurons]);
+  const dots = [];
+  for (let i = 0; i < numNeurons; i++) {
+    dots.push(
+      g.append('circle').attr('r', 4)
+        .attr('fill', '#2a6bb8').attr('stroke', '#1e5ab8').attr('stroke-width', 1).attr('opacity', 0.8)
+    );
+  }
+
+  // Label
+  const lambdaLabel = g.append('text').attr('x', 10).attr('y', innerH - 5)
+    .attr('font-size', '13px').attr('fill', '#5e6070');
+
+  // Legend
+  g.append('path').attr('d', d3.symbol(d3.symbolDiamond, 60)())
+    .attr('transform', `translate(${innerW - 120},15)`).attr('fill', '#c93135');
+  g.append('text').attr('x', innerW - 108).attr('y', 19)
+    .attr('font-size', '11px').attr('fill', '#5e6070').text('目標方向 w*');
+  g.append('circle').attr('cx', innerW - 115).attr('cy', 33).attr('r', 4).attr('fill', '#2a6bb8');
+  g.append('text').attr('x', innerW - 108).attr('y', 37)
+    .attr('font-size', '11px').attr('fill', '#5e6070').text('神經元方向');
+
+  function update() {
+    for (let i = 0; i < numNeurons; i++) {
+      // Interpolate angle toward target as lambda increases
+      const angle = initAngles[i] * (1 - lambda) + targetAngle * lambda;
+      const nx = cx + radius * Math.cos(angle);
+      const ny = cy - radius * Math.sin(angle);
+      dots[i].attr('cx', nx).attr('cy', ny);
+    }
+    lambdaLabel.text('λ = ' + lambda.toFixed(2));
+  }
+
+  update();
+
+  const lambdaSlider = container.querySelector('#chart23-lambda');
+  const lambdaVal = container.querySelector('#chart23-lambda-val');
+  lambdaSlider?.addEventListener('input', () => {
+    lambda = parseFloat(lambdaSlider.value);
+    lambdaVal.textContent = lambda.toFixed(2);
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ lambda }),
+    setState: (s) => {
+      lambda = s.lambda;
+      if (lambdaSlider) lambdaSlider.value = lambda;
+      if (lambdaVal) lambdaVal.textContent = lambda.toFixed(2);
+      update();
+    }
+  };
+});
+
+// === Chart #24: 14d κ≥2 Timeline ===
+chartInitFns['chart-24'] = () => createChart('chart-24', ({ g, innerW, innerH, container }) => {
+  const dBase = 10;
+  let kappa = 1.0;
+
+  const xScale = d3.scaleLinear().domain([1, 6]).range([0, innerW]);
+  const yScale = d3.scaleLog().domain([1, 1e6]).range([innerH, 0]);
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(xScale).ticks(5).tickFormat(d => d.toFixed(0)))
+    .selectAll('text').style('font-size', '12px');
+  g.append('g').call(d3.axisLeft(yScale).ticks(6, '.0e'))
+    .selectAll('text').style('font-size', '12px');
+
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('κ（資訊指數）');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -42)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('Phase 1 步數 (d=10)');
+
+  // Curve: d^κ for d=10
+  const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
+  const curveData = [];
+  for (let k = 1; k <= 6; k += 0.05) {
+    curveData.push([k, Math.pow(dBase, k)]);
+  }
+  g.append('path').datum(curveData).attr('d', lineGen)
+    .attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2.5);
+
+  // Moving dot
+  const dot = g.append('circle').attr('r', 7)
+    .attr('fill', '#e8a020').attr('stroke', '#5e6070').attr('stroke-width', 2);
+
+  // Annotation text
+  const annotText = g.append('text')
+    .attr('font-size', '13px').attr('font-weight', '700').attr('fill', '#1e5ab8');
+
+  // Step annotations along curve
+  const annotations = [
+    { k: 1, label: 'κ=1: 10 步' },
+    { k: 2, label: 'κ=2: 100 步' },
+    { k: 3, label: 'κ=3: 1000 步' },
+    { k: 4, label: 'κ=4: 10000 步' },
+    { k: 5, label: 'κ=5: 100000 步' }
+  ];
+  annotations.forEach(a => {
+    const val = Math.pow(dBase, a.k);
+    g.append('circle').attr('cx', xScale(a.k)).attr('cy', yScale(val))
+      .attr('r', 3).attr('fill', '#5e6070');
+    g.append('text').attr('x', xScale(a.k) + 8).attr('y', yScale(val) - 8)
+      .attr('font-size', '10px').attr('fill', '#5e6070').text(a.label);
+  });
+
+  function update() {
+    const val = Math.pow(dBase, kappa);
+    dot.attr('cx', xScale(kappa)).attr('cy', yScale(Math.max(1, Math.min(1e6, val))));
+    annotText.attr('x', xScale(kappa) + 12).attr('y', yScale(Math.max(1, Math.min(1e6, val))) - 12)
+      .text(val.toFixed(0) + ' 步');
+  }
+
+  update();
+
+  const kappaSlider = container.querySelector('#chart24-kappa');
+  const kappaVal = container.querySelector('#chart24-kappa-val');
+  kappaSlider?.addEventListener('input', () => {
+    kappa = parseFloat(kappaSlider.value);
+    kappaVal.textContent = kappa.toFixed(1);
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ kappa }),
+    setState: (s) => {
+      kappa = s.kappa;
+      if (kappaSlider) kappaSlider.value = kappa;
+      if (kappaVal) kappaVal.textContent = kappa.toFixed(1);
+      update();
+    }
+  };
+});
+
+// === Chart #25: 14e Staircase Learning ===
+chartInitFns['chart-25'] = () => createChart('chart-25', ({ g, innerW, innerH, container }) => {
+  const numDirs = 4;
+  const totalSteps = 200;
+  let step = 0;
+  let playing = true;
+  let timer = null;
+
+  // Transition times for each direction
+  const transitionTimes = [30, 70, 120, 170];
+  const colors = ['#1e5ab8', '#1e8050', '#e8a020', '#c93135'];
+  const labels = ['方向 1', '方向 2', '方向 3', '方向 4'];
+
+  // Alignment function: sigmoid-like rise at transition time
+  function alignment(t, tTransition) {
+    const steepness = 0.15;
+    return 1 / (1 + Math.exp(-steepness * (t - tTransition)));
+  }
+
+  const xScale = d3.scaleLinear().domain([0, totalSteps]).range([0, innerW]);
+  const yScale = d3.scaleLinear().domain([0, 1.1]).range([innerH, 0]);
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(xScale).ticks(5).tickFormat(d3.format('d')))
+    .selectAll('text').style('font-size', '12px');
+  g.append('g').call(d3.axisLeft(yScale).ticks(5))
+    .selectAll('text').style('font-size', '12px');
+
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('訓練步數 t');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('對齊度 m_j(t)');
+
+  // Transition time markers
+  transitionTimes.forEach((tt, i) => {
+    g.append('line')
+      .attr('x1', xScale(tt)).attr('x2', xScale(tt))
+      .attr('y1', 0).attr('y2', innerH)
+      .attr('stroke', colors[i]).attr('stroke-width', 1).attr('stroke-dasharray', '4,4').attr('opacity', 0.4);
+    g.append('text').attr('x', xScale(tt)).attr('y', -5)
+      .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', colors[i])
+      .text('T' + (i + 1));
+  });
+
+  // Lines for each direction
+  const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
+  const paths = [];
+  for (let j = 0; j < numDirs; j++) {
+    paths.push(g.append('path').attr('fill', 'none').attr('stroke', colors[j]).attr('stroke-width', 2.5));
+  }
+
+  // Legend
+  labels.forEach((label, i) => {
+    const lx = innerW - 80, ly = 10 + i * 18;
+    g.append('line').attr('x1', lx).attr('x2', lx + 16).attr('y1', ly).attr('y2', ly)
+      .attr('stroke', colors[i]).attr('stroke-width', 2.5);
+    g.append('text').attr('x', lx + 20).attr('y', ly + 4)
+      .attr('font-size', '11px').attr('fill', '#5e6070').text(label);
+  });
+
+  // Step indicator
+  const stepText = g.append('text').attr('x', 10).attr('y', innerH - 5)
+    .attr('font-size', '13px').attr('fill', '#5e6070');
+
+  function draw() {
+    for (let j = 0; j < numDirs; j++) {
+      const data = [];
+      for (let t = 0; t <= step; t++) {
+        data.push([t, alignment(t, transitionTimes[j])]);
+      }
+      paths[j].datum(data).attr('d', lineGen);
+    }
+    stepText.text('t = ' + step);
+  }
+
+  draw();
+
+  function startTimer() {
+    if (timer) timer.stop();
+    timer = d3.timer(() => {
+      if (!playing) return;
+      step++;
+      if (step > totalSteps) step = 0;
+      draw();
+    }, 40);
+  }
+  startTimer();
+
+  // Button bindings
+  const playBtn = container.querySelector('#chart25-play');
+  const pauseBtn = container.querySelector('#chart25-pause');
+  playBtn?.addEventListener('click', () => {
+    playing = true;
+    playBtn.classList.add('active');
+    pauseBtn?.classList.remove('active');
+    if (step >= totalSteps) step = 0;
+  });
+  pauseBtn?.addEventListener('click', () => {
+    playing = false;
+    pauseBtn.classList.add('active');
+    playBtn?.classList.remove('active');
+  });
+
+  return {
+    update: draw,
+    getState: () => ({ step, playing }),
+    setState: (s) => {
+      step = s.step; playing = s.playing;
+      if (playing) { playBtn?.classList.add('active'); pauseBtn?.classList.remove('active'); }
+      else { pauseBtn?.classList.add('active'); playBtn?.classList.remove('active'); }
+      draw();
+      startTimer();
+    }
+  };
+});
+
+// === Chart #26: 14f Non-Orthogonal Boundary ===
+chartInitFns['chart-26'] = () => createChart('chart-26', ({ g, innerW, innerH, container }) => {
+  let sigmaMin = 0.5;
+  const threshold = 0.3;
+
+  const xScale = d3.scaleLinear().domain([0, 1]).range([0, innerW]);
+  const yScale = d3.scaleLinear().domain([0, 1]).range([innerH, 0]);
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(xScale).ticks(5))
+    .selectAll('text').style('font-size', '12px');
+
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('σ_min(V*)');
+
+  // Two regions: green (feasible) and red (infeasible)
+  // Green region: right of threshold
+  g.append('rect')
+    .attr('x', xScale(threshold)).attr('y', 0)
+    .attr('width', innerW - xScale(threshold)).attr('height', innerH)
+    .attr('fill', '#1e8050').attr('opacity', 0.12);
+  // Red region: left of threshold
+  g.append('rect')
+    .attr('x', 0).attr('y', 0)
+    .attr('width', xScale(threshold)).attr('height', innerH)
+    .attr('fill', '#c93135').attr('opacity', 0.12);
+
+  // Threshold line
+  g.append('line')
+    .attr('x1', xScale(threshold)).attr('x2', xScale(threshold))
+    .attr('y1', 0).attr('y2', innerH)
+    .attr('stroke', '#5e6070').attr('stroke-width', 2).attr('stroke-dasharray', '6,4');
+  g.append('text').attr('x', xScale(threshold)).attr('y', -8)
+    .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#5e6070')
+    .text('閾值 = ' + threshold.toFixed(1));
+
+  // Region labels
+  g.append('text').attr('x', xScale(threshold / 2)).attr('y', innerH / 2 - 15)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('font-weight', '700').attr('fill', '#c93135')
+    .text('不可行');
+  g.append('text').attr('x', xScale(threshold / 2)).attr('y', innerH / 2 + 5)
+    .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#c93135')
+    .text('（需二階方法）');
+
+  g.append('text').attr('x', xScale((1 + threshold) / 2)).attr('y', innerH / 2 - 15)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('font-weight', '700').attr('fill', '#1e8050')
+    .text('可行');
+  g.append('text').attr('x', xScale((1 + threshold) / 2)).attr('y', innerH / 2 + 5)
+    .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#1e8050')
+    .text('（SVD 分離）');
+
+  // Sample complexity curve (higher when sigmaMin is small)
+  const curveGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
+  const curveData = [];
+  for (let s = 0.01; s <= 1; s += 0.01) {
+    // Complexity inversely related to sigma_min^2
+    const complexity = Math.min(1, 0.05 / (s * s));
+    curveData.push([s, 1 - complexity]);
+  }
+  g.append('path').datum(curveData).attr('d', curveGen)
+    .attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2).attr('opacity', 0.6);
+  g.append('text').attr('x', xScale(0.8)).attr('y', yScale(0.95) + 15)
+    .attr('font-size', '10px').attr('fill', '#1e5ab8').text('成功率');
+
+  // Moving vertical indicator
+  const indicator = g.append('line')
+    .attr('y1', 0).attr('y2', innerH)
+    .attr('stroke', '#e8a020').attr('stroke-width', 3);
+  const indicatorDot = g.append('circle')
+    .attr('r', 6).attr('fill', '#e8a020').attr('stroke', '#5e6070').attr('stroke-width', 1.5);
+  const statusText = g.append('text')
+    .attr('font-size', '14px').attr('font-weight', '700').attr('text-anchor', 'middle');
+
+  function update() {
+    indicator.attr('x1', xScale(sigmaMin)).attr('x2', xScale(sigmaMin));
+
+    // Dot on the curve
+    const complexity = Math.min(1, 0.05 / (sigmaMin * sigmaMin));
+    const successRate = 1 - complexity;
+    indicatorDot.attr('cx', xScale(sigmaMin)).attr('cy', yScale(Math.max(0, Math.min(1, successRate))));
+
+    // Status text
+    if (sigmaMin > threshold) {
+      statusText.attr('x', xScale(sigmaMin)).attr('y', innerH + 15)
+        .attr('fill', '#1e8050').text('可行');
+    } else {
+      statusText.attr('x', xScale(sigmaMin)).attr('y', innerH + 15)
+        .attr('fill', '#c93135').text('不可行');
+    }
+  }
+
+  update();
+
+  const sigmaSlider = container.querySelector('#chart26-sigma');
+  const sigmaVal = container.querySelector('#chart26-sigma-val');
+  sigmaSlider?.addEventListener('input', () => {
+    sigmaMin = parseFloat(sigmaSlider.value);
+    sigmaVal.textContent = sigmaMin.toFixed(2);
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ sigmaMin }),
+    setState: (s) => {
+      sigmaMin = s.sigmaMin;
+      if (sigmaSlider) sigmaSlider.value = sigmaMin;
+      if (sigmaVal) sigmaVal.textContent = sigmaMin.toFixed(2);
+      update();
     }
   };
 });
