@@ -619,7 +619,50 @@ footer {
     </div>
   </div>
 </section>
-  <section id="sec-thm3" class="theorem-section" data-nav="thm3"></section>
+  <section id="sec-thm3" class="theorem-section" data-nav="thm3">
+  <h2>定理 3：Jacobian 譜分離</h2>
+  <div class="layer-intuition">
+    <p>樂團裡的主奏和伴奏。$k$ 個教師神經元對應 $k$ 個主奏樂器，聲音洪亮（大奇異值）；其餘神經元是靜音的伴奏（微小奇異值）。中間有明確的音量斷層。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p><strong>設定</strong>：2-layer ReLU teacher-student。Teacher: $f^*(x) = \sum_j a^*_j \operatorname{relu}(w^{*T}_j x)$，$w^*_j$ 正交。Student: $f_\theta = \frac{1}{\sqrt{p}} \sum_j a_j \operatorname{relu}(w_j^T x)$，$p \gg k$。Rich regime $\alpha \to 0$。</p>
+      <p><strong>結論</strong>：</p>
+      <ul>
+        <li>$\sigma_i(J) \geq c\sqrt{n}$，對 $i \leq k(d+1)$</li>
+        <li>$\sigma_i(J) \leq C\alpha$，對 $i > k(d+1)$</li>
+        <li>有效秩 $r_{\text{eff}} \leq k(d+1)$</li>
+      </ul>
+    </div>
+  </details>
+  <details class="layer">
+    <summary>完整證明</summary>
+    <div class="layer-content">
+      <p><strong>Step 1（GF → k-sparse aligned）</strong>：梯度流使學生神經元的權重對齊到教師方向，僅 $k$ 個方向有顯著激活。</p>
+      <p><strong>Step 2（active block rank = $k(d+1)$）</strong>：每個活躍神經元貢獻 $d+1$ 個自由度（$d$ 個方向分量 + 1 個幅度），活躍 block 的秩為 $k(d+1)$。</p>
+      <p><strong>Step 3（dead block $\|K_{\text{dead}}\| = O(\alpha^2)$）</strong>：未對齊的「死」神經元對 Jacobian 的貢獻被 $\alpha$ 抑制，其核範數為 $O(\alpha^2)$。</p>
+      <p><strong>Step 4（Weyl inequality）</strong>：由 Weyl 不等式，活躍 block 的大奇異值與死 block 的微小擾動之間形成清晰的譜間隙。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-7">
+      <h3>奇異值瀑布圖</h3>
+      <div class="chart-controls">
+        <label>k（教師神經元數） <input type="range" id="chart7-k" min="1" max="5" step="1" value="2"><span class="value-display" id="chart7-k-val">2</span></label>
+        <label>$\alpha$（rich 參數） <input type="range" id="chart7-alpha" min="0.01" max="0.5" step="0.01" value="0.1"><span class="value-display" id="chart7-alpha-val">0.10</span></label>
+      </div>
+    </div>
+    <div class="chart-container" id="chart-8">
+      <h3>Teacher-Student 對齊動畫</h3>
+      <div class="chart-controls">
+        <button id="chart8-play" class="active">Play</button>
+        <button id="chart8-pause">Pause</button>
+        <label>速度 <input type="range" id="chart8-speed" min="0.5" max="3" step="0.1" value="1"><span class="value-display" id="chart8-speed-val">1.0</span></label>
+      </div>
+    </div>
+  </div>
+</section>
   <section id="sec-thm6" class="theorem-section" data-nav="thm6"></section>
   <section id="sec-aux" class="theorem-section"></section>
   <section id="sec-ext14" class="theorem-section"></section>
@@ -2435,6 +2478,350 @@ chartInitFns['chart-14'] = () => createChart('chart-14', ({ g, innerW, innerH, c
       const idx = routes.indexOf(activeRoute);
       if (idx >= 0) allBtns[idx]?.classList.add('active');
       switchRoute(activeRoute);
+    }
+  };
+});
+
+// === Chart #7: Singular Value Waterfall ===
+chartInitFns['chart-7'] = () => createChart('chart-7', ({ g, innerW, innerH, container }) => {
+  let k = 2, alpha = 0.1;
+  const d = 3; // fixed dimensionality
+  const totalBars = 36;
+  const cSqrtN = 5; // c*sqrt(n) baseline for large singular values
+
+  const xScale = d3.scaleBand().domain(d3.range(totalBars)).range([0, innerW]).padding(0.15);
+  const yScale = d3.scaleLinear().range([innerH, 0]);
+
+  // Axes groups
+  const axisX = g.append('g').attr('transform', `translate(0,${innerH})`);
+  const axisY = g.append('g');
+
+  // Axis labels
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('索引 i（降序排列）');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('σ_i(J)');
+
+  // Gap line and label
+  const gapLine = g.append('line')
+    .attr('stroke', '#c93135').attr('stroke-width', 2).attr('stroke-dasharray', '6,3');
+  const gapLabel = g.append('text')
+    .attr('font-size', '13px').attr('font-weight', '700').attr('fill', '#c93135')
+    .attr('text-anchor', 'middle');
+
+  // Info text
+  const infoText = g.append('text')
+    .attr('x', innerW - 10).attr('y', 18)
+    .attr('text-anchor', 'end').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030');
+
+  // Bars group
+  const barsGroup = g.append('g');
+
+  function generateData() {
+    const cutoff = k * (d + 1);
+    const values = [];
+    // Large singular values (i <= cutoff)
+    for (let i = 0; i < Math.min(cutoff, totalBars); i++) {
+      const variation = 0.8 + Math.random() * 0.4; // slight variation around cSqrtN
+      values.push({ idx: i, value: cSqrtN * variation, active: true });
+    }
+    // Small singular values (i > cutoff)
+    for (let i = cutoff; i < totalBars; i++) {
+      const variation = 0.5 + Math.random() * 1.0;
+      values.push({ idx: i, value: alpha * variation * 2, active: false });
+    }
+    // Sort descending
+    values.sort((a, b) => b.value - a.value);
+    return values;
+  }
+
+  function update() {
+    const data = generateData();
+    const cutoff = k * (d + 1);
+    const yMax = cSqrtN * 1.4;
+    yScale.domain([0, yMax]);
+
+    axisX.call(d3.axisBottom(xScale).tickValues(d3.range(0, totalBars, 5)).tickFormat(d => d + 1))
+      .selectAll('text').style('font-size', '13px');
+    axisY.call(d3.axisLeft(yScale).ticks(5)).selectAll('text').style('font-size', '13px');
+
+    // Bars
+    const bars = barsGroup.selectAll('rect').data(data, (d, i) => i);
+    bars.enter().append('rect')
+      .merge(bars)
+      .transition().duration(300)
+      .attr('x', (d, i) => xScale(i))
+      .attr('y', d => yScale(d.value))
+      .attr('width', xScale.bandwidth())
+      .attr('height', d => innerH - yScale(d.value))
+      .attr('fill', d => d.active ? '#1e5ab8' : '#8a8c98')
+      .attr('rx', 1);
+    bars.exit().remove();
+
+    // Gap line position: between last active and first inactive bar
+    const gapIdx = cutoff - 0.5;
+    const gapX = xScale(Math.floor(gapIdx)) + xScale.bandwidth();
+    const activeMin = data.filter(d => d.active).length > 0
+      ? d3.min(data.filter(d => d.active), d => d.value) : cSqrtN * 0.5;
+    const inactiveMax = data.filter(d => !d.active).length > 0
+      ? d3.max(data.filter(d => !d.active), d => d.value) : alpha;
+    const gapMid = (activeMin + inactiveMax) / 2;
+
+    gapLine
+      .attr('x1', gapX - innerW * 0.05).attr('x2', gapX + innerW * 0.05)
+      .attr('y1', yScale(gapMid)).attr('y2', yScale(gapMid));
+    gapLabel
+      .attr('x', gapX).attr('y', yScale(gapMid) - 8)
+      .text('gap');
+
+    infoText.text(`k(d+1) = ${cutoff}，活躍奇異值：${Math.min(cutoff, totalBars)} 個`);
+  }
+
+  update();
+
+  // Slider bindings
+  const kSlider = container.querySelector('#chart7-k');
+  const kVal = container.querySelector('#chart7-k-val');
+  const alphaSlider = container.querySelector('#chart7-alpha');
+  const alphaVal = container.querySelector('#chart7-alpha-val');
+
+  kSlider?.addEventListener('input', () => {
+    k = parseInt(kSlider.value);
+    kVal.textContent = k;
+    update();
+  });
+  alphaSlider?.addEventListener('input', () => {
+    alpha = parseFloat(alphaSlider.value);
+    alphaVal.textContent = alpha.toFixed(2);
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ k, alpha }),
+    setState: (s) => {
+      k = s.k; alpha = s.alpha;
+      if (kSlider) { kSlider.value = k; kVal.textContent = k; }
+      if (alphaSlider) { alphaSlider.value = alpha; alphaVal.textContent = alpha.toFixed(2); }
+      update();
+    }
+  };
+});
+
+// === Chart #8: Teacher-Student Alignment Animation ===
+chartInitFns['chart-8'] = () => createChart('chart-8', ({ g, innerW, innerH, container }) => {
+  const k = 2; // teacher neurons
+  const p = 20; // student neurons
+  const circleR = Math.min(innerW * 0.32, innerH * 0.42);
+  const cx = innerW * 0.38;
+  const cy = innerH * 0.5;
+  let playing = true;
+  let speed = 1.0;
+  let t = 0;
+
+  // Teacher directions (evenly spaced on unit circle)
+  const teacherAngles = d3.range(k).map(i => (i * Math.PI * 2) / k + Math.PI / 6);
+  const teacherColors = ['#c93135', '#1e8050', '#2a6bb8', '#8a7020', '#7b3fa0'];
+
+  // Student neurons: random angles + random active/dead status
+  const students = d3.range(p).map(i => {
+    const angle = Math.random() * Math.PI * 2;
+    // Assign to nearest teacher
+    let nearestTeacher = 0;
+    let minDist = Infinity;
+    teacherAngles.forEach((ta, ti) => {
+      const diff = Math.abs(Math.atan2(Math.sin(angle - ta), Math.cos(angle - ta)));
+      if (diff < minDist) { minDist = diff; nearestTeacher = ti; }
+    });
+    // ~60% active, 40% dead
+    const isDead = Math.random() < 0.4;
+    return {
+      initAngle: angle,
+      currentAngle: angle,
+      targetTeacher: nearestTeacher,
+      isDead,
+      amplitude: isDead ? 0 : (0.5 + Math.random() * 0.5),
+    };
+  });
+
+  // Draw unit circle
+  g.append('circle')
+    .attr('cx', cx).attr('cy', cy).attr('r', circleR)
+    .attr('fill', 'none').attr('stroke', '#d5d6da').attr('stroke-width', 1.5);
+
+  // Teacher direction markers (triangles)
+  const teacherGroup = g.append('g');
+  teacherAngles.forEach((angle, i) => {
+    const tx = cx + circleR * Math.cos(angle);
+    const ty = cy - circleR * Math.sin(angle);
+    const sz = 10;
+    teacherGroup.append('polygon')
+      .attr('points', `${tx},${ty - sz} ${tx - sz * 0.87},${ty + sz * 0.5} ${tx + sz * 0.87},${ty + sz * 0.5}`)
+      .attr('fill', teacherColors[i]).attr('stroke', '#1e2030').attr('stroke-width', 1.5);
+    // Label
+    const lx = cx + (circleR + 20) * Math.cos(angle);
+    const ly = cy - (circleR + 20) * Math.sin(angle);
+    teacherGroup.append('text')
+      .attr('x', lx).attr('y', ly + 4)
+      .attr('text-anchor', 'middle').attr('font-size', '12px').attr('font-weight', '700')
+      .attr('fill', teacherColors[i])
+      .text(`w*${i + 1}`);
+  });
+
+  // Student dots
+  const studentDots = g.append('g').selectAll('circle')
+    .data(students).enter().append('circle')
+    .attr('r', 4)
+    .attr('stroke', '#1e2030').attr('stroke-width', 0.5);
+
+  // Side panel: mini singular value waterfall
+  const panelX = innerW * 0.72;
+  const panelW = innerW * 0.25;
+  const panelH = innerH * 0.8;
+  const panelY = innerH * 0.1;
+
+  g.append('text').attr('x', panelX + panelW / 2).attr('y', panelY - 8)
+    .attr('text-anchor', 'middle').attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#1e2030')
+    .text('奇異值分布');
+
+  g.append('rect')
+    .attr('x', panelX - 4).attr('y', panelY - 4)
+    .attr('width', panelW + 8).attr('height', panelH + 8)
+    .attr('fill', 'none').attr('stroke', '#d5d6da').attr('stroke-width', 1).attr('rx', 4);
+
+  const miniBarCount = p;
+  const miniXScale = d3.scaleBand().domain(d3.range(miniBarCount)).range([panelX, panelX + panelW]).padding(0.1);
+  const miniYScale = d3.scaleLinear().domain([0, 6]).range([panelY + panelH, panelY]);
+
+  const miniBars = g.append('g').selectAll('rect')
+    .data(d3.range(miniBarCount)).enter().append('rect')
+    .attr('x', i => miniXScale(i))
+    .attr('width', miniXScale.bandwidth())
+    .attr('rx', 1);
+
+  // Progress text
+  const progressText = g.append('text')
+    .attr('x', cx).attr('y', innerH - 5)
+    .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#5e6070');
+
+  function getAlignment() {
+    // compute alignment fraction (0 = random, 1 = fully aligned)
+    let totalDeviation = 0;
+    let activeCount = 0;
+    students.forEach(s => {
+      if (s.isDead) return;
+      activeCount++;
+      const targetAngle = teacherAngles[s.targetTeacher];
+      const diff = Math.abs(Math.atan2(Math.sin(s.currentAngle - targetAngle), Math.cos(s.currentAngle - targetAngle)));
+      totalDeviation += diff;
+    });
+    if (activeCount === 0) return 1;
+    const maxDeviation = activeCount * Math.PI;
+    return 1 - totalDeviation / maxDeviation;
+  }
+
+  function updatePositions() {
+    // Move students toward their target teacher direction
+    students.forEach(s => {
+      if (s.isDead) return;
+      const targetAngle = teacherAngles[s.targetTeacher];
+      const diff = Math.atan2(Math.sin(targetAngle - s.currentAngle), Math.cos(targetAngle - s.currentAngle));
+      // Exponential approach
+      s.currentAngle += diff * 0.008 * speed * s.amplitude;
+    });
+
+    studentDots
+      .attr('cx', d => cx + circleR * Math.cos(d.currentAngle))
+      .attr('cy', d => cy - circleR * Math.sin(d.currentAngle))
+      .attr('fill', d => d.isDead ? '#d5d6da' : teacherColors[d.targetTeacher])
+      .attr('opacity', d => d.isDead ? 0.4 : 0.85);
+
+    // Update mini waterfall
+    const alignment = getAlignment();
+    const svData = students.map((s, i) => {
+      if (!s.isDead) {
+        return 5 * s.amplitude * (0.7 + 0.3 * alignment);
+      } else {
+        return 0.1 * (1 - alignment * 0.8) + Math.random() * 0.05;
+      }
+    }).sort((a, b) => b - a);
+
+    miniBars.data(svData)
+      .transition().duration(50)
+      .attr('y', d => miniYScale(d))
+      .attr('height', d => panelY + panelH - miniYScale(d))
+      .attr('fill', (d, i) => {
+        const activeThreshold = students.filter(s => !s.isDead).length;
+        return i < activeThreshold ? '#1e5ab8' : '#8a8c98';
+      });
+
+    progressText.text(`對齊程度：${(alignment * 100).toFixed(0)}%`);
+  }
+
+  updatePositions();
+
+  // Animation loop
+  let timer = null;
+
+  function startTimer() {
+    if (timer) timer.stop();
+    timer = d3.timer(() => {
+      if (!playing) return;
+      t++;
+      updatePositions();
+    }, 30);
+  }
+
+  function resetStudents() {
+    students.forEach(s => {
+      s.currentAngle = s.initAngle;
+    });
+    t = 0;
+    updatePositions();
+  }
+
+  startTimer();
+
+  // Button bindings
+  const playBtn = container.querySelector('#chart8-play');
+  const pauseBtn = container.querySelector('#chart8-pause');
+  const speedSlider = container.querySelector('#chart8-speed');
+  const speedVal = container.querySelector('#chart8-speed-val');
+
+  playBtn?.addEventListener('click', () => {
+    playing = true;
+    playBtn.classList.add('active');
+    pauseBtn?.classList.remove('active');
+    // If fully aligned, reset
+    if (getAlignment() > 0.99) resetStudents();
+  });
+  pauseBtn?.addEventListener('click', () => {
+    playing = false;
+    pauseBtn.classList.add('active');
+    playBtn?.classList.remove('active');
+  });
+  speedSlider?.addEventListener('input', () => {
+    speed = parseFloat(speedSlider.value);
+    speedVal.textContent = speed.toFixed(1);
+  });
+
+  return {
+    update: updatePositions,
+    getState: () => ({ playing, speed, t, angles: students.map(s => s.currentAngle) }),
+    setState: (s) => {
+      playing = s.playing; speed = s.speed; t = s.t;
+      if (s.angles) s.angles.forEach((a, i) => { if (students[i]) students[i].currentAngle = a; });
+      if (speedSlider) { speedSlider.value = speed; speedVal.textContent = speed.toFixed(1); }
+      if (playing) {
+        playBtn?.classList.add('active'); pauseBtn?.classList.remove('active');
+      } else {
+        pauseBtn?.classList.add('active'); playBtn?.classList.remove('active');
+      }
+      updatePositions();
+      startTimer();
     }
   };
 });
