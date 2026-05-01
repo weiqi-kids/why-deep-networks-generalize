@@ -71,14 +71,41 @@ body {
   position: sticky;
   top: 0;
   z-index: 100;
-  height: 180px;
   background: var(--bg-surface);
   border-bottom: 1px solid var(--border-subtle);
-  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.5rem 1.5rem;
+  overflow-x: auto;
+  white-space: nowrap;
+}
+#logic-map a {
+  display: inline-block;
+  padding: 0.375rem 0.75rem;
+  border-radius: 0.25rem;
+  font-size: var(--text-xs);
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: background 0.2s, color 0.2s;
+  white-space: nowrap;
+}
+#logic-map a:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+#logic-map a.active {
+  background: var(--color-link);
+  color: #fff;
+}
+#logic-map .nav-sep {
+  color: var(--text-muted);
+  font-size: var(--text-xs);
+  user-select: none;
 }
 
 [data-nav] {
-  scroll-margin-top: 196px;
+  scroll-margin-top: 60px;
 }
 
 /* === Main === */
@@ -371,7 +398,35 @@ footer {
 </head>
 <body>
 
-<nav id="logic-map" aria-label="定理邏輯鏈導航"></nav>
+<nav id="logic-map" aria-label="定理邏輯鏈導航">
+  <a href="#hero">首頁</a>
+  <span class="nav-sep">·</span>
+  <a href="#sec-noise-operator">M</a>
+  <span class="nav-sep">·</span>
+  <a href="#sec-thm1">泛化界</a>
+  <span class="nav-sep">·</span>
+  <a href="#sec-thm2">Benign</a>
+  <span class="nav-sep">·</span>
+  <a href="#sec-thm4">FL</a>
+  <span class="nav-sep">·</span>
+  <a href="#sec-thm5">FL必然</a>
+  <span class="nav-sep">·</span>
+  <a href="#sec-thm3">譜分離</a>
+  <span class="nav-sep">·</span>
+  <a href="#sec-thm6">臨界深度</a>
+  <span class="nav-sep">·</span>
+  <a href="#sec-aux">輔助定理</a>
+  <span class="nav-sep">·</span>
+  <a href="#sec-ext14">延伸14</a>
+  <span class="nav-sep">·</span>
+  <a href="#sec-ext16">延伸16</a>
+  <span class="nav-sep">·</span>
+  <a href="#sec-disproven">否證</a>
+  <span class="nav-sep">·</span>
+  <a href="#sec-scope">範圍</a>
+  <span class="nav-sep">·</span>
+  <a href="#methodology">方法論</a>
+</nav>
 
 <main>
   <!-- Hero -->
@@ -1344,7 +1399,23 @@ function chartOn(eventName, handler) {
   document.addEventListener('chart:' + eventName, e => handler(e.detail));
 }
 
-// === DAG Navigation Map ===
+// === Navigation Highlight ===
+function highlightNavNode(id) {
+  const nav = document.getElementById('logic-map');
+  nav.querySelectorAll('a').forEach(a => {
+    const href = a.getAttribute('href');
+    const sectionEl = href ? document.querySelector(href) : null;
+    const navId = sectionEl?.dataset.nav;
+    if (navId === id) {
+      a.classList.add('active');
+      a.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+    } else {
+      a.classList.remove('active');
+    }
+  });
+}
+
+// Keep logicChain data for other code that may reference it
 const logicChain = {
   nodes: [
     { id: "opM", label: "M", fullLabel: "噪聲傳播算子 M", type: "core", rank: 0 },
@@ -1421,194 +1492,26 @@ function highlightNavNode(id) {
     });
 }
 
-function renderDAG() {
-  const nav = d3.select('#logic-map');
-  nav.selectAll('*').remove();
-  const isMobile = window.innerWidth < 768;
+// renderDAG and renderMobileBreadcrumb removed — navigation is now plain HTML links
 
-  if (isMobile) {
-    renderMobileBreadcrumb(nav);
-    return;
-  }
+// Nav highlight also works for sections without data-nav (by matching href to id)
+const allNavLinks = document.querySelectorAll('#logic-map a[href^="#"]');
+const allNavSections = Array.from(allNavLinks).map(a => ({
+  link: a,
+  target: document.querySelector(a.getAttribute('href'))
+})).filter(x => x.target);
 
-  const w = nav.node().clientWidth;
-  const h = nav.node().clientHeight;
-  const svg = nav.append('svg').attr('viewBox', `0 0 ${w} ${h}`).attr('preserveAspectRatio', 'xMidYMid meet');
-
-  // Arrow marker
-  svg.append('defs').append('marker')
-    .attr('id', 'arrow').attr('viewBox', '0 0 10 6').attr('refX', 10).attr('refY', 3)
-    .attr('markerWidth', 8).attr('markerHeight', 6).attr('orient', 'auto')
-    .append('path').attr('d', 'M0,0L10,3L0,6Z').attr('fill', '#8a8c98');
-
-  // Only show 7 main-axis nodes
-  const mainAxisIds = ['opM', 'thm1', 'thm2', 'thm4', 'thm5', 'thm3', 'thm6'];
-  const mainLabels = {
-    opM:  'M',
-    thm1: '泛化界',
-    thm2: 'Benign',
-    thm4: 'FL',
-    thm5: 'FL必然',
-    thm3: '譜分離',
-    thm6: '臨界深度'
-  };
-  const mainFullLabels = {
-    opM:  '噪聲傳播算子 M',
-    thm1: '統一泛化界',
-    thm2: 'Benign 分界',
-    thm4: 'Feature Learning',
-    thm5: 'FL 必然發生',
-    thm3: 'Jacobian 譜分離',
-    thm6: '架構臨界深度'
-  };
-
-  // Hand-coded positions
-  const nodePositions = [
-    { id: 'opM',  x: w * 0.05,  y: h / 2 },
-    { id: 'thm1', x: w * 0.18,  y: h / 2 },
-    { id: 'thm2', x: w * 0.32,  y: h / 2 },
-    { id: 'thm4', x: w * 0.50,  y: h / 2 + 25 },
-    { id: 'thm5', x: w * 0.50,  y: h / 2 - 25 },
-    { id: 'thm3', x: w * 0.68,  y: h / 2 },
-    { id: 'thm6', x: w * 0.85,  y: h / 2 },
-  ];
-
-  const nodeMap = {};
-  nodePositions.forEach(n => { nodeMap[n.id] = n; });
-
-  // Main-axis edges only
-  const mainEdges = [
-    { source: 'opM',  target: 'thm1' },
-    { source: 'thm1', target: 'thm2' },
-    { source: 'thm2', target: 'thm4' },
-    { source: 'thm5', target: 'thm4' },
-    { source: 'thm5', target: 'thm3' },
-    { source: 'thm3', target: 'thm6' },
-  ];
-
-  // Draw edges as lines with arrows
-  // Shorten lines so arrows don't overlap node shapes
-  const nodeRadius = 20;
-  svg.selectAll('.nav-link').data(mainEdges).enter()
-    .append('line')
-    .attr('class', 'nav-link')
-    .attr('x1', d => {
-      const s = nodeMap[d.source], t = nodeMap[d.target];
-      const dx = t.x - s.x, dy = t.y - s.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      return s.x + (dx / dist) * nodeRadius;
-    })
-    .attr('y1', d => {
-      const s = nodeMap[d.source], t = nodeMap[d.target];
-      const dx = t.x - s.x, dy = t.y - s.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      return s.y + (dy / dist) * nodeRadius;
-    })
-    .attr('x2', d => {
-      const s = nodeMap[d.source], t = nodeMap[d.target];
-      const dx = t.x - s.x, dy = t.y - s.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      return t.x - (dx / dist) * (nodeRadius + 6);
-    })
-    .attr('y2', d => {
-      const s = nodeMap[d.source], t = nodeMap[d.target];
-      const dx = t.x - s.x, dy = t.y - s.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-      return t.y - (dy / dist) * (nodeRadius + 6);
-    })
-    .attr('stroke', '#8a8c98')
-    .attr('stroke-width', 1.5)
-    .attr('marker-end', 'url(#arrow)');
-
-  // Draw nodes
-  const nodeGroups = svg.selectAll('.nav-node').data(nodePositions).enter()
-    .append('g')
-    .attr('class', 'nav-node')
-    .attr('transform', d => `translate(${d.x},${d.y})`)
-    .attr('cursor', 'pointer')
-    .on('click', (_, d) => {
-      const target = document.querySelector(`[data-nav="${d.id}"]`);
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-
-  // Node shapes: diamond for opM, circle for others
-  nodeGroups.each(function(d) {
-    const g = d3.select(this);
-    if (d.id === 'opM') {
-      g.append('rect')
-        .attr('class', 'node-shape')
-        .attr('x', -14).attr('y', -14).attr('width', 28).attr('height', 28)
-        .attr('transform', 'rotate(45)')
-        .attr('fill', '#1e5ab8').attr('stroke', 'white').attr('stroke-width', 1.5);
-    } else {
-      g.append('circle')
-        .attr('class', 'node-shape')
-        .attr('r', nodeRadius)
-        .attr('fill', '#1e5ab8').attr('stroke', 'white').attr('stroke-width', 1.5);
+const sectionObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      allNavLinks.forEach(a => a.classList.remove('active'));
+      const match = allNavSections.find(x => x.target === entry.target);
+      if (match) match.link.classList.add('active');
     }
   });
+}, { threshold: 0.2, rootMargin: '-60px 0px 0px 0px' });
 
-  // Labels below nodes
-  nodeGroups.append('text')
-    .attr('text-anchor', 'middle')
-    .attr('dy', nodeRadius + 18)
-    .attr('font-size', '18px')
-    .attr('fill', '#5e6070')
-    .text(d => mainLabels[d.id]);
-
-  // Tooltips with full Chinese names
-  nodeGroups.append('title').text(d => mainFullLabels[d.id]);
-
-  // Apply highlight if a node is already active
-  if (currentNavId) {
-    const savedId = currentNavId;
-    currentNavId = null;
-    highlightNavNode(savedId);
-  }
-}
-
-function renderMobileBreadcrumb(nav) {
-  const mainNodes = ['opM','thm1','thm2','thm4','thm5','thm3','thm6'];
-  const mobileLabels = {
-    opM: 'M', thm1: '泛化界', thm2: 'Benign',
-    thm4: 'FL', thm5: 'FL必然', thm3: '譜分離', thm6: '臨界深度'
-  };
-
-  const container = nav.append('div')
-    .style('display', 'flex')
-    .style('align-items', 'center')
-    .style('height', '100%')
-    .style('overflow-x', 'auto')
-    .style('padding', '0 1rem')
-    .style('gap', '0.5rem');
-
-  mainNodes.forEach((id, i) => {
-    if (i > 0) {
-      container.append('span')
-        .style('color', '#8a8c98').style('font-size', '18px')
-        .text('→');
-    }
-    container.append('button')
-      .attr('class', 'nav-breadcrumb')
-      .attr('data-nav-id', id)
-      .style('background', currentNavId === id ? '#1e5ab8' : '#ecedf0')
-      .style('color', currentNavId === id ? 'white' : '#1e2030')
-      .style('border', 'none')
-      .style('border-radius', '0.25rem')
-      .style('padding', '0.25rem 0.5rem')
-      .style('font-size', '18px')
-      .style('white-space', 'nowrap')
-      .style('cursor', 'pointer')
-      .text(mobileLabels[id])
-      .on('click', () => {
-        const target = document.querySelector(`[data-nav="${id}"]`);
-        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      });
-  });
-}
-
-renderDAG();
-window.addEventListener('resize', () => { renderDAG(); });
+allNavSections.forEach(x => sectionObserver.observe(x.target));
 
 // === Chart #1: Jacobian SVD ===
 chartInitFns['chart-1'] = () => createChart('chart-1', ({ g, innerW, innerH, container }) => {
