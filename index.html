@@ -77,6 +77,10 @@ body {
   overflow: hidden;
 }
 
+[data-nav] {
+  scroll-margin-top: 196px;
+}
+
 /* === Main === */
 main {
   max-width: 72rem;
@@ -708,7 +712,7 @@ footer {
   <section id="sec-aux" class="theorem-section">
   <h2>輔助定理</h2>
 
-  <h3>8a：Balanced Conservation（支撐定理 3, 5）</h3>
+  <h3 data-nav="aux8a">8a：Balanced Conservation（支撐定理 3, 5）</h3>
   <div class="layer-intuition">
     <p>蹺蹺板守恆——權重的「大小」和「方向」此消彼長，總量守恆。這保證了訓練過程中 Jacobian 結構的穩定性。</p>
   </div>
@@ -729,7 +733,7 @@ footer {
     </div>
   </div>
 
-  <h3>8b：矩陣集中不等式（支撐定理 1）</h3>
+  <h3 data-nav="aux8b">8b：矩陣集中不等式（支撐定理 1）</h3>
   <div class="layer-intuition">
     <p>定理 1 假設各方向的噪聲互不干擾（$\Gamma$ 近似對角）。這個輔助定理告訴你：樣本夠多時，抽樣估計會收斂到真實值，對角近似是安全的。</p>
   </div>
@@ -749,7 +753,7 @@ footer {
     </div>
   </div>
 
-  <h3>8c：深度乘法上界（支撐定理 6）</h3>
+  <h3 data-nav="aux8c">8c：深度乘法上界（支撐定理 6）</h3>
   <div class="layer-intuition">
     <p>每多一層，衰減疊乘——但疊乘效果有上界，不是想像中的精確相乘。這代表不能天真地把每層的過濾效果直接相乘來估算總效果——實際過濾比預期弱。</p>
   </div>
@@ -763,7 +767,7 @@ footer {
   <div class="charts">
     <div class="chart-container" id="chart-19">
       <h3>奇異值乘法反例</h3>
-      <p style="font-size:0.85rem;color:#5e6070;margin:0.25rem 0 0.5rem;">每個矩陣代表一層的 Jacobian，乘積代表端對端 Jacobian</p>
+      <p style="font-size:var(--text-xs);color:var(--text-secondary);margin:0.25rem 0 0.5rem;">每個矩陣代表一層的 Jacobian，乘積代表端對端 Jacobian</p>
       <div class="chart-controls">
         <label>A₁₁ <input type="range" id="chart19-a11" min="-2" max="2" step="0.1" value="1"><span class="value-display" id="chart19-a11-val">1.0</span></label>
         <label>A₁₂ <input type="range" id="chart19-a12" min="-2" max="2" step="0.1" value="2"><span class="value-display" id="chart19-a12-val">2.0</span></label>
@@ -777,7 +781,7 @@ footer {
     </div>
   </div>
 
-  <h3>8d：Weight Decay 反例（修正常見誤解）</h3>
+  <h3 data-nav="aux8d">8d：Weight Decay 反例（修正常見誤解）</h3>
   <div class="layer-intuition">
     <p>Weight decay 讓參數變小，但不保證 Jacobian 的跡也變小——這是兩件不同的事。有嚴格反例證明。</p>
   </div>
@@ -1320,13 +1324,11 @@ document.querySelectorAll('[data-nav]').forEach(el => navObserver.observe(el));
 document.querySelectorAll('details.layer').forEach(detail => {
   const content = detail.querySelector('.layer-content');
   if (!content) return;
+  content.style.maxHeight = '0';
   detail.addEventListener('toggle', () => {
     if (detail.open) {
       content.style.maxHeight = content.scrollHeight + 'px';
       setTimeout(() => { content.style.maxHeight = 'none'; }, 300);
-    } else {
-      content.style.maxHeight = content.scrollHeight + 'px';
-      requestAnimationFrame(() => { content.style.maxHeight = '0'; });
     }
   });
 });
@@ -1493,7 +1495,7 @@ function renderDAG() {
 
   nodeGroups.append('text')
     .attr('text-anchor', 'middle').attr('dy', d => radiusMap[d.type] + 14)
-    .attr('font-size', '11px').attr('fill', '#5e6070')
+    .attr('font-size', '18px').attr('fill', '#5e6070')
     .text(d => d.label);
 
   // Tooltip
@@ -1517,7 +1519,7 @@ function renderMobileBreadcrumb(nav) {
     const n = nodeMap[id];
     if (i > 0) {
       container.append('span')
-        .style('color', '#8a8c98').style('font-size', '14px')
+        .style('color', '#8a8c98').style('font-size', '18px')
         .text('→');
     }
     container.append('button')
@@ -1527,7 +1529,7 @@ function renderMobileBreadcrumb(nav) {
       .style('border', 'none')
       .style('border-radius', '0.25rem')
       .style('padding', '0.25rem 0.5rem')
-      .style('font-size', '14px')
+      .style('font-size', '18px')
       .style('white-space', 'nowrap')
       .style('cursor', 'pointer')
       .text(n.label)
@@ -1550,7 +1552,7 @@ chartInitFns['chart-1'] = () => createChart('chart-1', ({ g, innerW, innerH, con
   const colorScale = d3.scaleLinear().domain([0, 1]).range(['#c93135', '#1e8050']);
 
   g.append('g').attr('class', 'axis-x').attr('transform', `translate(0,${innerH})`)
-    .call(d3.axisBottom(x).tickFormat(i => `σ${i+1}`)).selectAll('text').style('font-size', '14px');
+    .call(d3.axisBottom(x).tickFormat(i => `σ${i+1}`)).selectAll('text').style('font-size', '18px');
   const axisY = g.append('g').attr('class', 'axis-y');
   const bars = g.append('g').attr('class', 'bars');
 
@@ -1603,7 +1605,7 @@ chartInitFns['chart-2'] = () => createChart('chart-2', ({ g, innerW, innerH, con
     g.append('rect').attr('x', stageX[i] - 30).attr('y', 0).attr('width', 60).attr('height', innerH)
       .attr('fill', 'none').attr('stroke', '#d5d6da').attr('stroke-width', 1).attr('rx', 4);
     g.append('text').attr('x', stageX[i]).attr('y', innerH + 25).attr('text-anchor', 'middle')
-      .attr('font-size', '13px').attr('fill', '#5e6070').text(s);
+      .attr('font-size', '18px').attr('fill', '#5e6070').text(s);
   });
 
   // Channel lines
@@ -1645,7 +1647,7 @@ chartInitFns['chart-3'] = () => createChart('chart-3', ({ g, innerW, innerH, con
   const x = d3.scaleBand().domain(['MSE_test 上界']).range([innerW * 0.2, innerW * 0.8]).padding(0.3);
   const y = d3.scaleLinear().range([innerH, 0]);
 
-  g.append('g').attr('class', 'axis-x').attr('transform', `translate(0,${innerH})`).call(d3.axisBottom(x)).selectAll('text').style('font-size', '14px');
+  g.append('g').attr('class', 'axis-x').attr('transform', `translate(0,${innerH})`).call(d3.axisBottom(x)).selectAll('text').style('font-size', '18px');
   const axisY = g.append('g').attr('class', 'axis-y');
   const barsG = g.append('g');
   const labelsG = g.append('g');
@@ -1670,7 +1672,7 @@ chartInitFns['chart-3'] = () => createChart('chart-3', ({ g, innerW, innerH, con
     labels.enter().append('text').merge(labels).transition().duration(300)
       .attr('x', x('MSE_test 上界') + x.bandwidth() + 10)
       .attr('y', d => y((d.y0 + d.y1) / 2) + 5)
-      .attr('font-size', '13px').attr('fill', '#5e6070')
+      .attr('font-size', '18px').attr('fill', '#5e6070')
       .text(d => `${d.label}: ${d.value.toFixed(3)}`);
     labels.exit().remove();
   }
@@ -1695,7 +1697,7 @@ chartInitFns['chart-4'] = () => createChart('chart-4', ({ g, innerW, innerH, con
   const xScale = d3.scaleLinear().domain([0, 2 * Math.PI]).range([0, innerW]);
   const yScale = d3.scaleLinear().domain([-2, 2]).range([innerH, 0]);
 
-  g.append('g').attr('transform', `translate(0,${innerH})`).call(d3.axisBottom(xScale).ticks(5)).selectAll('text').style('font-size', '14px');
+  g.append('g').attr('transform', `translate(0,${innerH})`).call(d3.axisBottom(xScale).ticks(5)).selectAll('text').style('font-size', '18px');
   g.append('g').call(d3.axisLeft(yScale).ticks(5));
 
   const signalLine = d3.line().x(d => xScale(d.x)).y(d => yScale(d.s)).curve(d3.curveMonotoneX);
@@ -1710,7 +1712,7 @@ chartInitFns['chart-4'] = () => createChart('chart-4', ({ g, innerW, innerH, con
   const legend = g.append('g').attr('transform', `translate(${innerW - 120}, 10)`);
   [['S(x) 信號', '#1e8050'], ['N(x) 噪聲', '#c93135'], ['總和', '#1e2030']].forEach(([l, c], i) => {
     legend.append('line').attr('x1', 0).attr('x2', 20).attr('y1', i * 18).attr('y2', i * 18).attr('stroke', c).attr('stroke-width', 2);
-    legend.append('text').attr('x', 25).attr('y', i * 18 + 4).attr('font-size', '12px').attr('fill', '#5e6070').text(l);
+    legend.append('text').attr('x', 25).attr('y', i * 18 + 4).attr('font-size', '18px').attr('fill', '#5e6070').text(l);
   });
 
   // Precompute random noise seed
@@ -1776,38 +1778,38 @@ chartInitFns['chart-5'] = () => createChart('chart-5', ({ g, innerW, innerH, con
 
   // Region labels
   g.append('text').attr('x', xScale(0.3)).attr('y', yScale(1.6))
-    .attr('font-size', '14px').attr('font-weight', '700').attr('fill', '#1e8050')
+    .attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#1e8050')
     .text('Benign');
   g.append('text').attr('x', xScale(1.2)).attr('y', yScale(0.4))
-    .attr('font-size', '14px').attr('font-weight', '700').attr('fill', '#c93135')
+    .attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#c93135')
     .text('Catastrophic');
   g.append('text')
     .attr('x', xScale(1.05)).attr('y', yScale(1.7))
-    .attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#8a7020')
+    .attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#8a7020')
     .attr('transform', `rotate(-38, ${xScale(1.05)}, ${yScale(1.7)})`)
     .text('Tempered');
 
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(5).tickFormat(d => d.toFixed(1)))
-    .selectAll('text').style('font-size', '13px');
+    .selectAll('text').style('font-size', '18px');
   g.append('g')
     .call(d3.axisLeft(yScale).ticks(5).tickFormat(d => d.toFixed(1)))
-    .selectAll('text').style('font-size', '13px');
+    .selectAll('text').style('font-size', '18px');
 
   // Axis labels
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('α（奇異值衰減指數）');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('β（相關性衰減指數）');
 
   // Status text
   const statusText = g.append('text')
     .attr('x', innerW - 10).attr('y', 20)
-    .attr('text-anchor', 'end').attr('font-size', '14px').attr('font-weight', '600');
+    .attr('text-anchor', 'end').attr('font-size', '18px').attr('font-weight', '600');
 
   // Draggable point
   const dragPoint = g.append('circle')
@@ -1817,7 +1819,7 @@ chartInitFns['chart-5'] = () => createChart('chart-5', ({ g, innerW, innerH, con
 
   // Coord display
   const coordText = g.append('text')
-    .attr('font-size', '13px').attr('fill', '#5e6070');
+    .attr('font-size', '18px').attr('fill', '#5e6070');
 
   function updateStatus() {
     const diff = pointBeta - pointAlpha - 0.5;
@@ -1882,11 +1884,11 @@ chartInitFns['chart-6'] = () => createChart('chart-6', ({ g, innerW, innerH, con
 
   // Axis labels
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('j（分量索引）');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -40)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('值');
 
   // Shaded area between curves for j > k
@@ -1901,7 +1903,7 @@ chartInitFns['chart-6'] = () => createChart('chart-6', ({ g, innerW, innerH, con
     .attr('y1', 0).attr('y2', innerH)
     .attr('stroke', '#8a8c98').attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
   const kLabel = g.append('text')
-    .attr('font-size', '12px').attr('fill', '#8a8c98').attr('text-anchor', 'middle');
+    .attr('font-size', '18px').attr('fill', '#8a8c98').attr('text-anchor', 'middle');
 
   // Legend
   const legend = g.append('g').attr('transform', `translate(${innerW - 160}, 10)`);
@@ -1911,13 +1913,13 @@ chartInitFns['chart-6'] = () => createChart('chart-6', ({ g, innerW, innerH, con
     } else {
       legend.append('rect').attr('x', 0).attr('y', i * 20 - 6).attr('width', 20).attr('height', 12).attr('fill', c).attr('opacity', 0.3);
     }
-    legend.append('text').attr('x', 25).attr('y', i * 20 + 4).attr('font-size', '12px').attr('fill', '#5e6070').text(l);
+    legend.append('text').attr('x', 25).attr('y', i * 20 + 4).attr('font-size', '18px').attr('fill', '#5e6070').text(l);
   });
 
   // Sum annotation
   const sumText = g.append('text')
     .attr('x', innerW - 10).attr('y', innerH - 10)
-    .attr('text-anchor', 'end').attr('font-size', '13px').attr('font-weight', '600');
+    .attr('text-anchor', 'end').attr('font-size', '18px').attr('font-weight', '600');
 
   const line = d3.line().x(d => d[0]).y(d => d[1]);
 
@@ -1937,8 +1939,8 @@ chartInitFns['chart-6'] = () => createChart('chart-6', ({ g, innerW, innerH, con
     const yMax = d3.max(allVals) * 2;
     yScale.domain([yMin, yMax]);
 
-    axisX.call(d3.axisBottom(xScale).ticks(5, '~s')).selectAll('text').style('font-size', '13px');
-    axisY.call(d3.axisLeft(yScale).ticks(5, '.0e')).selectAll('text').style('font-size', '13px');
+    axisX.call(d3.axisBottom(xScale).ticks(5, '~s')).selectAll('text').style('font-size', '18px');
+    axisY.call(d3.axisLeft(yScale).ticks(5, '.0e')).selectAll('text').style('font-size', '18px');
 
     // Sigma line
     const sigmaPoints = js.map((j, i) => [xScale(j), yScale(Math.max(yMin, sigmas[i]))]);
@@ -2032,11 +2034,11 @@ chartInitFns['chart-9'] = () => createChart('chart-9', ({ g, innerW, innerH, con
 
   // Axis labels
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('n（樣本數）');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -40)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('誤差');
 
   // Lines
@@ -2050,13 +2052,13 @@ chartInitFns['chart-9'] = () => createChart('chart-9', ({ g, innerW, innerH, con
   const legend = g.append('g').attr('transform', `translate(${innerW - 180}, 10)`);
   [['NTK: n^{-2s/(2s+d)}', '#2a6bb8'], ['FL: n^{-2s/(2s+1)}', '#1e8050']].forEach(([l, c], i) => {
     legend.append('line').attr('x1', 0).attr('x2', 20).attr('y1', i * 20).attr('y2', i * 20).attr('stroke', c).attr('stroke-width', 2.5);
-    legend.append('text').attr('x', 25).attr('y', i * 20 + 4).attr('font-size', '12px').attr('fill', '#5e6070').text(l);
+    legend.append('text').attr('x', 25).attr('y', i * 20 + 4).attr('font-size', '18px').attr('fill', '#5e6070').text(l);
   });
 
   // Improvement ratio annotation
   const ratioText = g.append('text')
     .attr('x', innerW - 10).attr('y', innerH - 10)
-    .attr('text-anchor', 'end').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e8050');
+    .attr('text-anchor', 'end').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e8050');
 
   const line = d3.line().x(d => d[0]).y(d => d[1]);
 
@@ -2078,8 +2080,8 @@ chartInitFns['chart-9'] = () => createChart('chart-9', ({ g, innerW, innerH, con
     const yMax = Math.min(10, d3.max(allVals) * 2);
     yScale.domain([yMin, yMax]);
 
-    axisX.call(d3.axisBottom(xScale).ticks(4, '~s')).selectAll('text').style('font-size', '13px');
-    axisY.call(d3.axisLeft(yScale).ticks(5, '.0e')).selectAll('text').style('font-size', '13px');
+    axisX.call(d3.axisBottom(xScale).ticks(4, '~s')).selectAll('text').style('font-size', '18px');
+    axisY.call(d3.axisLeft(yScale).ticks(5, '.0e')).selectAll('text').style('font-size', '18px');
 
     // NTK line
     const ntkPoints = ns.map((n, i) => [xScale(n), yScale(Math.max(yMin, ntkData[i]))]);
@@ -2154,7 +2156,7 @@ chartInitFns['chart-10'] = () => createChart('chart-10', ({ svg, g, innerW, inne
       .attr('fill', 'none').attr('stroke', '#d5d6da').attr('stroke-width', 0.5);
     polarG.append('text')
       .attr('x', 3).attr('y', -rScale(r) - 2)
-      .attr('font-size', '10px').attr('fill', '#8a8c98')
+      .attr('font-size', '18px').attr('fill', '#8a8c98')
       .text(r.toFixed(2));
   });
 
@@ -2216,7 +2218,7 @@ chartInitFns['chart-10'] = () => createChart('chart-10', ({ svg, g, innerW, inne
     .enter().append('text')
     .attr('class', 'arc-label')
     .attr('text-anchor', 'middle')
-    .attr('font-size', '11px')
+    .attr('font-size', '18px')
     .attr('fill', '#5e6070')
     .attr('transform', d => {
       const midAngle = (d.startAngle + d.endAngle) / 2 - Math.PI / 2;
@@ -2228,7 +2230,7 @@ chartInitFns['chart-10'] = () => createChart('chart-10', ({ svg, g, innerW, inne
   // Mode label
   const modeLabel = polarG.append('text')
     .attr('text-anchor', 'middle')
-    .attr('font-size', '14px').attr('font-weight', '600')
+    .attr('font-size', '18px').attr('font-weight', '600')
     .attr('fill', '#1e2030')
     .attr('y', -maxRadius - 10)
     .text('NTK 模式');
@@ -2316,7 +2318,7 @@ chartInitFns['chart-11'] = () => createChart('chart-11', ({ g, innerW, innerH, c
     .style('color', 'white')
     .style('padding', '4px 8px')
     .style('border-radius', '4px')
-    .style('font-size', '13px')
+    .style('font-size', '18px')
     .style('pointer-events', 'none')
     .style('opacity', 0)
     .style('z-index', '10');
@@ -2355,19 +2357,19 @@ chartInitFns['chart-11'] = () => createChart('chart-11', ({ g, innerW, innerH, c
   // X axis - show only some ticks to avoid crowding
   const xAxis = d3.axisBottom(xScale).tickValues(dValues.filter(d => d % 5 === 0));
   g.append('g').attr('transform', `translate(0,${innerH})`)
-    .call(xAxis).selectAll('text').style('font-size', '12px');
+    .call(xAxis).selectAll('text').style('font-size', '18px');
 
   // Y axis - show only some ticks
   const yAxis = d3.axisLeft(yScale).tickValues(sValues.filter(s => s % 0.5 === 0).reverse());
-  g.append('g').call(yAxis).selectAll('text').style('font-size', '12px');
+  g.append('g').call(yAxis).selectAll('text').style('font-size', '18px');
 
   // Axis labels
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('d（維度）');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -40)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('s（平滑度）');
 
   // Color legend
@@ -2391,7 +2393,7 @@ chartInitFns['chart-11'] = () => createChart('chart-11', ({ g, innerW, innerH, c
 
   const legendAxis = d3.axisRight(legendScale).ticks(4).tickFormat(d => d.toFixed(0) + 'x');
   legendG.append('g').attr('transform', `translate(${legendW},0)`).call(legendAxis)
-    .selectAll('text').style('font-size', '11px');
+    .selectAll('text').style('font-size', '18px');
 
   return { update: () => {}, getState: () => ({}), setState: () => {} };
 });
@@ -2453,7 +2455,7 @@ chartInitFns['chart-12'] = () => createChart('chart-12', ({ g, innerW, innerH, c
     .attr('class', 'contour-fill')
     .attr('d', contourPath)
     .attr('fill', d => colorScale(d.value))
-    .attr('stroke', '#888')
+    .attr('stroke', '#8a8c98')
     .attr('stroke-width', 0.3)
     .attr('opacity', 0.7);
 
@@ -2463,7 +2465,7 @@ chartInitFns['chart-12'] = () => createChart('chart-12', ({ g, innerW, innerH, c
     .attr('r', 6).attr('fill', '#1e8050').attr('stroke', 'white').attr('stroke-width', 2);
   g.append('text')
     .attr('x', mScale(1) - 15).attr('y', rScale(1) - 12)
-    .attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#1e8050')
+    .attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e8050')
     .text('Global min');
 
   // Mark saddle point near (m=0, r~0.95) with red x
@@ -2473,7 +2475,7 @@ chartInitFns['chart-12'] = () => createChart('chart-12', ({ g, innerW, innerH, c
   g.append('line').attr('x1', sx - 5).attr('y1', sy + 5).attr('x2', sx + 5).attr('y2', sy - 5).attr('stroke', '#c93135').attr('stroke-width', 2.5);
   g.append('text')
     .attr('x', sx + 10).attr('y', sy + 4)
-    .attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#c93135')
+    .attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#c93135')
     .text('Saddle');
 
   // Draggable start point and GD trajectory
@@ -2535,18 +2537,18 @@ chartInitFns['chart-12'] = () => createChart('chart-12', ({ g, innerW, innerH, c
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(mScale).ticks(5).tickFormat(d => d.toFixed(1)))
-    .selectAll('text').style('font-size', '13px');
+    .selectAll('text').style('font-size', '18px');
   g.append('g')
     .call(d3.axisLeft(rScale).ticks(5).tickFormat(d => d.toFixed(1)))
-    .selectAll('text').style('font-size', '13px');
+    .selectAll('text').style('font-size', '18px');
 
   // Axis labels
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('m = cos(w, w*)');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('||w||');
 
   return {
@@ -2574,11 +2576,11 @@ chartInitFns['chart-13'] = () => createChart('chart-13', ({ g, innerW, innerH, c
 
   // Axis labels
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('t（時間步）');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('m（對齊度）');
 
   // Phase transition line
@@ -2587,16 +2589,16 @@ chartInitFns['chart-13'] = () => createChart('chart-13', ({ g, innerW, innerH, c
 
   // Phase labels
   const phase1Label = g.append('text')
-    .attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#2a6bb8');
+    .attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#2a6bb8');
   const phase2Label = g.append('text')
-    .attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e8050');
+    .attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e8050');
 
   // Horizontal reference at eps0
   const epsLine = g.append('line')
     .attr('x1', 0).attr('x2', innerW)
     .attr('stroke', '#d5d6da').attr('stroke-width', 1).attr('stroke-dasharray', '3,3');
   const epsLabel = g.append('text')
-    .attr('font-size', '11px').attr('fill', '#8a8c98');
+    .attr('font-size', '18px').attr('fill', '#8a8c98');
 
   // Curve
   const curvePath = g.append('path')
@@ -2645,8 +2647,8 @@ chartInitFns['chart-13'] = () => createChart('chart-13', ({ g, innerW, innerH, c
     const p1 = points.filter(d => d.phase === 1 || d.t <= transitionT + dt);
     const p2 = points.filter(d => d.t >= transitionT);
 
-    axisX.call(d3.axisBottom(xScale).ticks(6)).selectAll('text').style('font-size', '13px');
-    axisY.call(d3.axisLeft(yScale).ticks(5).tickFormat(d => d.toFixed(1))).selectAll('text').style('font-size', '13px');
+    axisX.call(d3.axisBottom(xScale).ticks(6)).selectAll('text').style('font-size', '18px');
+    axisY.call(d3.axisLeft(yScale).ticks(5).tickFormat(d => d.toFixed(1))).selectAll('text').style('font-size', '18px');
 
     curvePath.attr('d', lineGen(p1.map(d => [xScale(d.t), yScale(d.m)])));
     curve2Path.attr('d', lineGen(p2.map(d => [xScale(d.t), yScale(d.m)])));
@@ -2711,7 +2713,7 @@ chartInitFns['chart-14'] = () => createChart('chart-14', ({ g, innerW, innerH, c
   const conclusionG = g.append('g').attr('transform', `translate(${innerW / 2}, ${innerH - 5})`);
   conclusionG.append('text')
     .attr('text-anchor', 'middle')
-    .attr('font-size', '15px').attr('font-weight', '700').attr('fill', '#1e8050')
+    .attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#1e8050')
     .text('→ Feature Learning 必然發生');
 
   // Drawing area (above conclusion)
@@ -2753,12 +2755,12 @@ chartInitFns['chart-14'] = () => createChart('chart-14', ({ g, innerW, innerH, c
 
     // Labels
     routeA.append('text').attr('x', innerW / 2).attr('y', 18)
-      .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e2030')
       .text('所有谷底對齊 w*，非對齊點皆為鞍點');
     routeA.append('text').attr('x', mScaleA(1)).attr('y', rScaleA(1) - 10)
-      .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#1e8050').text('min');
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#1e8050').text('min');
     routeA.append('text').attr('x', sxA + 12).attr('y', syA + 4)
-      .attr('font-size', '11px').attr('fill', '#c93135').text('saddle');
+      .attr('font-size', '18px').attr('fill', '#c93135').text('saddle');
   }
 
   // === Route B: Static m(t) curve ===
@@ -2791,9 +2793,9 @@ chartInitFns['chart-14'] = () => createChart('chart-14', ({ g, innerW, innerH, c
 
     // Axes
     routeB.append('g').attr('transform', `translate(0,${drawH})`)
-      .call(d3.axisBottom(xB).ticks(5)).selectAll('text').style('font-size', '11px');
+      .call(d3.axisBottom(xB).ticks(5)).selectAll('text').style('font-size', '18px');
     routeB.append('g')
-      .call(d3.axisLeft(yB).ticks(5).tickFormat(d => d.toFixed(1))).selectAll('text').style('font-size', '11px');
+      .call(d3.axisLeft(yB).ticks(5).tickFormat(d => d.toFixed(1))).selectAll('text').style('font-size', '18px');
 
     // Phase 1 curve
     const line = d3.line().x(d => xB(d.t)).y(d => yB(d.m));
@@ -2811,10 +2813,10 @@ chartInitFns['chart-14'] = () => createChart('chart-14', ({ g, innerW, innerH, c
 
     // Labels
     routeB.append('text').attr('x', xB(transT / 2)).attr('y', 18)
-      .attr('text-anchor', 'middle').attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#2a6bb8')
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#2a6bb8')
       .text('Phase 1：偵測');
     routeB.append('text').attr('x', xB((transT + tMax) / 2)).attr('y', 18)
-      .attr('text-anchor', 'middle').attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#1e8050')
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e8050')
       .text('Phase 2：對齊');
   }
 
@@ -2840,7 +2842,7 @@ chartInitFns['chart-14'] = () => createChart('chart-14', ({ g, innerW, innerH, c
       .attr('r', 8).attr('fill', '#1e8050').attr('stroke', 'white').attr('stroke-width', 2);
     routeC.append('text')
       .attr('x', tx + 15).attr('y', ty + 4)
-      .attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e8050')
+      .attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e8050')
       .text('w*');
 
     // Initial neuron directions (scattered)
@@ -2875,10 +2877,10 @@ chartInitFns['chart-14'] = () => createChart('chart-14', ({ g, innerW, innerH, c
 
     // Labels
     routeC.append('text').attr('x', innerW / 2).attr('y', 18)
-      .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e2030')
       .text('神經元方向坍縮至 w*');
     routeC.append('text').attr('x', cx - radius - 10).attr('y', cy + radius + 20)
-      .attr('font-size', '11px').attr('fill', '#8a8c98')
+      .attr('font-size', '18px').attr('fill', '#8a8c98')
       .text('灰 = 初始方向，藍 = 訓練後');
   }
 
@@ -2902,7 +2904,7 @@ chartInitFns['chart-14'] = () => createChart('chart-14', ({ g, innerW, innerH, c
       .attr('fill', '#1e8050');
     routeD.append('text')
       .attr('x', cx + arrowLen + 15).attr('y', cy + 5)
-      .attr('font-size', '14px').attr('font-weight', '700').attr('fill', '#1e8050')
+      .attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#1e8050')
       .text('w*');
 
     // Random vectors — nearly orthogonal (small cos angle, almost vertical)
@@ -2932,13 +2934,13 @@ chartInitFns['chart-14'] = () => createChart('chart-14', ({ g, innerW, innerH, c
 
     // Labels
     routeD.append('text').attr('x', innerW / 2).attr('y', 18)
-      .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e2030')
       .text('高維隨機向量幾乎正交於 w*');
     routeD.append('text').attr('x', innerW / 2).attr('y', 38)
-      .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#5e6070')
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
       .text('cos(w_rand, w*) ≈ 0 — 只有 FL 能突破');
     routeD.append('text').attr('x', cx - arrowLen * 0.5).attr('y', cy - arrowLen * 0.5)
-      .attr('font-size', '11px').attr('fill', '#c93135')
+      .attr('font-size', '18px').attr('fill', '#c93135')
       .text('隨機初始方向');
   }
 
@@ -3002,24 +3004,24 @@ chartInitFns['chart-7'] = () => createChart('chart-7', ({ g, innerW, innerH, con
 
   // Axis labels
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('索引 i（降序排列）');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('σ_i(J)');
 
   // Gap line and label
   const gapLine = g.append('line')
     .attr('stroke', '#c93135').attr('stroke-width', 2).attr('stroke-dasharray', '6,3');
   const gapLabel = g.append('text')
-    .attr('font-size', '13px').attr('font-weight', '700').attr('fill', '#c93135')
+    .attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#c93135')
     .attr('text-anchor', 'middle');
 
   // Info text
   const infoText = g.append('text')
     .attr('x', innerW - 10).attr('y', 18)
-    .attr('text-anchor', 'end').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030');
+    .attr('text-anchor', 'end').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e2030');
 
   // Bars group
   const barsGroup = g.append('g');
@@ -3049,8 +3051,8 @@ chartInitFns['chart-7'] = () => createChart('chart-7', ({ g, innerW, innerH, con
     yScale.domain([0, yMax]);
 
     axisX.call(d3.axisBottom(xScale).tickValues(d3.range(0, totalBars, 5)).tickFormat(d => d + 1))
-      .selectAll('text').style('font-size', '13px');
-    axisY.call(d3.axisLeft(yScale).ticks(5)).selectAll('text').style('font-size', '13px');
+      .selectAll('text').style('font-size', '18px');
+    axisY.call(d3.axisLeft(yScale).ticks(5)).selectAll('text').style('font-size', '18px');
 
     // Bars
     const bars = barsGroup.selectAll('rect').data(data, (d, i) => i);
@@ -3128,7 +3130,7 @@ chartInitFns['chart-8'] = () => createChart('chart-8', ({ g, innerW, innerH, con
 
   // Teacher directions (evenly spaced on unit circle)
   const teacherAngles = d3.range(k).map(i => (i * Math.PI * 2) / k + Math.PI / 6);
-  const teacherColors = ['#c93135', '#1e8050', '#2a6bb8', '#8a7020', '#7b3fa0'];
+  const teacherColors = ['#c93135', '#1e8050', '#2a6bb8', '#8a7020', '#1e5ab8'];
 
   // Student neurons: random angles + random active/dead status
   const students = d3.range(p).map(i => {
@@ -3170,7 +3172,7 @@ chartInitFns['chart-8'] = () => createChart('chart-8', ({ g, innerW, innerH, con
     const ly = cy - (circleR + 20) * Math.sin(angle);
     teacherGroup.append('text')
       .attr('x', lx).attr('y', ly + 4)
-      .attr('text-anchor', 'middle').attr('font-size', '12px').attr('font-weight', '700')
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '700')
       .attr('fill', teacherColors[i])
       .text(`w*${i + 1}`);
   });
@@ -3188,7 +3190,7 @@ chartInitFns['chart-8'] = () => createChart('chart-8', ({ g, innerW, innerH, con
   const panelY = innerH * 0.1;
 
   g.append('text').attr('x', panelX + panelW / 2).attr('y', panelY - 8)
-    .attr('text-anchor', 'middle').attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#1e2030')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e2030')
     .text('奇異值分布');
 
   g.append('rect')
@@ -3209,7 +3211,7 @@ chartInitFns['chart-8'] = () => createChart('chart-8', ({ g, innerW, innerH, con
   // Progress text
   const progressText = g.append('text')
     .attr('x', cx).attr('y', innerH - 5)
-    .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#5e6070');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070');
 
   function getAlignment() {
     // compute alignment fraction (0 = random, 1 = fully aligned)
@@ -3345,11 +3347,11 @@ chartInitFns['chart-15'] = () => createChart('chart-15', ({ g, innerW, innerH, c
 
   // Axis labels
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('架構');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('L*（臨界深度）');
 
   const barsGroup = g.append('g');
@@ -3368,9 +3370,9 @@ chartInitFns['chart-15'] = () => createChart('chart-15', ({ g, innerW, innerH, c
     const yMax = Math.max(lStars.FC, 4) * 1.25;
     yScale.domain([0, yMax]);
 
-    axisX.call(d3.axisBottom(xScale)).selectAll('text').style('font-size', '14px');
+    axisX.call(d3.axisBottom(xScale)).selectAll('text').style('font-size', '18px');
     axisY.call(d3.axisLeft(yScale).ticks(Math.min(yMax, 10)).tickFormat(d3.format('d')))
-      .selectAll('text').style('font-size', '13px');
+      .selectAll('text').style('font-size', '18px');
 
     // Bars
     const data = archs.map(a => ({ arch: a, lstar: lStars[a] }));
@@ -3392,7 +3394,7 @@ chartInitFns['chart-15'] = () => createChart('chart-15', ({ g, innerW, innerH, c
     const labels = labelsGroup.selectAll('text').data(data, d => d.arch);
     labels.enter().append('text')
       .attr('text-anchor', 'middle')
-      .attr('font-size', '15px').attr('font-weight', '700')
+      .attr('font-size', '18px').attr('font-weight', '700')
       .merge(labels)
       .transition().duration(300)
       .attr('x', d => xScale(d.arch) + xScale.bandwidth() / 2)
@@ -3442,17 +3444,17 @@ chartInitFns['chart-16'] = () => createChart('chart-16', ({ g, innerW, innerH, c
   const axisY = g.append('g');
 
   axisX.call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.format('d')))
-    .selectAll('text').style('font-size', '13px');
+    .selectAll('text').style('font-size', '18px');
   axisY.call(d3.axisLeft(yScale).ticks(5, '.2f'))
-    .selectAll('text').style('font-size', '13px');
+    .selectAll('text').style('font-size', '18px');
 
   // Axis labels
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('深度 L');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('泛化誤差');
 
   const lStarFC = Math.ceil((d - 1) / 2);
@@ -3502,21 +3504,21 @@ chartInitFns['chart-16'] = () => createChart('chart-16', ({ g, innerW, innerH, c
     .attr('stroke', colors.FC).attr('stroke-width', 1.5).attr('stroke-dasharray', '6,3');
   const lStarLabel = g.append('text')
     .attr('x', xScale(lStarFC) + 5).attr('y', 15)
-    .attr('font-size', '12px').attr('font-weight', '600').attr('fill', colors.FC)
+    .attr('font-size', '18px').attr('font-weight', '600').attr('fill', colors.FC)
     .text('L*=' + lStarFC);
 
   // Legend labels on curves
   const fcLabel = g.append('text')
     .attr('x', xScale(maxDepth) - 5).attr('y', yScale(genFC()[maxDepth - 1].err) - 8)
-    .attr('text-anchor', 'end').attr('font-size', '12px').attr('font-weight', '600').attr('fill', colors.FC)
+    .attr('text-anchor', 'end').attr('font-size', '18px').attr('font-weight', '600').attr('fill', colors.FC)
     .text('FC');
   const resLabel = g.append('text')
     .attr('x', xScale(maxDepth) - 5).attr('y', yScale(genResNet()[maxDepth - 1].err) - 8)
-    .attr('text-anchor', 'end').attr('font-size', '12px').attr('font-weight', '600').attr('fill', colors.ResNet)
+    .attr('text-anchor', 'end').attr('font-size', '18px').attr('font-weight', '600').attr('fill', colors.ResNet)
     .text('ResNet');
   const transLabel = g.append('text')
     .attr('x', xScale(maxDepth) - 5).attr('y', yScale(genTransformer()[maxDepth - 1].err) + 16)
-    .attr('text-anchor', 'end').attr('font-size', '12px').attr('font-weight', '600').attr('fill', colors.Transformer)
+    .attr('text-anchor', 'end').attr('font-size', '18px').attr('font-weight', '600').attr('fill', colors.Transformer)
     .text('Transformer');
 
   const paths = { FC: fcPath, ResNet: resPath, Transformer: transPath };
@@ -3602,30 +3604,30 @@ chartInitFns['chart-17'] = () => createChart('chart-17', ({ g, innerW, innerH, c
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.format('d')))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('g').call(d3.axisLeft(yScale).ticks(6))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
 
   // Axis labels
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('訓練步數');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('值');
 
   const line = d3.line().x(d => xScale(d.t)).y(d => yScale(d.v)).curve(d3.curveMonotoneX);
 
   // Paths
   const aPath = g.append('path').attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2.5);
-  const wPath = g.append('path').attr('fill', 'none').attr('stroke', '#c05020').attr('stroke-width', 2.5).attr('stroke-dasharray', '6,3');
+  const wPath = g.append('path').attr('fill', 'none').attr('stroke', '#c93135').attr('stroke-width', 2.5).attr('stroke-dasharray', '6,3');
   const diffPath = g.append('path').attr('fill', 'none').attr('stroke', '#1e8050').attr('stroke-width', 3);
 
   // Legend
   const legendData = [
     { label: 'a²', color: '#1e5ab8', dash: '' },
-    { label: '||w||²', color: '#c05020', dash: '6,3' },
+    { label: '||w||²', color: '#c93135', dash: '6,3' },
     { label: 'a² − ||w||² = 0', color: '#1e8050', dash: '' }
   ];
   legendData.forEach((d, i) => {
@@ -3634,12 +3636,12 @@ chartInitFns['chart-17'] = () => createChart('chart-17', ({ g, innerW, innerH, c
     g.append('line').attr('x1', lx).attr('x2', lx + 20).attr('y1', ly).attr('y2', ly)
       .attr('stroke', d.color).attr('stroke-width', 2.5).attr('stroke-dasharray', d.dash);
     g.append('text').attr('x', lx + 25).attr('y', ly + 4)
-      .attr('font-size', '12px').attr('fill', d.color).text(d.label);
+      .attr('font-size', '18px').attr('fill', d.color).text(d.label);
   });
 
   // Step indicator
   const stepText = g.append('text').attr('x', 10).attr('y', 15)
-    .attr('font-size', '13px').attr('fill', '#5e6070');
+    .attr('font-size', '18px').attr('fill', '#5e6070');
 
   function draw() {
     const { aData, wData, diffData } = genData(step);
@@ -3749,10 +3751,10 @@ chartInitFns['chart-18'] = () => createChart('chart-18', ({ g, innerW, innerH, c
 
   // Labels
   g.append('text').attr('x', leftX + cellSize * gridSize / 2).attr('y', topY - 10)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e2030')
     .text('Ĵ^TĴ/n（估計值）');
   g.append('text').attr('x', rightX + cellSize * gridSize / 2).attr('y', topY - 10)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e2030')
     .text('K_pop（真實值）');
 
   // Draw K_pop heatmap (static)
@@ -3766,7 +3768,7 @@ chartInitFns['chart-18'] = () => createChart('chart-18', ({ g, innerW, innerH, c
       g.append('text')
         .attr('x', rightX + j * cellSize + cellSize / 2 - 1)
         .attr('y', topY + i * cellSize + cellSize / 2 + 4)
-        .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#fff')
+        .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#f5f6f8')
         .text(K_pop[i][j].toFixed(1));
     }
   }
@@ -3785,14 +3787,14 @@ chartInitFns['chart-18'] = () => createChart('chart-18', ({ g, innerW, innerH, c
       estTexts[i][j] = g.append('text')
         .attr('x', leftX + j * cellSize + cellSize / 2 - 1)
         .attr('y', topY + i * cellSize + cellSize / 2 + 4)
-        .attr('text-anchor', 'middle').attr('font-size', '10px');
+        .attr('text-anchor', 'middle').attr('font-size', '18px');
     }
   }
 
   // Op-norm display
   const normText = g.append('text')
     .attr('x', innerW / 2).attr('y', topY + gridSize * cellSize + 30)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('font-weight', '600').attr('fill', '#1e2030');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e2030');
 
   function update() {
     const est = genEstimate(nVal);
@@ -3803,7 +3805,7 @@ chartInitFns['chart-18'] = () => createChart('chart-18', ({ g, innerW, innerH, c
         const dev = est[i][j] - K_pop[i][j];
         estCells[i][j].attr('fill', colorDiv(dev));
         estTexts[i][j].text(est[i][j].toFixed(1))
-          .attr('fill', Math.abs(dev) > 0.5 ? '#c05020' : '#1e2030');
+          .attr('fill', Math.abs(dev) > 0.5 ? '#c93135' : '#1e2030');
       }
     }
 
@@ -3874,10 +3876,10 @@ chartInitFns['chart-19'] = () => createChart('chart-19', ({ g, innerW, innerH, c
 
   // Title labels
   g.append('text').attr('x', innerW * 0.25).attr('y', 20)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e2030')
     .text('σ(A·B) — 實際');
   g.append('text').attr('x', innerW * 0.75).attr('y', 20)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e2030')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e2030')
     .text('σ(A)·σ(B) — 天真估計');
 
   const yScale = d3.scaleLinear().domain([0, 5]).range([barAreaH, 0]);
@@ -3895,14 +3897,14 @@ chartInitFns['chart-19'] = () => createChart('chart-19', ({ g, innerW, innerH, c
   const actualLabels = [0, 1].map(i => {
     return g.append('text')
       .attr('x', innerW * 0.25 - barWidth + i * (barWidth + 5) + barWidth / 2 - 1)
-      .attr('text-anchor', 'middle').attr('font-size', '12px').attr('font-weight', '600').attr('fill', '#1e2030');
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600').attr('fill', '#1e2030');
   });
   // Sigma labels
   [0, 1].forEach(i => {
     g.append('text')
       .attr('x', innerW * 0.25 - barWidth + i * (barWidth + 5) + barWidth / 2 - 1)
       .attr('y', barAreaTop + barAreaH + 15)
-      .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#5e6070')
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
       .text('σ' + (i + 1));
   });
 
@@ -3916,20 +3918,20 @@ chartInitFns['chart-19'] = () => createChart('chart-19', ({ g, innerW, innerH, c
   const naiveLabels = [0, 1].map(i => {
     return g.append('text')
       .attr('x', innerW * 0.75 - barWidth + i * (barWidth + 5) + barWidth / 2 - 1)
-      .attr('text-anchor', 'middle').attr('font-size', '12px').attr('font-weight', '600');
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600');
   });
   [0, 1].forEach(i => {
     g.append('text')
       .attr('x', innerW * 0.75 - barWidth + i * (barWidth + 5) + barWidth / 2 - 1)
       .attr('y', barAreaTop + barAreaH + 15)
-      .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#5e6070')
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
       .text('σ' + (i + 1));
   });
 
   // Difference text
   const diffText = g.append('text')
     .attr('x', innerW / 2).attr('y', barAreaTop + barAreaH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('font-weight', '600');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '600');
 
   function update() {
     const A = getMatrix('a');
@@ -3971,8 +3973,8 @@ chartInitFns['chart-19'] = () => createChart('chart-19', ({ g, innerW, innerH, c
     const maxRelDiff = Math.max(relDiff1, relDiff2);
 
     if (maxRelDiff > 0.1) {
-      diffText.text(`差異達 ${(maxRelDiff * 100).toFixed(0)}% — 天真估計失效！`).attr('fill', '#c05020');
-      naiveLabels.forEach(l => l.attr('fill', '#c05020'));
+      diffText.text(`差異達 ${(maxRelDiff * 100).toFixed(0)}% — 天真估計失效！`).attr('fill', '#c93135');
+      naiveLabels.forEach(l => l.attr('fill', '#c93135'));
     } else {
       diffText.text(`差異 ${(maxRelDiff * 100).toFixed(0)}%`).attr('fill', '#1e8050');
       naiveLabels.forEach(l => l.attr('fill', '#1e2030'));
@@ -4055,36 +4057,36 @@ chartInitFns['chart-20'] = () => createChart('chart-20', ({ svg, g, innerW, inne
 
   // Left Y axis (blue)
   g.append('g').call(d3.axisLeft(yScaleLeft).ticks(5))
-    .selectAll('text').style('font-size', '12px').style('fill', '#1e5ab8');
+    .selectAll('text').style('font-size', '18px').style('fill', '#1e5ab8');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#1e5ab8')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#1e5ab8')
     .text('||θ||²');
 
   // Right Y axis (red)
   g.append('g').attr('transform', `translate(${innerW},0)`)
     .call(d3.axisRight(yScaleRight).ticks(5))
-    .selectAll('text').style('font-size', '12px').style('fill', '#c05020');
+    .selectAll('text').style('font-size', '18px').style('fill', '#c93135');
   g.append('text').attr('transform', 'rotate(90)')
     .attr('x', innerH / 2).attr('y', -innerW - 38)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#c05020')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#c93135')
     .text('tr(J^TJ)');
 
   // X axis
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.format('d')))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('訓練步數');
 
   // Reference line: initial tr(J^TJ)
   g.append('line')
     .attr('x1', 0).attr('x2', innerW)
     .attr('y1', yScaleRight(initTrJTJ)).attr('y2', yScaleRight(initTrJTJ))
-    .attr('stroke', '#c05020').attr('stroke-width', 1).attr('stroke-dasharray', '6,4').attr('opacity', 0.5);
+    .attr('stroke', '#c93135').attr('stroke-width', 1).attr('stroke-dasharray', '6,4').attr('opacity', 0.5);
   g.append('text').attr('x', innerW - 5).attr('y', yScaleRight(initTrJTJ) - 5)
-    .attr('text-anchor', 'end').attr('font-size', '10px').attr('fill', '#c05020').attr('opacity', 0.7)
+    .attr('text-anchor', 'end').attr('font-size', '18px').attr('fill', '#c93135').attr('opacity', 0.7)
     .text('初始 tr(J^TJ)');
 
   // Lines
@@ -4092,22 +4094,22 @@ chartInitFns['chart-20'] = () => createChart('chart-20', ({ svg, g, innerW, inne
   const lineRight = d3.line().x(d => xScale(d.t)).y(d => yScaleRight(d.v)).curve(d3.curveMonotoneX);
 
   const thetaPath = g.append('path').attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2.5);
-  const trPath = g.append('path').attr('fill', 'none').attr('stroke', '#c05020').attr('stroke-width', 2.5);
+  const trPath = g.append('path').attr('fill', 'none').attr('stroke', '#c93135').attr('stroke-width', 2.5);
 
   // Peak annotation
   const peakAnnotG = g.append('g').attr('opacity', 0);
   peakAnnotG.append('circle')
     .attr('cx', xScale(peakStep)).attr('cy', yScaleRight(peakVal))
-    .attr('r', 5).attr('fill', 'none').attr('stroke', '#c05020').attr('stroke-width', 2);
+    .attr('r', 5).attr('fill', 'none').attr('stroke', '#c93135').attr('stroke-width', 2);
   peakAnnotG.append('text')
     .attr('x', xScale(peakStep) + 8).attr('y', yScaleRight(peakVal) - 8)
-    .attr('font-size', '13px').attr('font-weight', '700').attr('fill', '#c05020')
+    .attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#c93135')
     .text('+' + peakPct + '%');
 
   // Legend
   const legendItems = [
     { label: '||θ||² (左軸)', color: '#1e5ab8' },
-    { label: 'tr(J^TJ) (右軸)', color: '#c05020' }
+    { label: 'tr(J^TJ) (右軸)', color: '#c93135' }
   ];
   legendItems.forEach((d, i) => {
     const lx = 10;
@@ -4115,12 +4117,12 @@ chartInitFns['chart-20'] = () => createChart('chart-20', ({ svg, g, innerW, inne
     g.append('line').attr('x1', lx).attr('x2', lx + 20).attr('y1', ly).attr('y2', ly)
       .attr('stroke', d.color).attr('stroke-width', 2.5);
     g.append('text').attr('x', lx + 25).attr('y', ly + 4)
-      .attr('font-size', '12px').attr('fill', d.color).text(d.label);
+      .attr('font-size', '18px').attr('fill', d.color).text(d.label);
   });
 
   // Step indicator
   const stepText = g.append('text').attr('x', 10).attr('y', innerH - 5)
-    .attr('font-size', '13px').attr('fill', '#5e6070');
+    .attr('font-size', '18px').attr('fill', '#5e6070');
 
   function draw() {
     const thetaData = [], trData = [];
@@ -4222,14 +4224,14 @@ chartInitFns['chart-21'] = () => createChart('chart-21', ({ g, innerW, innerH, c
 
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`).call(d3.axisBottom(xScale).ticks(5))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('g').call(d3.axisLeft(yScale).ticks(5))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('x');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070').text('x');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('f(x)');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070').text('f(x)');
 
   // Kink markers (red diamonds)
   kinks.forEach(kx => {
@@ -4247,7 +4249,7 @@ chartInitFns['chart-21'] = () => createChart('chart-21', ({ g, innerW, innerH, c
   // Gradient flow particle
   let particleX = 0.9; // start near right side
   const particle = g.append('circle')
-    .attr('r', 6).attr('fill', '#1e8050').attr('stroke', '#0a5030').attr('stroke-width', 1.5);
+    .attr('r', 6).attr('fill', '#1e8050').attr('stroke', '#1e8050').attr('stroke-width', 1.5);
 
   // Trail
   const trail = g.append('path').attr('fill', 'none')
@@ -4334,7 +4336,7 @@ chartInitFns['chart-21'] = () => createChart('chart-21', ({ g, innerW, innerH, c
         .attr('stroke', d.color).attr('stroke-width', 3).attr('stroke-dasharray', '4,2');
     }
     g.append('text').attr('x', lx + 15).attr('y', ly + 4)
-      .attr('font-size', '11px').attr('fill', '#5e6070').text(d.label);
+      .attr('font-size', '18px').attr('fill', '#5e6070').text(d.label);
   });
 
   return {
@@ -4357,19 +4359,19 @@ chartInitFns['chart-22'] = () => createChart('chart-22', ({ g, innerW, innerH, c
   const yAxis = g.append('g');
 
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('d（維度）');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070').text('d（維度）');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -42)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('量級');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070').text('量級');
 
   const signalPath = g.append('path').attr('fill', 'none').attr('stroke', '#1e8050').attr('stroke-width', 2.5);
   const noisePath = g.append('path').attr('fill', 'none').attr('stroke', '#c93135').attr('stroke-width', 2.5).attr('stroke-dasharray', '6,3');
 
-  const crossDot = g.append('circle').attr('r', 6).attr('fill', '#e8a020').attr('stroke', '#5e6070').attr('stroke-width', 1.5);
-  const crossLabel = g.append('text').attr('font-size', '12px').attr('font-weight', '700').attr('fill', '#e8a020');
+  const crossDot = g.append('circle').attr('r', 6).attr('fill', '#8a7020').attr('stroke', '#5e6070').attr('stroke-width', 1.5);
+  const crossLabel = g.append('text').attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#8a7020');
 
   // Requirement annotation
-  const reqText = g.append('text').attr('font-size', '12px').attr('fill', '#5e6070')
+  const reqText = g.append('text').attr('font-size', '18px').attr('fill', '#5e6070')
     .attr('x', innerW - 10).attr('y', 15).attr('text-anchor', 'end');
 
   // Legend
@@ -4382,12 +4384,12 @@ chartInitFns['chart-22'] = () => createChart('chart-22', ({ g, innerW, innerH, c
     g.append('line').attr('x1', lx).attr('x2', lx + 20).attr('y1', ly).attr('y2', ly)
       .attr('stroke', d.color).attr('stroke-width', 2.5).attr('stroke-dasharray', d.dash);
     g.append('text').attr('x', lx + 25).attr('y', ly + 4)
-      .attr('font-size', '11px').attr('fill', '#5e6070').text(d.label);
+      .attr('font-size', '18px').attr('fill', '#5e6070').text(d.label);
   });
 
   function update() {
-    xAxis.call(d3.axisBottom(xScale).ticks(5, '.0f')).selectAll('text').style('font-size', '12px');
-    yAxis.call(d3.axisLeft(yScale).ticks(5, '.0e')).selectAll('text').style('font-size', '12px');
+    xAxis.call(d3.axisBottom(xScale).ticks(5, '.0f')).selectAll('text').style('font-size', '18px');
+    yAxis.call(d3.axisLeft(yScale).ticks(5, '.0e')).selectAll('text').style('font-size', '18px');
 
     const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1]));
     const dValues = d3.range(5, 201, 1);
@@ -4468,7 +4470,7 @@ chartInitFns['chart-23'] = () => createChart('chart-23', ({ g, innerW, innerH, c
 
   // Draw unit circle
   g.append('circle').attr('cx', cx).attr('cy', cy).attr('r', radius)
-    .attr('fill', 'none').attr('stroke', '#ccc').attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
+    .attr('fill', 'none').attr('stroke', '#d5d6da').attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
 
   // Target direction marker (red diamond)
   const targetX = cx + radius * Math.cos(targetAngle);
@@ -4477,7 +4479,7 @@ chartInitFns['chart-23'] = () => createChart('chart-23', ({ g, innerW, innerH, c
     .attr('transform', `translate(${targetX},${targetY})`)
     .attr('fill', '#c93135').attr('stroke', '#c93135');
   g.append('text').attr('x', targetX + 12).attr('y', targetY + 4)
-    .attr('font-size', '12px').attr('font-weight', '700').attr('fill', '#c93135').text('w*');
+    .attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#c93135').text('w*');
 
   // Neuron dots
   const neuronColors = d3.scaleSequential(d3.interpolateBlues).domain([0, numNeurons]);
@@ -4491,16 +4493,16 @@ chartInitFns['chart-23'] = () => createChart('chart-23', ({ g, innerW, innerH, c
 
   // Label
   const lambdaLabel = g.append('text').attr('x', 10).attr('y', innerH - 5)
-    .attr('font-size', '13px').attr('fill', '#5e6070');
+    .attr('font-size', '18px').attr('fill', '#5e6070');
 
   // Legend
   g.append('path').attr('d', d3.symbol(d3.symbolDiamond, 60)())
     .attr('transform', `translate(${innerW - 120},15)`).attr('fill', '#c93135');
   g.append('text').attr('x', innerW - 108).attr('y', 19)
-    .attr('font-size', '11px').attr('fill', '#5e6070').text('目標方向 w*');
+    .attr('font-size', '18px').attr('fill', '#5e6070').text('目標方向 w*');
   g.append('circle').attr('cx', innerW - 115).attr('cy', 33).attr('r', 4).attr('fill', '#2a6bb8');
   g.append('text').attr('x', innerW - 108).attr('y', 37)
-    .attr('font-size', '11px').attr('fill', '#5e6070').text('神經元方向');
+    .attr('font-size', '18px').attr('fill', '#5e6070').text('神經元方向');
 
   function update() {
     for (let i = 0; i < numNeurons; i++) {
@@ -4546,15 +4548,15 @@ chartInitFns['chart-24'] = () => createChart('chart-24', ({ g, innerW, innerH, c
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(5).tickFormat(d => d.toFixed(0)))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('g').call(d3.axisLeft(yScale).ticks(6, '.0e'))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
 
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('κ（資訊指數）');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070').text('κ（資訊指數）');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -42)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('Phase 1 步數 (d=10)');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070').text('Phase 1 步數 (d=10)');
 
   // Curve: d^κ for d=10
   const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
@@ -4567,11 +4569,11 @@ chartInitFns['chart-24'] = () => createChart('chart-24', ({ g, innerW, innerH, c
 
   // Moving dot
   const dot = g.append('circle').attr('r', 7)
-    .attr('fill', '#e8a020').attr('stroke', '#5e6070').attr('stroke-width', 2);
+    .attr('fill', '#8a7020').attr('stroke', '#5e6070').attr('stroke-width', 2);
 
   // Annotation text
   const annotText = g.append('text')
-    .attr('font-size', '13px').attr('font-weight', '700').attr('fill', '#1e5ab8');
+    .attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#1e5ab8');
 
   // Step annotations along curve
   const annotations = [
@@ -4586,7 +4588,7 @@ chartInitFns['chart-24'] = () => createChart('chart-24', ({ g, innerW, innerH, c
     g.append('circle').attr('cx', xScale(a.k)).attr('cy', yScale(val))
       .attr('r', 3).attr('fill', '#5e6070');
     g.append('text').attr('x', xScale(a.k) + 8).attr('y', yScale(val) - 8)
-      .attr('font-size', '10px').attr('fill', '#5e6070').text(a.label);
+      .attr('font-size', '18px').attr('fill', '#5e6070').text(a.label);
   });
 
   function update() {
@@ -4628,7 +4630,7 @@ chartInitFns['chart-25'] = () => createChart('chart-25', ({ g, innerW, innerH, c
 
   // Transition times for each direction
   const transitionTimes = [30, 70, 120, 170];
-  const colors = ['#1e5ab8', '#1e8050', '#e8a020', '#c93135'];
+  const colors = ['#1e5ab8', '#1e8050', '#8a7020', '#c93135'];
   const labels = ['方向 1', '方向 2', '方向 3', '方向 4'];
 
   // Alignment function: sigmoid-like rise at transition time
@@ -4643,15 +4645,15 @@ chartInitFns['chart-25'] = () => createChart('chart-25', ({ g, innerW, innerH, c
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(5).tickFormat(d3.format('d')))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('g').call(d3.axisLeft(yScale).ticks(5))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
 
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('訓練步數 t');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070').text('訓練步數 t');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070').text('對齊度 m_j(t)');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070').text('對齊度 m_j(t)');
 
   // Transition time markers
   transitionTimes.forEach((tt, i) => {
@@ -4660,7 +4662,7 @@ chartInitFns['chart-25'] = () => createChart('chart-25', ({ g, innerW, innerH, c
       .attr('y1', 0).attr('y2', innerH)
       .attr('stroke', colors[i]).attr('stroke-width', 1).attr('stroke-dasharray', '4,4').attr('opacity', 0.4);
     g.append('text').attr('x', xScale(tt)).attr('y', -5)
-      .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', colors[i])
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', colors[i])
       .text('T' + (i + 1));
   });
 
@@ -4677,12 +4679,12 @@ chartInitFns['chart-25'] = () => createChart('chart-25', ({ g, innerW, innerH, c
     g.append('line').attr('x1', lx).attr('x2', lx + 16).attr('y1', ly).attr('y2', ly)
       .attr('stroke', colors[i]).attr('stroke-width', 2.5);
     g.append('text').attr('x', lx + 20).attr('y', ly + 4)
-      .attr('font-size', '11px').attr('fill', '#5e6070').text(label);
+      .attr('font-size', '18px').attr('fill', '#5e6070').text(label);
   });
 
   // Step indicator
   const stepText = g.append('text').attr('x', 10).attr('y', innerH - 5)
-    .attr('font-size', '13px').attr('fill', '#5e6070');
+    .attr('font-size', '18px').attr('fill', '#5e6070');
 
   function draw() {
     for (let j = 0; j < numDirs; j++) {
@@ -4747,10 +4749,10 @@ chartInitFns['chart-26'] = () => createChart('chart-26', ({ g, innerW, innerH, c
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(5))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
 
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('σ_min(V*)');
 
   // Two regions: green (feasible) and red (infeasible)
@@ -4771,22 +4773,22 @@ chartInitFns['chart-26'] = () => createChart('chart-26', ({ g, innerW, innerH, c
     .attr('y1', 0).attr('y2', innerH)
     .attr('stroke', '#5e6070').attr('stroke-width', 2).attr('stroke-dasharray', '6,4');
   g.append('text').attr('x', xScale(threshold)).attr('y', -8)
-    .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('閾值 = ' + threshold.toFixed(1));
 
   // Region labels
   g.append('text').attr('x', xScale(threshold / 2)).attr('y', innerH / 2 - 15)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('font-weight', '700').attr('fill', '#c93135')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#c93135')
     .text('不可行');
   g.append('text').attr('x', xScale(threshold / 2)).attr('y', innerH / 2 + 5)
-    .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#c93135')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#c93135')
     .text('（需二階方法）');
 
   g.append('text').attr('x', xScale((1 + threshold) / 2)).attr('y', innerH / 2 - 15)
-    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('font-weight', '700').attr('fill', '#1e8050')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#1e8050')
     .text('可行');
   g.append('text').attr('x', xScale((1 + threshold) / 2)).attr('y', innerH / 2 + 5)
-    .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#1e8050')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#1e8050')
     .text('（SVD 分離）');
 
   // Sample complexity curve (higher when sigmaMin is small)
@@ -4800,16 +4802,16 @@ chartInitFns['chart-26'] = () => createChart('chart-26', ({ g, innerW, innerH, c
   g.append('path').datum(curveData).attr('d', curveGen)
     .attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2).attr('opacity', 0.6);
   g.append('text').attr('x', xScale(0.8)).attr('y', yScale(0.95) + 15)
-    .attr('font-size', '10px').attr('fill', '#1e5ab8').text('成功率');
+    .attr('font-size', '18px').attr('fill', '#1e5ab8').text('成功率');
 
   // Moving vertical indicator
   const indicator = g.append('line')
     .attr('y1', 0).attr('y2', innerH)
-    .attr('stroke', '#e8a020').attr('stroke-width', 3);
+    .attr('stroke', '#8a7020').attr('stroke-width', 3);
   const indicatorDot = g.append('circle')
-    .attr('r', 6).attr('fill', '#e8a020').attr('stroke', '#5e6070').attr('stroke-width', 1.5);
+    .attr('r', 6).attr('fill', '#8a7020').attr('stroke', '#5e6070').attr('stroke-width', 1.5);
   const statusText = g.append('text')
-    .attr('font-size', '14px').attr('font-weight', '700').attr('text-anchor', 'middle');
+    .attr('font-size', '18px').attr('font-weight', '700').attr('text-anchor', 'middle');
 
   function update() {
     indicator.attr('x1', xScale(sigmaMin)).attr('x2', xScale(sigmaMin));
@@ -4861,17 +4863,17 @@ chartInitFns['chart-27'] = () => createChart('chart-27', ({ g, innerW, innerH, c
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(6).tickFormat(d => d.toFixed(1)))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('γ = p/n');
 
   g.append('g')
     .call(d3.axisLeft(yScale).ticks(5, '.2g'))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('Test Error (log)');
 
   // Double descent model
@@ -4898,22 +4900,22 @@ chartInitFns['chart-27'] = () => createChart('chart-27', ({ g, innerW, innerH, c
     .attr('y1', 0).attr('y2', innerH)
     .attr('stroke', '#c93135').attr('stroke-width', 1).attr('stroke-dasharray', '4,3').attr('opacity', 0.5);
   g.append('text').attr('x', xScale(1) + 4).attr('y', 12)
-    .attr('font-size', '10px').attr('fill', '#c93135').text('γ=1');
+    .attr('font-size', '18px').attr('fill', '#c93135').text('γ=1');
 
   // Region labels
   g.append('text').attr('x', xScale(0.5)).attr('y', innerH - 8)
-    .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#5e6070').text('underparam');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070').text('underparam');
   g.append('text').attr('x', xScale(2)).attr('y', innerH - 8)
-    .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#5e6070').text('overparam');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070').text('overparam');
 
   // Moving indicator
   const indicator = g.append('line')
     .attr('y1', 0).attr('y2', innerH)
-    .attr('stroke', '#e8a020').attr('stroke-width', 2.5);
+    .attr('stroke', '#8a7020').attr('stroke-width', 2.5);
   const indicatorDot = g.append('circle')
-    .attr('r', 5).attr('fill', '#e8a020').attr('stroke', '#fff').attr('stroke-width', 1.5);
+    .attr('r', 5).attr('fill', '#8a7020').attr('stroke', '#fff').attr('stroke-width', 1.5);
   const valLabel = g.append('text')
-    .attr('font-size', '12px').attr('font-weight', '700').attr('fill', '#e8a020').attr('text-anchor', 'middle');
+    .attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#8a7020').attr('text-anchor', 'middle');
 
   function update() {
     const clampedG = Math.max(0.1, Math.min(3, gamma));
@@ -4955,17 +4957,17 @@ chartInitFns['chart-28'] = () => createChart('chart-28', ({ g, innerW, innerH })
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(6).tickFormat(d => d.toFixed(1)))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('γ = p/n');
 
   g.append('g')
     .call(d3.axisLeft(yScale).ticks(5, '.0e'))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('tr(M)');
 
   // tr(M) model: three segments
@@ -5006,21 +5008,21 @@ chartInitFns['chart-28'] = () => createChart('chart-28', ({ g, innerW, innerH })
 
   // Segment labels with formula
   g.append('text').attr('x', xScale(0.5)).attr('y', 15)
-    .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#1e5ab8')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#1e5ab8')
     .text('γ<1: σ²(1+γ)/(1-γ)³');
   g.append('text').attr('x', xScale(1)).attr('y', 30)
-    .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#c93135').attr('font-weight', '700')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#c93135').attr('font-weight', '700')
     .text('γ=1: → ∞');
   g.append('text').attr('x', xScale(2.2)).attr('y', 15)
-    .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#1e8050')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#1e8050')
     .text('γ>1: min-norm ↓');
 
   // Moving indicator (synced from chart-27)
   const indicator = g.append('line')
     .attr('y1', 0).attr('y2', innerH)
-    .attr('stroke', '#e8a020').attr('stroke-width', 2.5).attr('stroke-dasharray', '4,3');
+    .attr('stroke', '#8a7020').attr('stroke-width', 2.5).attr('stroke-dasharray', '4,3');
   const indicatorDot = g.append('circle')
-    .attr('r', 5).attr('fill', '#e8a020').attr('stroke', '#fff').attr('stroke-width', 1.5);
+    .attr('r', 5).attr('fill', '#8a7020').attr('stroke', '#fff').attr('stroke-width', 1.5);
 
   function updateIndicator(gv) {
     const clampedG = Math.max(0.1, Math.min(3, gv));
@@ -5051,17 +5053,17 @@ chartInitFns['chart-29'] = () => createChart('chart-29', ({ g, innerW, innerH, c
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(5).tickFormat(d => (d / 1000) + 'k'))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('Training Steps');
 
   g.append('g')
     .call(d3.axisLeft(yScale).ticks(5))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('Loss');
 
   // Transition point depends on weight decay: higher WD → earlier transition
@@ -5094,22 +5096,22 @@ chartInitFns['chart-29'] = () => createChart('chart-29', ({ g, innerW, innerH, c
   g.append('path').datum(trainData).attr('d', lineGen)
     .attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2);
   g.append('text').attr('x', xScale(2000)).attr('y', yScale(trainLoss(2000)) - 8)
-    .attr('font-size', '11px').attr('fill', '#1e5ab8').text('Train Loss');
+    .attr('font-size', '18px').attr('fill', '#1e5ab8').text('Train Loss');
 
   // Test loss curve (dynamic)
   const testPath = g.append('path')
     .attr('fill', 'none').attr('stroke', '#c93135').attr('stroke-width', 2.5);
   const testLabel = g.append('text')
-    .attr('font-size', '11px').attr('fill', '#c93135').text('Test Loss');
+    .attr('font-size', '18px').attr('fill', '#c93135').text('Test Loss');
 
   // Phase transition line
   const phaseLine = g.append('line')
     .attr('y1', 0).attr('y2', innerH)
     .attr('stroke', '#5e6070').attr('stroke-width', 1.5).attr('stroke-dasharray', '6,4');
   const phaseLabel1 = g.append('text')
-    .attr('font-size', '10px').attr('fill', '#5e6070').attr('text-anchor', 'end');
+    .attr('font-size', '18px').attr('fill', '#5e6070').attr('text-anchor', 'end');
   const phaseLabel2 = g.append('text')
-    .attr('font-size', '10px').attr('fill', '#5e6070');
+    .attr('font-size', '18px').attr('fill', '#5e6070');
 
   function update() {
     const tStep = transitionStep(wd);
@@ -5160,17 +5162,17 @@ chartInitFns['chart-30'] = () => createChart('chart-30', ({ g, innerW, innerH })
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(5).tickFormat(d => (d / 1000) + 'k'))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('Training Steps');
 
   g.append('g')
     .call(d3.axisLeft(yScale).ticks(5, '.0e'))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -42)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('κ(J_t)');
 
   // κ_crit horizontal line
@@ -5180,7 +5182,7 @@ chartInitFns['chart-30'] = () => createChart('chart-30', ({ g, innerW, innerH })
     .attr('y1', yScale(kappaCrit)).attr('y2', yScale(kappaCrit))
     .attr('stroke', '#c93135').attr('stroke-width', 1.5).attr('stroke-dasharray', '6,4');
   g.append('text').attr('x', innerW - 5).attr('y', yScale(kappaCrit) - 5)
-    .attr('text-anchor', 'end').attr('font-size', '11px').attr('fill', '#c93135')
+    .attr('text-anchor', 'end').attr('font-size', '18px').attr('fill', '#c93135')
     .text('κ_crit');
 
   // Condition number curve (dynamic)
@@ -5194,14 +5196,14 @@ chartInitFns['chart-30'] = () => createChart('chart-30', ({ g, innerW, innerH })
 
   const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
   const kappaPath = g.append('path')
-    .attr('fill', 'none').attr('stroke', '#7b3fe4').attr('stroke-width', 2.5);
+    .attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2.5);
 
   // Transition indicator
   const transLine = g.append('line')
     .attr('y1', 0).attr('y2', innerH)
-    .attr('stroke', '#e8a020').attr('stroke-width', 2).attr('stroke-dasharray', '4,3');
+    .attr('stroke', '#8a7020').attr('stroke-width', 2).attr('stroke-dasharray', '4,3');
   const transLabel = g.append('text')
-    .attr('font-size', '10px').attr('fill', '#e8a020').attr('text-anchor', 'middle');
+    .attr('font-size', '18px').attr('fill', '#8a7020').attr('text-anchor', 'middle');
 
   // Crossing dot
   const crossDot = g.append('circle')
@@ -5290,7 +5292,7 @@ chartInitFns['chart-31'] = () => createChart('chart-31', ({ g, innerW, innerH, c
     .attr('cx', xScale(targetX)).attr('cy', yScale(targetY))
     .attr('r', 5).attr('fill', '#c93135').attr('stroke', '#fff').attr('stroke-width', 1.5);
   g.append('text').attr('x', xScale(targetX) + 8).attr('y', yScale(targetY) - 8)
-    .attr('font-size', '11px').attr('fill', '#c93135').attr('font-weight', '600').text('最小值');
+    .attr('font-size', '18px').attr('fill', '#c93135').attr('font-weight', '600').text('最小值');
 
   // Animation state
   let playing = true;
@@ -5319,7 +5321,7 @@ chartInitFns['chart-31'] = () => createChart('chart-31', ({ g, innerW, innerH, c
   const hessArrow = g.append('line')
     .attr('x1', xScale(startX)).attr('y1', yScale(startY))
     .attr('x2', xScale(startX)).attr('y2', yScale(startY))
-    .attr('stroke', '#7b3fe4').attr('stroke-width', 4)
+    .attr('stroke', '#1e5ab8').attr('stroke-width', 4)
     .attr('marker-end', 'none');
 
   // Arrow marker
@@ -5327,7 +5329,7 @@ chartInitFns['chart-31'] = () => createChart('chart-31', ({ g, innerW, innerH, c
   defs.append('marker').attr('id', 'arrow-hess').attr('viewBox', '0 0 10 10')
     .attr('refX', 10).attr('refY', 5).attr('markerWidth', 8).attr('markerHeight', 8)
     .attr('orient', 'auto-start-reverse')
-    .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#7b3fe4');
+    .append('path').attr('d', 'M 0 0 L 10 5 L 0 10 z').attr('fill', '#1e5ab8');
   defs.append('marker').attr('id', 'arrow-gd').attr('viewBox', '0 0 10 10')
     .attr('refX', 10).attr('refY', 5).attr('markerWidth', 6).attr('markerHeight', 6)
     .attr('orient', 'auto-start-reverse')
@@ -5339,7 +5341,7 @@ chartInitFns['chart-31'] = () => createChart('chart-31', ({ g, innerW, innerH, c
   // Phase labels
   const phaseLabel = g.append('text')
     .attr('x', 10).attr('y', 20)
-    .attr('font-size', '13px').attr('font-weight', '700').attr('fill', '#7b3fe4')
+    .attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#1e5ab8')
     .text('Phase 1: Hessian 方向搜尋');
 
   // Starting point marker
@@ -5363,7 +5365,7 @@ chartInitFns['chart-31'] = () => createChart('chart-31', ({ g, innerW, innerH, c
         .attr('marker-end', prog > 0.1 ? 'url(#arrow-hess)' : 'none')
         .attr('opacity', 1);
       gdArrows.selectAll('*').remove();
-      phaseLabel.text('Phase 1: Hessian 方向搜尋').attr('fill', '#7b3fe4');
+      phaseLabel.text('Phase 1: Hessian 方向搜尋').attr('fill', '#1e5ab8');
     } else {
       // Phase 2: GD refinement arrows appearing one by one
       const phase2Frame = frame - phase1End;
@@ -5442,14 +5444,14 @@ chartInitFns['chart-32'] = () => createChart('chart-32', ({ g, innerW, innerH, c
   const yAxis = g.append('g');
 
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('d（維度）');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -42)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('n₀（所需樣本量）');
 
-  const colors = { 2: '#1e5ab8', 3: '#7b3fe4', 4: '#c93135' };
+  const colors = { 2: '#1e5ab8', 3: '#1e5ab8', 4: '#c93135' };
   const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
 
   const paths = {};
@@ -5458,14 +5460,14 @@ chartInitFns['chart-32'] = () => createChart('chart-32', ({ g, innerW, innerH, c
     paths[p] = g.append('path')
       .attr('fill', 'none').attr('stroke', colors[p]).attr('stroke-width', 2.5);
     labels[p] = g.append('text')
-      .attr('font-size', '12px').attr('fill', colors[p]).attr('font-weight', '600');
+      .attr('font-size', '18px').attr('fill', colors[p]).attr('font-weight', '600');
   });
 
   // Annotation
   const annotGroup = g.append('g');
   annotGroup.append('text')
     .attr('x', innerW / 2).attr('y', innerH * 0.15)
-    .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#c93135')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#c93135')
     .attr('font-weight', '600').text('此下界不可逾越');
   annotGroup.append('line')
     .attr('x1', innerW * 0.3).attr('x2', innerW * 0.7)
@@ -5477,8 +5479,8 @@ chartInitFns['chart-32'] = () => createChart('chart-32', ({ g, innerW, innerH, c
     const maxY = Math.pow(dMax, 4) * 2;
     yScale.domain([1, maxY]);
 
-    xAxis.call(d3.axisBottom(xScale).ticks(5, '~d')).selectAll('text').style('font-size', '12px');
-    yAxis.call(d3.axisLeft(yScale).ticks(5, '.0e')).selectAll('text').style('font-size', '12px');
+    xAxis.call(d3.axisBottom(xScale).ticks(5, '~d')).selectAll('text').style('font-size', '18px');
+    yAxis.call(d3.axisLeft(yScale).ticks(5, '.0e')).selectAll('text').style('font-size', '18px');
 
     [2, 3, 4].forEach(p => {
       const data = [];
@@ -5553,10 +5555,10 @@ chartInitFns['chart-33'] = () => createChart('chart-33', ({ g, innerW, innerH, c
 
   // Labels
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 30)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('Layer');
   const titleText = g.append('text').attr('x', innerW / 2).attr('y', -5)
-    .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#5e6070');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070');
 
   function update() {
     layerGroup.selectAll('*').remove();
@@ -5581,13 +5583,13 @@ chartInitFns['chart-33'] = () => createChart('chart-33', ({ g, innerW, innerH, c
       // Layer number
       layerGroup.append('text')
         .attr('x', x + boxW / 2).attr('y', y + boxH + 15)
-        .attr('text-anchor', 'middle').attr('font-size', '11px').attr('fill', '#5e6070')
+        .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
         .text(i + 1);
 
       // Quality label
       layerGroup.append('text')
         .attr('x', x + boxW / 2).attr('y', y + boxH / 2 + 4)
-        .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#fff')
+        .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#f5f6f8')
         .attr('font-weight', '600')
         .text((q * 100).toFixed(0) + '%');
 
@@ -5598,14 +5600,14 @@ chartInitFns['chart-33'] = () => createChart('chart-33', ({ g, innerW, innerH, c
       else role = '映射';
       layerGroup.append('text')
         .attr('x', x + boxW / 2).attr('y', y - 5)
-        .attr('text-anchor', 'middle').attr('font-size', '9px').attr('fill', '#5e6070')
+        .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
         .text(role);
 
       // Arrow between boxes
       if (i < L - 1) {
         layerGroup.append('text')
           .attr('x', x + boxW + 2).attr('y', y + boxH / 2 + 4)
-          .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#8a8c98')
+          .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#8a8c98')
           .text('\u2192');
       }
     }
@@ -5642,17 +5644,17 @@ chartInitFns['chart-34'] = () => createChart('chart-34', ({ g, innerW, innerH })
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(10).tickFormat(d3.format('d')))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('深度 L');
 
   g.append('g')
     .call(d3.axisLeft(yScale).ticks(6, '.0e'))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -42)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('B\u00B2（逼近誤差）');
 
   // Exponential decay: B^2 = C * exp(-c*L)
@@ -5664,17 +5666,17 @@ chartInitFns['chart-34'] = () => createChart('chart-34', ({ g, innerW, innerH })
 
   const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
   g.append('path').datum(data).attr('d', lineGen)
-    .attr('fill', 'none').attr('stroke', '#7b3fe4').attr('stroke-width', 2.5);
+    .attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2.5);
 
   // Data points
   g.selectAll('.dot34')
     .data(data).enter().append('circle')
     .attr('cx', d => xScale(d[0])).attr('cy', d => yScale(d[1]))
-    .attr('r', 3.5).attr('fill', '#7b3fe4');
+    .attr('r', 3.5).attr('fill', '#1e5ab8');
 
   // Annotation
   g.append('text').attr('x', xScale(12)).attr('y', yScale(C0 * Math.exp(-decayC * 5)) - 10)
-    .attr('font-size', '12px').attr('fill', '#7b3fe4').attr('font-weight', '600')
+    .attr('font-size', '18px').attr('fill', '#1e5ab8').attr('font-weight', '600')
     .text('B\u00B2 \u221D exp(-cL)');
 
   return { update: () => {}, getState: () => ({}), setState: () => {} };
@@ -5690,7 +5692,7 @@ chartInitFns['chart-35'] = () => createChart('chart-35', ({ g, innerW, innerH, c
   const simplexGroup = g.append('g');
   const infoText = g.append('text')
     .attr('x', innerW / 2).attr('y', innerH - 5)
-    .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#5e6070');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070');
 
   function getSimplexVertices2D(k) {
     if (k <= 3) {
@@ -5714,7 +5716,7 @@ chartInitFns['chart-35'] = () => createChart('chart-35', ({ g, innerW, innerH, c
     return verts;
   }
 
-  const colors = ['#1e5ab8', '#c93135', '#1e8050', '#7b3fe4', '#e8a020', '#2db0ce'];
+  const colors = ['#1e5ab8', '#c93135', '#1e8050', '#1e5ab8', '#8a7020', '#2a6bb8'];
 
   function update() {
     simplexGroup.selectAll('*').remove();
@@ -5738,7 +5740,7 @@ chartInitFns['chart-35'] = () => createChart('chart-35', ({ g, innerW, innerH, c
         .attr('stroke', '#fff').attr('stroke-width', 2);
       simplexGroup.append('text')
         .attr('x', v[0]).attr('y', v[1] - 14)
-        .attr('text-anchor', 'middle').attr('font-size', '11px')
+        .attr('text-anchor', 'middle').attr('font-size', '18px')
         .attr('fill', colors[i % colors.length]).attr('font-weight', '600')
         .text('class ' + (i + 1));
     });
@@ -5751,7 +5753,7 @@ chartInitFns['chart-35'] = () => createChart('chart-35', ({ g, innerW, innerH, c
       .attr('r', 3).attr('fill', '#5e6070');
     simplexGroup.append('text')
       .attr('x', centX).attr('y', centY + 15)
-      .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#5e6070')
+      .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
       .text('centroid');
 
     infoText.text(`K=${K}, r_eff = K\u22121 = ${K - 1}  (\u6B63\u5247\u55AE\u7D14\u5F62)`);
@@ -5802,10 +5804,10 @@ chartInitFns['chart-36'] = () => createChart('chart-36', ({ g, innerW, innerH, c
 
   // Region labels
   g.append('text').attr('x', xScale(0.3)).attr('y', yScale(1.6))
-    .attr('font-size', '13px').attr('font-weight', '700').attr('fill', '#1e8050')
+    .attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#1e8050')
     .text('Benign');
   g.append('text').attr('x', xScale(1.2)).attr('y', yScale(0.4))
-    .attr('font-size', '13px').attr('font-weight', '700').attr('fill', '#c93135')
+    .attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#c93135')
     .text('Catastrophic');
 
   // MSE boundary line
@@ -5826,31 +5828,31 @@ chartInitFns['chart-36'] = () => createChart('chart-36', ({ g, innerW, innerH, c
   const legend = g.append('g').attr('transform', `translate(${innerW - 100}, 10)`);
   legend.append('line').attr('x1', 0).attr('x2', 20).attr('y1', 0).attr('y2', 0)
     .attr('stroke', '#1e5ab8').attr('stroke-width', 3).attr('stroke-dasharray', '8,4');
-  legend.append('text').attr('x', 25).attr('y', 4).attr('font-size', '11px').attr('fill', '#1e5ab8').text('MSE');
+  legend.append('text').attr('x', 25).attr('y', 4).attr('font-size', '18px').attr('fill', '#1e5ab8').text('MSE');
   legend.append('line').attr('x1', 0).attr('x2', 20).attr('y1', 18).attr('y2', 18)
     .attr('stroke', '#c93135').attr('stroke-width', 2.5).attr('stroke-dasharray', '4,4');
-  legend.append('text').attr('x', 25).attr('y', 22).attr('font-size', '11px').attr('fill', '#c93135').text('CE');
+  legend.append('text').attr('x', 25).attr('y', 22).attr('font-size', '18px').attr('fill', '#c93135').text('CE');
 
   // Overlap message
   const overlapMsg = g.append('text')
     .attr('x', xScale(0.85)).attr('y', yScale(1.55))
-    .attr('font-size', '12px').attr('font-weight', '700').attr('fill', '#8a7020')
+    .attr('font-size', '18px').attr('font-weight', '700').attr('fill', '#8a7020')
     .attr('transform', `rotate(-38, ${xScale(0.85)}, ${yScale(1.55)})`)
     .text('\u5169\u689D\u5206\u754C\u5B8C\u5168\u91CD\u5408');
 
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(5).tickFormat(d => d.toFixed(1)))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('g')
     .call(d3.axisLeft(yScale).ticks(5).tickFormat(d => d.toFixed(1)))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('\u03B1\uFF08\u5947\u7570\u503C\u8870\u6E1B\u6307\u6578\uFF09');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('\u03B2\uFF08\u76F8\u95DC\u6027\u8870\u6E1B\u6307\u6578\uFF09');
 
   function update() {
@@ -5898,15 +5900,15 @@ chartInitFns['chart-37'] = () => createChart('chart-37', ({ g, innerW, innerH, c
   // Axes
   g.append('g').attr('transform', `translate(0,${innerH})`)
     .call(d3.axisBottom(xScale).ticks(5))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
   g.append('g')
     .call(d3.axisLeft(yScale).ticks(5))
-    .selectAll('text').style('font-size', '12px');
+    .selectAll('text').style('font-size', '18px');
 
   const pointsGroup = g.append('g');
   const labelText = g.append('text')
     .attr('x', innerW / 2).attr('y', -5)
-    .attr('text-anchor', 'middle').attr('font-size', '12px').attr('fill', '#5e6070');
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070');
 
   // Seeded random for consistency
   function seededRandom(seed) {
@@ -6003,22 +6005,22 @@ chartInitFns['chart-38'] = () => createChart('chart-38', ({ g, innerW, innerH, c
   const yAxisG = g.append('g');
 
   g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('r_eff');
   g.append('text').attr('transform', 'rotate(-90)')
     .attr('x', -innerH / 2).attr('y', -38)
-    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .attr('text-anchor', 'middle').attr('font-size', '18px').attr('fill', '#5e6070')
     .text('\u221A(r_eff / n)');
 
   const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
   const curvePath = g.append('path')
-    .attr('fill', 'none').attr('stroke', '#7b3fe4').attr('stroke-width', 2.5);
+    .attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2.5);
 
   // Current point indicator
   const ptDot = g.append('circle')
     .attr('r', 6).attr('fill', '#c93135').attr('stroke', '#fff').attr('stroke-width', 2);
   const ptLabel = g.append('text')
-    .attr('font-size', '12px').attr('fill', '#c93135').attr('font-weight', '600');
+    .attr('font-size', '18px').attr('fill', '#c93135').attr('font-weight', '600');
 
   // Threshold line at y=0.1 (small correction zone)
   const threshLine = g.append('line')
@@ -6026,14 +6028,14 @@ chartInitFns['chart-38'] = () => createChart('chart-38', ({ g, innerW, innerH, c
     .attr('stroke', '#1e8050').attr('stroke-width', 1).attr('stroke-dasharray', '4,3');
   const threshLabel = g.append('text')
     .attr('x', innerW - 5).attr('text-anchor', 'end')
-    .attr('font-size', '10px').attr('fill', '#1e8050');
+    .attr('font-size', '18px').attr('fill', '#1e8050');
 
   function update() {
     const maxCorr = Math.sqrt(100 / n);
     yScale.domain([0, Math.max(0.5, maxCorr * 1.3)]);
 
-    xAxisG.call(d3.axisBottom(xScale).ticks(10)).selectAll('text').style('font-size', '12px');
-    yAxisG.call(d3.axisLeft(yScale).ticks(6)).selectAll('text').style('font-size', '12px');
+    xAxisG.call(d3.axisBottom(xScale).ticks(10)).selectAll('text').style('font-size', '18px');
+    yAxisG.call(d3.axisLeft(yScale).ticks(6)).selectAll('text').style('font-size', '18px');
 
     // Curve
     const data = [];
