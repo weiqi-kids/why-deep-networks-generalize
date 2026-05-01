@@ -435,7 +435,153 @@ footer {
 <script src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/contrib/auto-render.min.js" defer
   onload="renderMathInElement(document.body,{delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}]})"></script>
 <script>
-/* === All JS will be added here by subsequent tasks === */
+// === Glossary ===
+const GLOSSARY = [
+  { term: "神經網路", def: "一個有很多旋鈕的函數機器", metaphor: "像一台混音器，每個旋鈕控制一個效果" },
+  { term: "參數 (p)", def: "那些可以轉的旋鈕", metaphor: "混音器上的旋鈕數量" },
+  { term: "訓練資料 (n)", def: "用來調旋鈕的參考答案", metaphor: "老師給你的練習題" },
+  { term: "過參數化", def: "旋鈕比練習題多很多 (p >> n)", metaphor: "1000 個旋鈕，只有 10 題練習" },
+  { term: "泛化", def: "在沒見過的新資料上也表現好", metaphor: "考試考到沒練過的題目也會寫" },
+  { term: "過擬合", def: "死背練習題，新題就不會", metaphor: "只背答案不理解" },
+  { term: "SGD", def: "調旋鈕的方法——每次看幾筆資料，微調一點", metaphor: "每次看一兩題，稍微轉一下旋鈕" },
+  { term: "損失函數", def: "衡量「離正確答案多遠」的分數", metaphor: "考試扣分" },
+  { term: "Jacobian", def: "記錄「轉每個旋鈕會怎麼影響輸出」的大表格", metaphor: "混音器的說明書——轉哪個鈕影響哪個聲音" },
+  { term: "奇異值", def: "Jacobian 裡每個方向的重要程度", metaphor: "每個旋鈕的靈敏度排名" },
+];
+
+function renderGlossary(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+  container.innerHTML = '';
+  GLOSSARY.forEach(g => {
+    const card = document.createElement('div');
+    card.className = 'glossary-card';
+    card.innerHTML = `<div class="term">${g.term}</div><div class="definition">${g.def}</div><div class="metaphor">${g.metaphor}</div>`;
+    card.addEventListener('click', () => card.classList.toggle('flipped'));
+    container.appendChild(card);
+  });
+}
+
+renderGlossary('glossary-inline');
+renderGlossary('glossary-grid');
+
+document.getElementById('glossary-btn').addEventListener('click', () => {
+  document.getElementById('glossary-overlay').hidden = false;
+});
+document.addEventListener('keydown', e => {
+  if (e.key === '?' && !e.ctrlKey && !e.metaKey && e.target.tagName !== 'INPUT') {
+    e.preventDefault();
+    const overlay = document.getElementById('glossary-overlay');
+    overlay.hidden = !overlay.hidden;
+  }
+  if (e.key === 'Escape') {
+    document.getElementById('glossary-overlay').hidden = true;
+  }
+});
+
+// === Chart Infrastructure ===
+const chartRegistry = {};
+const chartStates = {};
+
+function createChart(containerId, initFn) {
+  const container = document.getElementById(containerId);
+  if (!container) return null;
+  const svgEl = document.createElement('div');
+  svgEl.className = 'chart-svg-wrapper';
+  const controlsTarget = container.querySelector('.chart-controls');
+  const insertBefore = controlsTarget || null;
+  container.insertBefore(svgEl, insertBefore);
+
+  const width = container.clientWidth - 32;
+  const height = Math.min(400, width * 0.6);
+  const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+
+  const svg = d3.select(svgEl).append('svg')
+    .attr('viewBox', `0 0 ${width} ${height}`)
+    .attr('preserveAspectRatio', 'xMidYMid meet')
+    .attr('aria-label', container.querySelector('h3')?.textContent || '');
+
+  const g = svg.append('g').attr('transform', `translate(${margin.left},${margin.top})`);
+  const innerW = width - margin.left - margin.right;
+  const innerH = height - margin.top - margin.bottom;
+
+  const api = initFn({ svg, g, width, height, innerW, innerH, margin, container });
+
+  return {
+    update: api.update || (() => {}),
+    destroy: () => { svgEl.remove(); },
+    getState: api.getState || (() => ({})),
+    setState: api.setState || (() => {}),
+  };
+}
+
+// === Lazy Loading ===
+const chartInitFns = {};
+
+const lazyObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    const id = entry.target.id;
+    if (entry.isIntersecting && !chartRegistry[id] && chartInitFns[id]) {
+      if (chartStates[id]) {
+        chartRegistry[id] = chartInitFns[id]();
+        chartRegistry[id].setState(chartStates[id]);
+      } else {
+        chartRegistry[id] = chartInitFns[id]();
+      }
+    } else if (!entry.isIntersecting && chartRegistry[id]) {
+      const rect = entry.boundingClientRect;
+      const windowH = window.innerHeight;
+      if (rect.top > windowH + 800 || rect.bottom < -800) {
+        chartStates[id] = chartRegistry[id].getState();
+        chartRegistry[id].destroy();
+        delete chartRegistry[id];
+      }
+    }
+  });
+}, { threshold: 0, rootMargin: '200px' });
+
+function observeAllCharts() {
+  document.querySelectorAll('.chart-container[id]').forEach(el => {
+    lazyObserver.observe(el);
+  });
+}
+
+// === Reading Position ===
+const navObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      const navId = entry.target.dataset.nav;
+      if (navId && typeof highlightNavNode === 'function') {
+        highlightNavNode(navId);
+      }
+    }
+  });
+}, { threshold: 0.3, rootMargin: '-180px 0px 0px 0px' });
+
+document.querySelectorAll('[data-nav]').forEach(el => navObserver.observe(el));
+
+// === Details Animation ===
+document.querySelectorAll('details.layer').forEach(detail => {
+  const content = detail.querySelector('.layer-content');
+  if (!content) return;
+  detail.addEventListener('toggle', () => {
+    if (detail.open) {
+      content.style.maxHeight = content.scrollHeight + 'px';
+      setTimeout(() => { content.style.maxHeight = 'none'; }, 300);
+    } else {
+      content.style.maxHeight = content.scrollHeight + 'px';
+      requestAnimationFrame(() => { content.style.maxHeight = '0'; });
+    }
+  });
+});
+
+// === Pub-Sub for Chart Linkage ===
+function chartEmit(eventName, detail) {
+  document.dispatchEvent(new CustomEvent('chart:' + eventName, { detail }));
+}
+function chartOn(eventName, handler) {
+  document.addEventListener('chart:' + eventName, e => handler(e.detail));
+}
 </script>
 </body>
 </html>
