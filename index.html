@@ -523,7 +523,51 @@ footer {
     </div>
   </div>
 </section>
-  <section id="sec-thm4" class="theorem-section" data-nav="thm4"></section>
+  <section id="sec-thm4" class="theorem-section" data-nav="thm4">
+  <h2>定理 4：Feature Learning 消除維度詛咒</h2>
+  <div class="layer-intuition">
+    <p>在 100 維空間裡找一條線上的規律。笨方法（NTK）是在 100 維裡地毯式搜索；聰明方法（Feature Learning）是先發現「其實答案只跟某個方向有關」，把問題降到一維再找。需要的資料量從 $n^{100\text{相關}}$ 驟降到 $n^{1\text{相關}}$。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p><strong>設定</strong>：Single-index model $f^*(x) = \varphi(w^{*T} x)$，$\varphi \in H^s$（Sobolev 平滑度 $s$）。</p>
+      <p><strong>結論</strong>：</p>
+      <ul>
+        <li>NTK 誤差：$E_{\text{NTK}} = \Theta(n^{-2s/(2s+d)})$ — 受維度 $d$ 詛咒</li>
+        <li>FL 誤差：$E_{\text{FL}} = \Theta(n^{-2s/(2s+1)})$ — 維度無關</li>
+        <li>改善比：$n^{2s(d-1)/((2s+1)(2s+d))}$</li>
+      </ul>
+    </div>
+  </details>
+  <details class="layer">
+    <summary>完整證明</summary>
+    <div class="layer-content">
+      <p><strong>Step 1（NTK）</strong>：球諧特徵值 $\lambda_\ell \sim \ell^{-(d+1)}$，重數 $N(d,\ell) \sim \ell^{d-2}$。高維度下重數爆炸導致估計效率低落。</p>
+      <p><strong>Step 2（FL）</strong>：Feature Learning 讓核函數坍縮到一維方向，重數從 $\ell^{d-2}$ 降為 $1$。</p>
+      <p><strong>Step 3</strong>：指數差異 $\frac{2s}{2s+d}$ vs $\frac{2s}{2s+1}$，差距隨 $d$ 增大而擴大。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-9">
+      <h3>NTK vs FL 學習曲線</h3>
+      <div class="chart-controls">
+        <label>d (維度) <input type="range" id="chart9-d" min="2" max="100" step="1" value="10"><span class="value-display" id="chart9-d-val">10</span></label>
+        <label>s (平滑度) <input type="range" id="chart9-s" min="0.5" max="3" step="0.1" value="1"><span class="value-display" id="chart9-s-val">1.0</span></label>
+      </div>
+    </div>
+    <div class="chart-container" id="chart-10">
+      <h3>球諧係數衰減</h3>
+      <div class="chart-controls">
+        <button id="chart10-ntk" class="active">NTK 模式</button>
+        <button id="chart10-fl">FL 模式</button>
+      </div>
+    </div>
+    <div class="chart-container" id="chart-11">
+      <h3>改善倍數熱力圖</h3>
+    </div>
+  </div>
+</section>
   <section id="sec-thm5" class="theorem-section" data-nav="thm5"></section>
   <section id="sec-thm3" class="theorem-section" data-nav="thm3"></section>
   <section id="sec-thm6" class="theorem-section" data-nav="thm6"></section>
@@ -1375,6 +1419,384 @@ chartInitFns['chart-6'] = () => createChart('chart-6', ({ g, innerW, innerH, con
       update();
     }
   };
+});
+
+// === Chart #9: NTK vs FL Learning Curves (log-log) ===
+chartInitFns['chart-9'] = () => createChart('chart-9', ({ g, innerW, innerH, container }) => {
+  let dVal = 10, sVal = 1.0;
+  const nPoints = 60;
+
+  const xScale = d3.scaleLog().domain([100, 100000]).range([0, innerW]);
+  const yScale = d3.scaleLog().domain([1e-4, 1]).range([innerH, 0]);
+
+  // Axes
+  const axisX = g.append('g').attr('transform', `translate(0,${innerH})`);
+  const axisY = g.append('g');
+
+  // Axis labels
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('n（樣本數）');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -40)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('誤差');
+
+  // Lines
+  const ntkPath = g.append('path').attr('fill', 'none').attr('stroke', '#2a6bb8').attr('stroke-width', 2.5);
+  const flPath = g.append('path').attr('fill', 'none').attr('stroke', '#1e8050').attr('stroke-width', 2.5);
+
+  // Shaded gap area
+  const gapArea = g.append('path').attr('fill', '#1e8050').attr('opacity', 0.08);
+
+  // Legend
+  const legend = g.append('g').attr('transform', `translate(${innerW - 180}, 10)`);
+  [['NTK: n^{-2s/(2s+d)}', '#2a6bb8'], ['FL: n^{-2s/(2s+1)}', '#1e8050']].forEach(([l, c], i) => {
+    legend.append('line').attr('x1', 0).attr('x2', 20).attr('y1', i * 20).attr('y2', i * 20).attr('stroke', c).attr('stroke-width', 2.5);
+    legend.append('text').attr('x', 25).attr('y', i * 20 + 4).attr('font-size', '12px').attr('fill', '#5e6070').text(l);
+  });
+
+  // Improvement ratio annotation
+  const ratioText = g.append('text')
+    .attr('x', innerW - 10).attr('y', innerH - 10)
+    .attr('text-anchor', 'end').attr('font-size', '13px').attr('font-weight', '600').attr('fill', '#1e8050');
+
+  const line = d3.line().x(d => d[0]).y(d => d[1]);
+
+  function update() {
+    const ntkExp = -2 * sVal / (2 * sVal + dVal);
+    const flExp = -2 * sVal / (2 * sVal + 1);
+
+    const ns = d3.range(nPoints).map(i => {
+      const t = i / (nPoints - 1);
+      return 100 * Math.pow(1000, t); // 100 to 100000
+    });
+
+    const ntkData = ns.map(n => Math.pow(n, ntkExp));
+    const flData = ns.map(n => Math.pow(n, flExp));
+
+    // Update y-scale
+    const allVals = ntkData.concat(flData).filter(v => v > 0);
+    const yMin = Math.max(1e-8, d3.min(allVals) * 0.5);
+    const yMax = Math.min(10, d3.max(allVals) * 2);
+    yScale.domain([yMin, yMax]);
+
+    axisX.call(d3.axisBottom(xScale).ticks(4, '~s')).selectAll('text').style('font-size', '13px');
+    axisY.call(d3.axisLeft(yScale).ticks(5, '.0e')).selectAll('text').style('font-size', '13px');
+
+    // NTK line
+    const ntkPoints = ns.map((n, i) => [xScale(n), yScale(Math.max(yMin, ntkData[i]))]);
+    ntkPath.attr('d', line(ntkPoints));
+
+    // FL line
+    const flPoints = ns.map((n, i) => [xScale(n), yScale(Math.max(yMin, flData[i]))]);
+    flPath.attr('d', line(flPoints));
+
+    // Gap area between curves
+    const upperPoints = ns.map((n, i) => [xScale(n), yScale(Math.max(yMin, ntkData[i]))]);
+    const lowerPoints = ns.map((n, i) => [xScale(n), yScale(Math.max(yMin, flData[i]))]).reverse();
+    gapArea.attr('d', line(upperPoints.concat(lowerPoints)) + 'Z');
+
+    // Improvement ratio at n=1000
+    const ratioExp = 2 * sVal * (dVal - 1) / ((2 * sVal + 1) * (2 * sVal + dVal));
+    const ratio = Math.pow(1000, ratioExp);
+    ratioText.text(`改善比 (n=1000): ${ratio.toFixed(1)}x`);
+  }
+
+  update();
+
+  const dSlider = container.querySelector('#chart9-d');
+  const sSlider = container.querySelector('#chart9-s');
+  const dDisplay = container.querySelector('#chart9-d-val');
+  const sDisplay = container.querySelector('#chart9-s-val');
+
+  dSlider?.addEventListener('input', () => {
+    dVal = +dSlider.value;
+    dDisplay.textContent = dVal;
+    update();
+  });
+  sSlider?.addEventListener('input', () => {
+    sVal = +sSlider.value;
+    sDisplay.textContent = sVal.toFixed(1);
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ dVal, sVal }),
+    setState: (s) => {
+      dVal = s.dVal; sVal = s.sVal;
+      if (dSlider) { dSlider.value = dVal; dDisplay.textContent = dVal; }
+      if (sSlider) { sSlider.value = sVal; sDisplay.textContent = sVal.toFixed(1); }
+      update();
+    }
+  };
+});
+
+// === Chart #10: Spherical Harmonic Coefficient Decay (polar bar chart) ===
+chartInitFns['chart-10'] = () => createChart('chart-10', ({ svg, g, innerW, innerH, container }) => {
+  let mode = 'ntk'; // 'ntk' or 'fl'
+  const dVal = 10;
+  const maxL = 8;
+  const orders = d3.range(1, maxL + 1);
+
+  const cx = innerW / 2;
+  const cy = innerH / 2;
+  const maxRadius = Math.min(cx, cy) - 20;
+
+  // Move drawing group to center
+  const polarG = g.append('g').attr('transform', `translate(${cx},${cy})`);
+
+  // Radial scale for eigenvalue magnitude
+  const rScale = d3.scaleLinear().domain([0, 1]).range([0, maxRadius]);
+
+  // Reference circles
+  [0.25, 0.5, 0.75, 1.0].forEach(r => {
+    polarG.append('circle')
+      .attr('r', rScale(r))
+      .attr('fill', 'none').attr('stroke', '#d5d6da').attr('stroke-width', 0.5);
+    polarG.append('text')
+      .attr('x', 3).attr('y', -rScale(r) - 2)
+      .attr('font-size', '10px').attr('fill', '#8a8c98')
+      .text(r.toFixed(2));
+  });
+
+  function getMultiplicity(ell, isNTK) {
+    if (!isNTK) return 1;
+    // N(d, ell) ~ ell^(d-2), normalized to something visible
+    return Math.pow(ell, dVal - 2);
+  }
+
+  function getEigenvalue(ell) {
+    // lambda_ell ~ ell^{-(d+1)}, normalized so ell=1 is 1
+    return Math.pow(ell, -(dVal + 1)) / Math.pow(1, -(dVal + 1));
+  }
+
+  function computeArcs(isNTK) {
+    // Compute multiplicities
+    const mults = orders.map(ell => getMultiplicity(ell, isNTK));
+    const totalMult = d3.sum(mults);
+
+    // Angular span proportional to multiplicity
+    let angleStart = 0;
+    return orders.map((ell, i) => {
+      const angularSpan = (mults[i] / totalMult) * 2 * Math.PI;
+      const padAngle = 0.02;
+      const arc = {
+        ell,
+        startAngle: angleStart + padAngle / 2,
+        endAngle: angleStart + angularSpan - padAngle / 2,
+        innerRadius: 8,
+        outerRadius: rScale(getEigenvalue(ell)),
+        multiplicity: mults[i],
+        eigenvalue: getEigenvalue(ell),
+      };
+      angleStart += angularSpan;
+      return arc;
+    });
+  }
+
+  const arcGen = d3.arc()
+    .innerRadius(d => d.innerRadius)
+    .outerRadius(d => d.outerRadius)
+    .startAngle(d => d.startAngle)
+    .endAngle(d => d.endAngle);
+
+  const colorScale = d3.scaleSequential(d3.interpolateBlues).domain([maxL, 1]);
+
+  // Draw arcs
+  const arcs = polarG.selectAll('.harmonic-arc').data(computeArcs(true))
+    .enter().append('path')
+    .attr('class', 'harmonic-arc')
+    .attr('d', arcGen)
+    .attr('fill', d => mode === 'ntk' ? colorScale(d.ell) : '#1e8050')
+    .attr('opacity', 0.75)
+    .attr('stroke', 'white')
+    .attr('stroke-width', 1);
+
+  // Labels
+  const arcLabels = polarG.selectAll('.arc-label').data(computeArcs(true))
+    .enter().append('text')
+    .attr('class', 'arc-label')
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '11px')
+    .attr('fill', '#5e6070')
+    .attr('transform', d => {
+      const midAngle = (d.startAngle + d.endAngle) / 2 - Math.PI / 2;
+      const r = d.outerRadius + 14;
+      return `translate(${r * Math.cos(midAngle)},${r * Math.sin(midAngle)})`;
+    })
+    .text(d => `l=${d.ell}`);
+
+  // Mode label
+  const modeLabel = polarG.append('text')
+    .attr('text-anchor', 'middle')
+    .attr('font-size', '14px').attr('font-weight', '600')
+    .attr('fill', '#1e2030')
+    .attr('y', -maxRadius - 10)
+    .text('NTK 模式');
+
+  function update() {
+    const isNTK = mode === 'ntk';
+    const data = computeArcs(isNTK);
+
+    arcs.data(data)
+      .transition().duration(600)
+      .attr('d', arcGen)
+      .attr('fill', d => isNTK ? colorScale(d.ell) : '#1e8050')
+      .attr('opacity', 0.75);
+
+    arcLabels.data(data)
+      .transition().duration(600)
+      .attr('transform', d => {
+        const midAngle = (d.startAngle + d.endAngle) / 2 - Math.PI / 2;
+        const r = d.outerRadius + 14;
+        return `translate(${r * Math.cos(midAngle)},${r * Math.sin(midAngle)})`;
+      });
+
+    modeLabel.text(isNTK ? 'NTK 模式' : 'FL 模式');
+  }
+
+  // Toggle buttons
+  const ntkBtn = container.querySelector('#chart10-ntk');
+  const flBtn = container.querySelector('#chart10-fl');
+  ntkBtn?.addEventListener('click', () => {
+    mode = 'ntk';
+    ntkBtn.classList.add('active');
+    flBtn.classList.remove('active');
+    update();
+  });
+  flBtn?.addEventListener('click', () => {
+    mode = 'fl';
+    flBtn.classList.add('active');
+    ntkBtn.classList.remove('active');
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ mode }),
+    setState: (s) => {
+      mode = s.mode;
+      if (mode === 'ntk') { ntkBtn?.classList.add('active'); flBtn?.classList.remove('active'); }
+      else { flBtn?.classList.add('active'); ntkBtn?.classList.remove('active'); }
+      update();
+    }
+  };
+});
+
+// === Chart #11: Improvement Ratio Heatmap ===
+chartInitFns['chart-11'] = () => createChart('chart-11', ({ g, innerW, innerH, container }) => {
+  const nEval = 1000;
+  const dValues = d3.range(3, 51); // d from 3 to 50
+  const sValues = [];
+  for (let s = 0.5; s <= 3.0; s += 0.1) sValues.push(+s.toFixed(1));
+
+  const cellW = innerW / dValues.length;
+  const cellH = innerH / sValues.length;
+
+  const xScale = d3.scaleBand().domain(dValues).range([0, innerW]);
+  const yScale = d3.scaleBand().domain(sValues.slice().reverse()).range([0, innerH]);
+
+  // Compute all ratios for color scale domain
+  let maxRatio = 1;
+  const cells = [];
+  dValues.forEach(d => {
+    sValues.forEach(s => {
+      const ratioExp = 2 * s * (d - 1) / ((2 * s + 1) * (2 * s + d));
+      const ratio = Math.pow(nEval, ratioExp);
+      if (ratio > maxRatio) maxRatio = ratio;
+      cells.push({ d, s, ratio, ratioExp });
+    });
+  });
+
+  const colorScale = d3.scaleSequential(d3.interpolateGreens).domain([1, maxRatio]);
+
+  // Tooltip
+  const tooltip = d3.select(container).append('div')
+    .style('position', 'absolute')
+    .style('background', '#1e2030')
+    .style('color', 'white')
+    .style('padding', '4px 8px')
+    .style('border-radius', '4px')
+    .style('font-size', '13px')
+    .style('pointer-events', 'none')
+    .style('opacity', 0)
+    .style('z-index', '10');
+
+  // Make container position relative for tooltip
+  d3.select(container).style('position', 'relative');
+
+  // Draw cells
+  g.selectAll('.heatmap-cell').data(cells)
+    .enter().append('rect')
+    .attr('class', 'heatmap-cell')
+    .attr('x', d => xScale(d.d))
+    .attr('y', d => yScale(d.s))
+    .attr('width', xScale.bandwidth())
+    .attr('height', yScale.bandwidth())
+    .attr('fill', d => colorScale(d.ratio))
+    .attr('stroke', 'white')
+    .attr('stroke-width', 0.5)
+    .on('mouseover', function(event, d) {
+      d3.select(this).attr('stroke', '#1e2030').attr('stroke-width', 2);
+      tooltip.style('opacity', 1)
+        .html(`d=${d.d}, s=${d.s}<br>改善比: ${d.ratio.toFixed(1)}x`);
+    })
+    .on('mousemove', function(event) {
+      const rect = container.getBoundingClientRect();
+      tooltip
+        .style('left', (event.clientX - rect.left + 12) + 'px')
+        .style('top', (event.clientY - rect.top - 10) + 'px');
+    })
+    .on('mouseout', function() {
+      d3.select(this).attr('stroke', 'white').attr('stroke-width', 0.5);
+      tooltip.style('opacity', 0);
+    });
+
+  // Axes
+  // X axis - show only some ticks to avoid crowding
+  const xAxis = d3.axisBottom(xScale).tickValues(dValues.filter(d => d % 5 === 0));
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(xAxis).selectAll('text').style('font-size', '12px');
+
+  // Y axis - show only some ticks
+  const yAxis = d3.axisLeft(yScale).tickValues(sValues.filter(s => s % 0.5 === 0).reverse());
+  g.append('g').call(yAxis).selectAll('text').style('font-size', '12px');
+
+  // Axis labels
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('d（維度）');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -40)
+    .attr('text-anchor', 'middle').attr('font-size', '14px').attr('fill', '#5e6070')
+    .text('s（平滑度）');
+
+  // Color legend
+  const legendW = 20, legendH = innerH * 0.6;
+  const legendG = g.append('g').attr('transform', `translate(${innerW + 8}, ${(innerH - legendH) / 2})`);
+  const legendScale = d3.scaleLinear().domain([1, maxRatio]).range([legendH, 0]);
+
+  // Gradient
+  const defs = g.append('defs');
+  const gradient = defs.append('linearGradient')
+    .attr('id', 'heatmap-gradient-11')
+    .attr('x1', '0%').attr('y1', '100%')
+    .attr('x2', '0%').attr('y2', '0%');
+  gradient.append('stop').attr('offset', '0%').attr('stop-color', colorScale(1));
+  gradient.append('stop').attr('offset', '100%').attr('stop-color', colorScale(maxRatio));
+
+  legendG.append('rect')
+    .attr('width', legendW).attr('height', legendH)
+    .attr('fill', 'url(#heatmap-gradient-11)')
+    .attr('stroke', '#d5d6da');
+
+  const legendAxis = d3.axisRight(legendScale).ticks(4).tickFormat(d => d.toFixed(0) + 'x');
+  legendG.append('g').attr('transform', `translate(${legendW},0)`).call(legendAxis)
+    .selectAll('text').style('font-size', '11px');
+
+  return { update: () => {}, getState: () => ({}), setState: () => {} };
 });
 
 // === Boot ===
