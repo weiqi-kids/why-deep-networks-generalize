@@ -924,7 +924,59 @@ footer {
     </div>
   </div>
 
-  <!-- 14g-14h will be added here -->
+  <h3>14g-14h：巨觀現象的微觀解釋</h3>
+  <div class="layer-intuition">
+    <p>14g 連接定理 2（Benign 分界），14h 連接定理 1（統一泛化界）——用算子 M 的語言解釋兩大神秘現象。</p>
+  </div>
+
+  <h3 data-nav="ext14g">14g：Double Descent——爆管點與最小範數修復</h3>
+  <div class="layer-intuition">
+    <p>模型大小剛好等於資料量時（$\gamma=1$），Jacobian 最小奇異值趨近零，$\operatorname{tr}(M)$ 爆炸——這是「爆管點」。過了這個點（$\gamma>1$），最小範數約束改善條件數，$\operatorname{tr}(M)$ 反而下降。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>$\operatorname{tr}(M) = \sigma^2 \sum s_i^{-4}$。</p>
+      <p>$\gamma < 1$：$\operatorname{tr}(M)/n \to \sigma^2(1+\gamma)/(1-\gamma)^3$。</p>
+      <p>$\gamma = 1$：$s_{\min}\to 0$，$\operatorname{tr}(M)\to\infty$。</p>
+      <p>$\gamma > 1$：minimum-norm improves conditioning。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-27">
+      <h3>Double Descent</h3>
+      <div class="chart-controls">
+        <label>$\gamma$ <input type="range" id="chart27-gamma" min="0.1" max="3" step="0.01" value="1"><span class="value-display" id="chart27-gamma-val">1.00</span></label>
+      </div>
+    </div>
+    <div class="chart-container" id="chart-28">
+      <h3>tr(M) 三段分解</h3>
+    </div>
+  </div>
+
+  <h3 data-nav="ext14h">14h：Grokking——先死背再頓悟</h3>
+  <div class="layer-intuition">
+    <p>先死背再頓悟。早期 Jacobian 條件數極差，$\operatorname{tr}(M)$ 天文數字大（噪聲滿溢）。Weight decay 慢慢壓縮參數，某一刻條件數突然穿過臨界值，泛化瞬間出現——像水壩決堤。</p>
+  </div>
+  <details class="layer">
+    <summary>形式化定理</summary>
+    <div class="layer-content">
+      <p>Phase I（memorization）：$\kappa(J)$ extreme，$\operatorname{tr}(M) = O(e^{cn})$。</p>
+      <p>Phase II（compression）：weight decay + L-homogeneity → $\operatorname{tr}(M)$ exponential decay。</p>
+      <p>Phase transition at $\kappa(J_t) \leq \kappa_{\mathrm{crit}}$。</p>
+    </div>
+  </details>
+  <div class="charts">
+    <div class="chart-container" id="chart-29">
+      <h3>Grokking</h3>
+      <div class="chart-controls">
+        <label>Weight Decay <input type="range" id="chart29-wd" min="0" max="0.1" step="0.001" value="0.01"><span class="value-display" id="chart29-wd-val">0.010</span></label>
+      </div>
+    </div>
+    <div class="chart-container" id="chart-30">
+      <h3>條件數轉變</h3>
+    </div>
+  </div>
 </section>
   <section id="sec-ext16" class="theorem-section"></section>
   <section id="sec-disproven" class="theorem-section"></section>
@@ -4604,6 +4656,395 @@ chartInitFns['chart-26'] = () => createChart('chart-26', ({ g, innerW, innerH, c
       if (sigmaVal) sigmaVal.textContent = sigmaMin.toFixed(2);
       update();
     }
+  };
+});
+
+// === Chart #27: Double Descent ===
+chartInitFns['chart-27'] = () => createChart('chart-27', ({ g, innerW, innerH, container }) => {
+  let gamma = 1.0;
+
+  const xScale = d3.scaleLinear().domain([0.1, 3]).range([0, innerW]);
+  const yScale = d3.scaleLog().domain([0.01, 100]).range([innerH, 0]).clamp(true);
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(xScale).ticks(6).tickFormat(d => d.toFixed(1)))
+    .selectAll('text').style('font-size', '12px');
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('γ = p/n');
+
+  g.append('g')
+    .call(d3.axisLeft(yScale).ticks(5, '.2g'))
+    .selectAll('text').style('font-size', '12px');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('Test Error (log)');
+
+  // Double descent model
+  function errorModel(gv) {
+    const underfitting = 1 / (1 + gv);
+    const spike = 8 * Math.exp(-((gv - 1) ** 2) / 0.01);
+    const bias = Math.max(0, 1 - gv) * 0.5;
+    const overfit = gv > 1 ? 0.3 / gv : 0;
+    return underfitting + spike + bias + overfit + 0.05;
+  }
+
+  // Draw curve
+  const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
+  const curveData = [];
+  for (let gv = 0.1; gv <= 3; gv += 0.01) {
+    curveData.push([gv, errorModel(gv)]);
+  }
+  g.append('path').datum(curveData).attr('d', lineGen)
+    .attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2.5);
+
+  // Vertical line at γ=1
+  g.append('line')
+    .attr('x1', xScale(1)).attr('x2', xScale(1))
+    .attr('y1', 0).attr('y2', innerH)
+    .attr('stroke', '#c93135').attr('stroke-width', 1).attr('stroke-dasharray', '4,3').attr('opacity', 0.5);
+  g.append('text').attr('x', xScale(1) + 4).attr('y', 12)
+    .attr('font-size', '10px').attr('fill', '#c93135').text('γ=1');
+
+  // Region labels
+  g.append('text').attr('x', xScale(0.5)).attr('y', innerH - 8)
+    .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#5e6070').text('underparam');
+  g.append('text').attr('x', xScale(2)).attr('y', innerH - 8)
+    .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#5e6070').text('overparam');
+
+  // Moving indicator
+  const indicator = g.append('line')
+    .attr('y1', 0).attr('y2', innerH)
+    .attr('stroke', '#e8a020').attr('stroke-width', 2.5);
+  const indicatorDot = g.append('circle')
+    .attr('r', 5).attr('fill', '#e8a020').attr('stroke', '#fff').attr('stroke-width', 1.5);
+  const valLabel = g.append('text')
+    .attr('font-size', '12px').attr('font-weight', '700').attr('fill', '#e8a020').attr('text-anchor', 'middle');
+
+  function update() {
+    const clampedG = Math.max(0.1, Math.min(3, gamma));
+    const ex = xScale(clampedG);
+    const ev = errorModel(clampedG);
+    indicator.attr('x1', ex).attr('x2', ex);
+    indicatorDot.attr('cx', ex).attr('cy', yScale(ev));
+    valLabel.attr('x', ex).attr('y', yScale(ev) - 10).text('err=' + ev.toFixed(2));
+    chartEmit('gamma', { gamma: clampedG });
+  }
+
+  update();
+
+  const gammaSlider = container.querySelector('#chart27-gamma');
+  const gammaVal = container.querySelector('#chart27-gamma-val');
+  gammaSlider?.addEventListener('input', () => {
+    gamma = parseFloat(gammaSlider.value);
+    gammaVal.textContent = gamma.toFixed(2);
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ gamma }),
+    setState: (s) => {
+      gamma = s.gamma;
+      if (gammaSlider) gammaSlider.value = gamma;
+      if (gammaVal) gammaVal.textContent = gamma.toFixed(2);
+      update();
+    }
+  };
+});
+
+// === Chart #28: tr(M) Three-Segment Decomposition (LINKED to #27) ===
+chartInitFns['chart-28'] = () => createChart('chart-28', ({ g, innerW, innerH }) => {
+  const xScale = d3.scaleLinear().domain([0.1, 3]).range([0, innerW]);
+  const yScale = d3.scaleLog().domain([0.1, 1e4]).range([innerH, 0]).clamp(true);
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(xScale).ticks(6).tickFormat(d => d.toFixed(1)))
+    .selectAll('text').style('font-size', '12px');
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('γ = p/n');
+
+  g.append('g')
+    .call(d3.axisLeft(yScale).ticks(5, '.0e'))
+    .selectAll('text').style('font-size', '12px');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('tr(M)');
+
+  // tr(M) model: three segments
+  const sigma2 = 1;
+  function trM(gv) {
+    if (Math.abs(gv - 1) < 0.03) return 1e4; // spike capped for display
+    if (gv < 1) return sigma2 * (1 + gv) / Math.pow(1 - gv, 3);
+    // gv > 1: decreasing, minimum-norm regime
+    return sigma2 * (1 + 1 / gv) / Math.pow(1 - 1 / gv, 3);
+  }
+
+  // Draw three colored segments
+  // Segment 1: γ < 1 (blue)
+  const seg1 = [];
+  for (let gv = 0.1; gv <= 0.97; gv += 0.01) {
+    seg1.push([gv, Math.min(1e4, trM(gv))]);
+  }
+  const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
+  g.append('path').datum(seg1).attr('d', lineGen)
+    .attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2.5);
+
+  // Segment 2: γ ≈ 1 (red spike)
+  const seg2 = [];
+  for (let gv = 0.93; gv <= 1.07; gv += 0.005) {
+    const val = Math.abs(gv - 1) < 0.005 ? 1e4 : sigma2 / Math.pow(Math.abs(gv - 1), 3);
+    seg2.push([gv, Math.min(1e4, val)]);
+  }
+  g.append('path').datum(seg2).attr('d', lineGen)
+    .attr('fill', 'none').attr('stroke', '#c93135').attr('stroke-width', 2.5);
+
+  // Segment 3: γ > 1 (green, decreasing)
+  const seg3 = [];
+  for (let gv = 1.03; gv <= 3; gv += 0.01) {
+    seg3.push([gv, Math.min(1e4, trM(gv))]);
+  }
+  g.append('path').datum(seg3).attr('d', lineGen)
+    .attr('fill', 'none').attr('stroke', '#1e8050').attr('stroke-width', 2.5);
+
+  // Segment labels with formula
+  g.append('text').attr('x', xScale(0.5)).attr('y', 15)
+    .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#1e5ab8')
+    .text('γ<1: σ²(1+γ)/(1-γ)³');
+  g.append('text').attr('x', xScale(1)).attr('y', 30)
+    .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#c93135').attr('font-weight', '700')
+    .text('γ=1: → ∞');
+  g.append('text').attr('x', xScale(2.2)).attr('y', 15)
+    .attr('text-anchor', 'middle').attr('font-size', '10px').attr('fill', '#1e8050')
+    .text('γ>1: min-norm ↓');
+
+  // Moving indicator (synced from chart-27)
+  const indicator = g.append('line')
+    .attr('y1', 0).attr('y2', innerH)
+    .attr('stroke', '#e8a020').attr('stroke-width', 2.5).attr('stroke-dasharray', '4,3');
+  const indicatorDot = g.append('circle')
+    .attr('r', 5).attr('fill', '#e8a020').attr('stroke', '#fff').attr('stroke-width', 1.5);
+
+  function updateIndicator(gv) {
+    const clampedG = Math.max(0.1, Math.min(3, gv));
+    indicator.attr('x1', xScale(clampedG)).attr('x2', xScale(clampedG));
+    const tv = Math.min(1e4, Math.abs(clampedG - 1) < 0.03 ? 1e4 : trM(clampedG));
+    indicatorDot.attr('cx', xScale(clampedG)).attr('cy', yScale(tv));
+  }
+
+  updateIndicator(1);
+
+  // Subscribe to gamma changes from chart-27
+  chartOn('gamma', ({ gamma }) => { updateIndicator(gamma); });
+
+  return {
+    update: () => {},
+    getState: () => ({}),
+    setState: () => {}
+  };
+});
+
+// === Chart #29: Grokking ===
+chartInitFns['chart-29'] = () => createChart('chart-29', ({ g, innerW, innerH, container }) => {
+  let wd = 0.01;
+
+  const xScale = d3.scaleLinear().domain([0, 10000]).range([0, innerW]);
+  const yScale = d3.scaleLinear().domain([0, 1.2]).range([innerH, 0]);
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(xScale).ticks(5).tickFormat(d => (d / 1000) + 'k'))
+    .selectAll('text').style('font-size', '12px');
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('Training Steps');
+
+  g.append('g')
+    .call(d3.axisLeft(yScale).ticks(5))
+    .selectAll('text').style('font-size', '12px');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -38)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('Loss');
+
+  // Transition point depends on weight decay: higher WD → earlier transition
+  function transitionStep(w) {
+    // Transition between 2000 (high WD) and 8000 (low WD)
+    if (w <= 0) return 9500;
+    return Math.max(1500, Math.min(9000, 5000 / (w * 100 + 0.5)));
+  }
+
+  // Training loss: drops quickly regardless of WD
+  function trainLoss(step) {
+    return 1.0 * Math.exp(-step / 300);
+  }
+
+  // Test loss: stays high in Phase I, drops at transition
+  function testLoss(step, tStep) {
+    if (step < tStep * 0.8) return 0.9 + 0.1 * Math.exp(-step / 5000);
+    // Sharp transition around tStep
+    const progress = (step - tStep * 0.8) / (tStep * 0.4);
+    return 0.9 * Math.exp(-5 * Math.max(0, progress));
+  }
+
+  const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
+
+  // Training loss curve (always the same shape)
+  const trainData = [];
+  for (let s = 0; s <= 10000; s += 50) {
+    trainData.push([s, trainLoss(s)]);
+  }
+  g.append('path').datum(trainData).attr('d', lineGen)
+    .attr('fill', 'none').attr('stroke', '#1e5ab8').attr('stroke-width', 2);
+  g.append('text').attr('x', xScale(2000)).attr('y', yScale(trainLoss(2000)) - 8)
+    .attr('font-size', '11px').attr('fill', '#1e5ab8').text('Train Loss');
+
+  // Test loss curve (dynamic)
+  const testPath = g.append('path')
+    .attr('fill', 'none').attr('stroke', '#c93135').attr('stroke-width', 2.5);
+  const testLabel = g.append('text')
+    .attr('font-size', '11px').attr('fill', '#c93135').text('Test Loss');
+
+  // Phase transition line
+  const phaseLine = g.append('line')
+    .attr('y1', 0).attr('y2', innerH)
+    .attr('stroke', '#5e6070').attr('stroke-width', 1.5).attr('stroke-dasharray', '6,4');
+  const phaseLabel1 = g.append('text')
+    .attr('font-size', '10px').attr('fill', '#5e6070').attr('text-anchor', 'end');
+  const phaseLabel2 = g.append('text')
+    .attr('font-size', '10px').attr('fill', '#5e6070');
+
+  function update() {
+    const tStep = transitionStep(wd);
+
+    // Update test loss
+    const testData = [];
+    for (let s = 0; s <= 10000; s += 50) {
+      testData.push([s, testLoss(s, tStep)]);
+    }
+    testPath.datum(testData).attr('d', lineGen);
+    testLabel.attr('x', xScale(Math.min(tStep * 0.5, 4000))).attr('y', yScale(0.95) - 8);
+
+    // Update phase line
+    phaseLine.attr('x1', xScale(tStep)).attr('x2', xScale(tStep));
+    phaseLabel1.attr('x', xScale(tStep) - 5).attr('y', 15).text('Phase I');
+    phaseLabel2.attr('x', xScale(tStep) + 5).attr('y', 15).text('Phase II');
+
+    chartEmit('wd', { wd, transitionStep: tStep });
+  }
+
+  update();
+
+  const wdSlider = container.querySelector('#chart29-wd');
+  const wdVal = container.querySelector('#chart29-wd-val');
+  wdSlider?.addEventListener('input', () => {
+    wd = parseFloat(wdSlider.value);
+    wdVal.textContent = wd.toFixed(3);
+    update();
+  });
+
+  return {
+    update,
+    getState: () => ({ wd }),
+    setState: (s) => {
+      wd = s.wd;
+      if (wdSlider) wdSlider.value = wd;
+      if (wdVal) wdVal.textContent = wd.toFixed(3);
+      update();
+    }
+  };
+});
+
+// === Chart #30: Condition Number Transition (LINKED to #29) ===
+chartInitFns['chart-30'] = () => createChart('chart-30', ({ g, innerW, innerH }) => {
+  const xScale = d3.scaleLinear().domain([0, 10000]).range([0, innerW]);
+  const yScale = d3.scaleLog().domain([1, 1e8]).range([innerH, 0]).clamp(true);
+
+  // Axes
+  g.append('g').attr('transform', `translate(0,${innerH})`)
+    .call(d3.axisBottom(xScale).ticks(5).tickFormat(d => (d / 1000) + 'k'))
+    .selectAll('text').style('font-size', '12px');
+  g.append('text').attr('x', innerW / 2).attr('y', innerH + 35)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('Training Steps');
+
+  g.append('g')
+    .call(d3.axisLeft(yScale).ticks(5, '.0e'))
+    .selectAll('text').style('font-size', '12px');
+  g.append('text').attr('transform', 'rotate(-90)')
+    .attr('x', -innerH / 2).attr('y', -42)
+    .attr('text-anchor', 'middle').attr('font-size', '13px').attr('fill', '#5e6070')
+    .text('κ(J_t)');
+
+  // κ_crit horizontal line
+  const kappaCrit = 1e3;
+  g.append('line')
+    .attr('x1', 0).attr('x2', innerW)
+    .attr('y1', yScale(kappaCrit)).attr('y2', yScale(kappaCrit))
+    .attr('stroke', '#c93135').attr('stroke-width', 1.5).attr('stroke-dasharray', '6,4');
+  g.append('text').attr('x', innerW - 5).attr('y', yScale(kappaCrit) - 5)
+    .attr('text-anchor', 'end').attr('font-size', '11px').attr('fill', '#c93135')
+    .text('κ_crit');
+
+  // Condition number curve (dynamic)
+  function conditionNum(step, tStep) {
+    // Start very high, exponential decay, crosses kappaCrit around tStep
+    const kStart = 1e7;
+    // Decay rate calibrated so crossing happens at tStep
+    const decayRate = Math.log(kStart / kappaCrit) / tStep;
+    return kStart * Math.exp(-decayRate * step);
+  }
+
+  const lineGen = d3.line().x(d => xScale(d[0])).y(d => yScale(d[1])).curve(d3.curveMonotoneX);
+  const kappaPath = g.append('path')
+    .attr('fill', 'none').attr('stroke', '#7b3fe4').attr('stroke-width', 2.5);
+
+  // Transition indicator
+  const transLine = g.append('line')
+    .attr('y1', 0).attr('y2', innerH)
+    .attr('stroke', '#e8a020').attr('stroke-width', 2).attr('stroke-dasharray', '4,3');
+  const transLabel = g.append('text')
+    .attr('font-size', '10px').attr('fill', '#e8a020').attr('text-anchor', 'middle');
+
+  // Crossing dot
+  const crossDot = g.append('circle')
+    .attr('r', 6).attr('fill', '#c93135').attr('stroke', '#fff').attr('stroke-width', 2);
+
+  function updateWithWD(wdVal, tStep) {
+    // Default transition step if not provided
+    if (!tStep) {
+      if (wdVal <= 0) tStep = 9500;
+      else tStep = Math.max(1500, Math.min(9000, 5000 / (wdVal * 100 + 0.5)));
+    }
+
+    const kappaData = [];
+    for (let s = 0; s <= 10000; s += 50) {
+      const k = conditionNum(s, tStep);
+      kappaData.push([s, Math.max(1, k)]);
+    }
+    kappaPath.datum(kappaData).attr('d', lineGen);
+
+    // Transition line and crossing dot
+    transLine.attr('x1', xScale(tStep)).attr('x2', xScale(tStep));
+    transLabel.attr('x', xScale(tStep)).attr('y', innerH - 5).text('κ crosses κ_crit');
+    crossDot.attr('cx', xScale(tStep)).attr('cy', yScale(kappaCrit));
+  }
+
+  // Initial draw with default WD
+  updateWithWD(0.01, 5000 / (0.01 * 100 + 0.5));
+
+  // Subscribe to WD changes from chart-29
+  chartOn('wd', ({ wd, transitionStep }) => { updateWithWD(wd, transitionStep); });
+
+  return {
+    update: () => {},
+    getState: () => ({}),
+    setState: () => {}
   };
 });
 
