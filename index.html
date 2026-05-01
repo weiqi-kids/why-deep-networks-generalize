@@ -244,9 +244,12 @@ main {
   inset: 0;
   z-index: 200;
   background: rgba(0,0,0,0.5);
-  display: flex;
+  display: none;
   align-items: center;
   justify-content: center;
+}
+#glossary-overlay:not([hidden]) {
+  display: flex;
 }
 #glossary-overlay .glossary-panel {
   background: var(--bg-base);
