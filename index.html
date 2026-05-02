@@ -993,12 +993,12 @@ footer {
 </section>
   <section id="sec-ext14" class="theorem-section">
   <h2>延伸：理論擴展與現象解釋</h2>
-  <h3>14a-14f：Feature Learning 證明的擴展</h3>
+  <h3>Feature Learning 證明的擴展（A–F）</h3>
   <div class="layer-intuition">
     <p>以下六個延伸補齊了定理 5 的完整圖景——從 ReLU 不光滑性、有限樣本、光滑激活、高階目標、多方向學習到非正交情形。</p>
   </div>
 
-  <h3 data-nav="ext14a">14a：Tame Function——ReLU 不光滑但梯度流仍安全</h3>
+  <h3 data-nav="ext14a">擴展 A：Tame Function——ReLU 不光滑但梯度流仍安全</h3>
   <div class="layer-intuition">
     <p>ReLU 不光滑但屬 tame function，梯度流仍避開壞臨界點。在折角處 Clarke subdifferential 提供安全的下降方向集合。</p>
   </div>
@@ -1015,7 +1015,7 @@ footer {
     </div>
   </div>
 
-  <h3 data-nav="ext14b">14b：Population → SGD——有限樣本的代價</h3>
+  <h3 data-nav="ext14b">擴展 B：Population → SGD——有限樣本的代價</h3>
   <div class="layer-intuition">
     <p>信號 $d^{-\kappa/2}$ vs 噪聲 $1/\sqrt{n}$ 的賽跑：要讓信號超越噪聲，需要 $n = \Theta(d^\kappa)$ 個樣本。</p>
   </div>
@@ -1036,7 +1036,7 @@ footer {
     </div>
   </div>
 
-  <h3 data-nav="ext14c">14c：光滑 $\varphi$ 推廣——弱正則化擴展到所有非仿射光滑函數</h3>
+  <h3 data-nav="ext14c">擴展 C：光滑 $\varphi$ 推廣——弱正則化擴展到所有非仿射光滑函數</h3>
   <div class="layer-intuition">
     <p>加弱正則化後，結論擴展到所有非仿射光滑函數。正則化使神經元方向坍縮到目標方向 $w^*$。</p>
   </div>
@@ -1056,7 +1056,7 @@ footer {
     </div>
   </div>
 
-  <h3 data-nav="ext14d">14d：$\kappa \geq 2$ 推廣——高階目標需要更多步</h3>
+  <h3 data-nav="ext14d">擴展 D：$\kappa \geq 2$ 推廣——高階目標需要更多步</h3>
   <div class="layer-intuition">
     <p>$\kappa=1$ 只要 $O(d)$ 步，$\kappa \geq 2$ 要 $O(d^\kappa)$ 步。目標函數的非線性階數決定學習速度。</p>
   </div>
@@ -1076,7 +1076,7 @@ footer {
     </div>
   </div>
 
-  <h3 data-nav="ext14e">14e：正交 Multi-index——多方向依序學習如爬階梯</h3>
+  <h3 data-nav="ext14e">擴展 E：正交 Multi-index——多方向依序學習如爬階梯</h3>
   <div class="layer-intuition">
     <p>多方向依序學習如爬階梯：先學第一個方向，再學第二個，形成階梯式學習曲線。</p>
   </div>
@@ -1097,7 +1097,7 @@ footer {
     </div>
   </div>
 
-  <h3 data-nav="ext14f">14f：非正交——條件數決定可行性</h3>
+  <h3 data-nav="ext14f">擴展 F：非正交——條件數決定可行性</h3>
   <div class="layer-intuition">
     <p>條件數好時可 SVD 分離各方向，差時需二階方法。$\sigma_{\min}(V^*)$ 越大，問題越好解。</p>
   </div>
@@ -1117,12 +1117,12 @@ footer {
     </div>
   </div>
 
-  <h3>14g-14h：巨觀現象的微觀解釋</h3>
+  <h3>巨觀現象的微觀解釋（G–H）</h3>
   <div class="layer-intuition">
-    <p>14g 連接定理 2（Benign 分界），14h 連接定理 1（統一泛化界）——用算子 M 的語言解釋兩大神秘現象。</p>
+    <p>擴展 G 連接定理 2（Benign 分界），擴展 H 連接定理 1（統一泛化界）——用算子 M 的語言解釋兩大神秘現象。</p>
   </div>
 
-  <h3 data-nav="ext14g">14g：Double Descent——爆管點與最小範數修復</h3>
+  <h3 data-nav="ext14g">擴展 G：Double Descent——爆管點與最小範數修復</h3>
   <div class="layer-intuition">
     <p>模型大小剛好等於資料量時（$\gamma=1$），Jacobian 最小奇異值趨近零，$\operatorname{tr}(M)$ 爆炸——這是「爆管點」。過了這個點（$\gamma>1$），最小範數約束改善條件數，$\operatorname{tr}(M)$ 反而下降。</p>
   </div>
@@ -1147,7 +1147,7 @@ footer {
     </div>
   </div>
 
-  <h3 data-nav="ext14h">14h：Grokking——先死背再頓悟</h3>
+  <h3 data-nav="ext14h">擴展 H：Grokking——先死背再頓悟</h3>
   <div class="layer-intuition">
     <p>先死背再頓悟。早期 Jacobian 條件數極差，$\operatorname{tr}(M)$ 天文數字大（噪聲滿溢）。Weight decay 慢慢壓縮參數，某一刻條件數突然穿過臨界值，泛化瞬間出現——像水壩決堤。</p>
   </div>
@@ -1174,7 +1174,7 @@ footer {
   <section id="sec-ext16" class="theorem-section">
   <h2>延伸：範圍擴展</h2>
 
-  <h3 data-nav="ext16a">16a：純交互 Multi-index——Hessian 啟動二階搜尋</h3>
+  <h3 data-nav="ext16a">擴展 I：純交互 Multi-index——Hessian 啟動二階搜尋</h3>
   <div class="layer-intuition">
     <p>當目標函數是純交互（如 $\varphi = z_1 z_2$），一階梯度偵測不到信號。解法：先用 Hessian（二階資訊）找到方向，再用 GD 精化。需要的樣本量 $n_0 = \tilde{O}(d^p)$。</p>
   </div>
@@ -1203,7 +1203,7 @@ footer {
     </div>
   </div>
 
-  <h3 data-nav="ext16b">16b：深度 $L > 2$——泛化界對任意深度成立</h3>
+  <h3 data-nav="ext16b">擴展 J：深度 $L > 2$——泛化界對任意深度成立</h3>
   <div class="layer-intuition">
     <p>泛化界對任意深度成立。深度的額外好處：逼近誤差 $B^2$ 可隨深度指數衰減。</p>
   </div>
@@ -1226,7 +1226,7 @@ footer {
     </div>
   </div>
 
-  <h3 data-nav="ext16c">16c：分類 Cross-Entropy——與 MSE 分界相同</h3>
+  <h3 data-nav="ext16c">擴展 K：分類 Cross-Entropy——與 MSE 分界相同</h3>
   <div class="layer-intuition">
     <p>Benign 分界 $\beta > \alpha + 1/2$ 與 MSE 相同。Neural Collapse：$r_{\text{eff}} = K - 1$。</p>
   </div>
@@ -1256,7 +1256,7 @@ footer {
     </div>
   </div>
 
-  <h3 data-nav="ext16d">16d：非高斯輸入——流形假設下的修正</h3>
+  <h3 data-nav="ext16d">擴展 L：非高斯輸入——流形假設下的修正</h3>
   <div class="layer-intuition">
     <p>$M$ 的定義不依賴分佈假設。流形假設：$d \to d_M$（以流形維度取代環境維度）。</p>
   </div>
@@ -1343,32 +1343,9 @@ footer {
 </section>
 </main>
 
-<footer id="methodology">
-  <h2 style="font-size:var(--text-xl);font-weight:700;margin-bottom:1rem;">方法論筆記</h2>
-  <div class="method-cards">
-    <div class="method-card">
-      <div class="number">1</div>
-      <p>每個主張必須標記「嚴格/條件/猜想」</p>
-    </div>
-    <div class="method-card">
-      <div class="number">2</div>
-      <p>主動構造反例否證自己的主張</p>
-    </div>
-    <div class="method-card">
-      <div class="number">3</div>
-      <p>多路線獨立攻克同一問題以交叉驗證</p>
-    </div>
-    <div class="method-card">
-      <div class="number">4</div>
-      <p>從最簡設定出發，逐步推廣</p>
-    </div>
-    <div class="method-card">
-      <div class="number">5</div>
-      <p>數值實驗驗證理論預測</p>
-    </div>
-  </div>
-  <p style="color:var(--text-muted);margin-top:1.5rem;font-size:var(--text-xs);">本文經 12 輪 Opus subagent 迭代審查與修正。</p>
-  <p style="margin-top:1rem;font-size:var(--text-xs);"><a href="https://github.com/weiqi-kids/why-deep-networks-generalize" style="color:var(--color-link);text-decoration:none;">GitHub Repository</a></p>
+<footer id="methodology" style="text-align:center; padding:3rem 1.5rem; color:var(--text-muted); font-size:var(--text-xs);">
+  <p>本頁面源碼與內容開源</p>
+  <p style="margin-top:1rem;"><a href="https://github.com/weiqi-kids/why-deep-networks-generalize" style="color:var(--color-link);text-decoration:none;">GitHub Repository ↗</a></p>
 </footer>
 
 <button id="glossary-btn" aria-label="名詞表">?</button>
@@ -6200,22 +6177,42 @@ window.addEventListener('resize', () => {
   });
 });
 
-// === AEO Share Buttons ===
+// === AEO Share Buttons（含冪等保護、aria-label、完整段落、角色設定） ===
 document.querySelectorAll('.theorem-section h2').forEach(h2 => {
+  if (h2.querySelector('.share-ai-btn')) return;     // 冪等保護
   const section = h2.closest('.theorem-section');
   const id = section.id;
   if (!id) return;
-  const intuition = section.querySelector('.layer-intuition')?.textContent?.trim()?.slice(0, 200) || '';
+  if (!h2.dataset.heading) h2.dataset.heading = h2.textContent.trim();
+
+  // 完整段落文字（≤ 1500 字，排除 chart-container 與 button）
+  const clone = section.cloneNode(true);
+  clone.querySelectorAll('.chart-container, .share-ai-btn, script, style').forEach(el => el.remove());
+  const fullText = clone.textContent.replace(/\s+/g, ' ').trim().slice(0, 1500);
+
   const btn = document.createElement('button');
   btn.className = 'share-ai-btn';
+  btn.type = 'button';
   btn.textContent = '複製到 AI';
-  btn.title = '複製此段落摘要與連結，可貼到 ChatGPT 或 Claude 討論';
+  btn.title = '複製此段完整內容與連結，可貼到 ChatGPT 或 Claude 接續討論';
+  btn.setAttribute('aria-label', '複製此段摘要與連結到剪貼簿');
   btn.addEventListener('click', (e) => {
     e.preventDefault();
     const url = `${location.origin}${location.pathname}#${id}`;
-    const text = `${h2.textContent.replace('複製到 AI', '').trim()}\n\n${intuition}\n\n${url}`;
-    navigator.clipboard.writeText(text).then(() => {
+    const heading = h2.dataset.heading;
+    const payload =
+      `我正在閱讀以下這段：\n\n` +
+      `## ${heading}\n\n` +
+      `${fullText}\n\n` +
+      `---\n` +
+      `完整內容：${url}\n\n` +
+      `請扮演這篇論文的共同作者，依高中生能懂的語言（最多一個符號且立刻白話化）` +
+      `和我討論這段，必要時可延伸到相關概念。`;
+    navigator.clipboard.writeText(payload).then(() => {
       btn.textContent = '已複製';
+      setTimeout(() => { btn.textContent = '複製到 AI'; }, 2000);
+    }).catch(() => {
+      btn.textContent = '複製失敗';
       setTimeout(() => { btn.textContent = '複製到 AI'; }, 2000);
     });
   });
