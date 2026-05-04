@@ -45,9 +45,9 @@
 
 \title[Landscape Analysis for Feature Alignment]{A Landscape Analysis Approach to Feature Alignment\\in Shallow ReLU Networks for Single-Index Models}
 
-\author{[Author Name]}
-\address{[Institution]}
-\email{[Email]}
+\author{C$\Lambda$ / Lightman}
+\address{}
+\email{Lightman.chang@gmail.com}
 
 \date{\today}
 
@@ -157,7 +157,15 @@ The first Hermite coefficient of $\varphi$ is nonzero:
 \]
 \end{assumption}
 
-For the homogeneous CPL target $\varphi(t) = s_+ \relu(t) + s_- \relu(-t)$, a direct computation gives $\mu_1 = (s_+ - s_-)/2$, so Assumption~\ref{ass:kappa} holds whenever $s_+ \neq s_-$, i.e., whenever $\varphi$ is not an even function.
+For the homogeneous CPL target $\varphi(t) = s_+ \relu(t) + s_- \relu(-t)$, a
+direct computation gives
+$\mu_1 = s_+ \E[z\,\relu(z)] + s_- \E[z\,\relu(-z)]
+       = s_+(1/2) + s_-(-1/2) = (s_+ - s_-)/2$,
+so Assumption~\ref{ass:kappa} holds whenever $s_+ \neq s_-$, i.e., whenever
+$\varphi$ is not an even function.  This assumption is not used in
+Theorem~\ref{thm:alignment} (which holds for all CPL $\varphi$), but is needed
+for Theorem~\ref{thm:saddle}: when $s_+ = s_-$, the target is symmetric and
+the landscape may admit non-aligned local minima by symmetry.
 
 \subsection{Distributional derivatives}\label{sec:distrib}
 
@@ -226,13 +234,13 @@ For the purposes of Lemma~\ref{lem:relu-indep}, only the fact that $D_v^2 \relu(
 \section{ReLU Directional Independence}\label{sec:lemma}
 %% ========================================================
 
-The following lemma is the key technical tool of this paper.
+The following theorem is the key technical contribution of this paper.
 
-\begin{lemma}[ReLU directional independence]\label{lem:relu-indep}
+\begin{theorem}[ReLU directional independence]\label{lem:relu-indep}
 Let $d \geq 2$ and let $v_1, \ldots, v_m \in \R^d \setminus \{0\}$ have pairwise distinct directions, i.e., $\hat{v}_i \neq \pm \hat{v}_j$ for all $i \neq j$. Then the functions $\{\relu(v_i^\top x)\}_{i=1}^m$ are linearly independent in $L^2(\R^d, \gamma_d)$.
 
 Moreover, for any nonzero $v \in \R^d$, the pair $\{\relu(v^\top x),\, \relu(-v^\top x)\}$ is linearly independent in $L^2(\R^d, \gamma_d)$, and more generally, $\{\relu(v_1^\top x), \ldots, \relu(v_m^\top x)\}$ is linearly independent whenever the $v_i$ are pairwise non-proportional (i.e., $v_i \neq \lambda v_j$ for any $\lambda > 0$ and $i \neq j$).
-\end{lemma}
+\end{theorem}
 
 \begin{proof}
 Suppose there exist constants $c_1, \ldots, c_m \in \R$ such that

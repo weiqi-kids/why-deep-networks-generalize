@@ -52,9 +52,9 @@
   Noise Propagation Operators and a Two-Parameter\\
   Characterization of Benign Overfitting}
 
-\author{[Author Name]}
-\address{[Institution]}
-\email{[Email]}
+\author{C$\Lambda$ / Lightman}
+\address{}
+\email{Lightman.chang@gmail.com}
 
 \date{\today}
 
@@ -141,7 +141,12 @@ Tibshirani~\cite{HMRT2022} gave precise asymptotic characterizations of the
 double-descent phenomenon in least-squares regression.  Boursier and
 Flammarion~\cite{BF2022} analyzed gradient flow in two-layer ReLU
 teacher--student networks, proving that the learned weights align with the
-teacher directions.
+teacher directions.  Belkin, Hsu, Ma, and Mandal~\cite{BHMM2019} empirically
+demonstrated the double-descent curve.  Mei and Montanari~\cite{MM2022}
+analyzed generalization in random feature models, providing sharp asymptotics
+that connect kernel regression to neural network behaviour.  Rakhlin and
+Zhai~\cite{RZ2019} gave minimax-optimal risk bounds for kernel regression
+that highlight the role of the effective dimension.
 
 \medskip
 \noindent\textbf{What is new here?}
@@ -187,8 +192,9 @@ Our main contributions are:
 \subsection{Setting and notation}
 
 Let $S = \{(\bx_{i}, y_{i})\}_{i=1}^{n}$ be a training set with
-$\bx_{i} \in \R^{d}$ and $y_{i} \in \R$.  We assume a standard regression
-model
+$\bx_{i} \in \R^{d}$ and $y_{i} \in \R$.  We write
+$\mathbf{y} = (y_{1}, \ldots, y_{n})^{\top} \in \R^{n}$ for the label vector.
+We assume a standard regression model
 \begin{equation}\label{eq:data-model}
   y_{i} = g^{*}(\bx_{i}) + \xi_{i}, \qquad i = 1, \ldots, n,
 \end{equation}
@@ -199,6 +205,13 @@ $\lambda \in \R$,
 \begin{equation}\label{eq:sub-gaussian}
   \E\bigl[e^{\lambda \xi_{i}}\bigr] \leq e^{\lambda^{2}\sigma^{2}/2}.
 \end{equation}
+
+\begin{remark}[Notation convention]\label{rem:notation}
+Throughout this paper, $\sigma$ (without subscript) denotes the noise standard
+deviation, while $\sigma_{j}$ (with subscript) denotes the $j$-th singular value
+of the Jacobian $\bJ$.  The diagonal matrix of singular values is
+$\boldsymbol{\Sigma} = \diag(\sigma_{1}, \ldots, \sigma_{n})$.
+\end{remark}
 
 Let $f(\cdot\,; \theta)\colon \R^{d} \to \R$ be a parametric predictor with
 parameter vector $\theta \in \R^{p}$.  We assume that $\theta^{*}$ is the \emph{minimum-norm} interpolating
@@ -909,6 +922,13 @@ We conclude by highlighting several directions for future investigation.
 
 \begin{thebibliography}{10}
 
+\bibitem{BHMM2019}
+M.~Belkin, D.~Hsu, S.~Ma, and S.~Mandal.
+\newblock Reconciling modern machine-learning practice and the classical
+  bias--variance trade-off.
+\newblock \emph{Proceedings of the National Academy of Sciences},
+  116(32):15849--15854, 2019.
+
 \bibitem{BLLT2020}
 P.~L.~Bartlett, P.~M.~Long, G.~Lugosi, and A.~Tsigler.
 \newblock Benign overfitting in linear regression.
@@ -932,12 +952,25 @@ A.~Jacot, F.~Gabriel, and C.~Hongler.
   networks.
 \newblock \emph{Advances in Neural Information Processing Systems}, 31, 2018.
 
+\bibitem{MM2022}
+S.~Mei and A.~Montanari.
+\newblock The generalization error of random features regression: Precise
+  asymptotics and the double descent curve.
+\newblock \emph{Communications on Pure and Applied Mathematics},
+  75(4):667--766, 2022.
+
 \bibitem{MSCBR2022}
 N.~Mallinar, J.~B.~Simon, A.~Abedsoltan, P.~Pandit, M.~Belkin, and
   P.~Nakkiran.
 \newblock Benign, tempered, or catastrophic: toward a refined taxonomy of
   overfitting.
 \newblock \emph{Advances in Neural Information Processing Systems}, 35, 2022.
+
+\bibitem{RZ2019}
+A.~Rakhlin and X.~Zhai.
+\newblock Consistency of interpolation with {L}aplace kernels is a
+  high-dimensional phenomenon.
+\newblock In \emph{Conference on Learning Theory (COLT)}, pages 2595--2623, 2019.
 
 \bibitem{RV2013}
 M.~Rudelson and R.~Vershynin.
