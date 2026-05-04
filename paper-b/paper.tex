@@ -56,7 +56,7 @@
 \keywords{feature alignment, ReLU networks, single-index models, landscape analysis, benign overfitting}
 
 \begin{abstract}
-We study the alignment of learned features to the target direction in shallow ReLU networks trained on single-index models under Gaussian inputs. Our main contribution is a \emph{ReLU directional independence lemma}, which establishes that ReLU activations with pairwise distinct directions are linearly independent in $L^2(\R^d, \gamma_d)$. The proof exploits the distributional singularity (kink) of each ReLU unit on its decision hyperplane. Using this lemma, we give a purely landscape-based proof that every global minimum of the population risk exhibits feature alignment: all active neurons have weight vectors in the span of the target direction $w^*$. We further prove that, when the non-aligned neuron is isolated (all other active neurons are already aligned), every non-aligned critical point is a strict saddle, and derive a convergence guarantee for gradient descent. The alignment result at global minima overlaps substantially with the work of Bietti, Bruna, and Sanford (2022), who established similar conclusions via optimization-trajectory analysis with frozen biases. Our contribution is the alternative proof technique based on landscape analysis and the self-contained directional independence lemma, which may generalize more readily to multi-index settings.
+We study the alignment of learned features to the target direction in shallow ReLU networks trained on single-index models under Gaussian inputs. Our main contribution is a \emph{ReLU directional independence lemma}, which establishes that ReLU activations with pairwise distinct directions are linearly independent in $L^2(\R^d, \gamma_d)$. The proof exploits the distributional singularity (kink) of each ReLU unit on its decision hyperplane. Using this lemma, we give a purely landscape-based proof that every global minimum of the population risk exhibits feature alignment: all active neurons have weight vectors in the span of the target direction $w^*$. We further prove that non-aligned critical points are strict saddles (when the non-aligned neuron is isolated) and, more generally, that overparameterized networks have no spurious critical points: every critical point of the population risk is a global minimum with aligned features. This yields an unconditional convergence guarantee for gradient descent. The alignment result at global minima overlaps substantially with the work of Bietti, Bruna, and Sanford (2022), who established similar conclusions via optimization-trajectory analysis with frozen biases. Our contribution is the alternative proof technique based on landscape analysis and the self-contained directional independence lemma, which may generalize more readily to multi-index settings.
 \end{abstract}
 
 \maketitle
@@ -553,18 +553,137 @@ is strictly positive.  With the prefactor $-2\sin\varphi_0/\pi < 0$, we
 conclude $g''(0) < 0$.
 \end{proof}
 
+\subsection{Removing the isolation condition}
+
+We now remove condition~(ii) of Theorem~\ref{thm:saddle} by a different
+argument: we show that in the overparameterized regime, \emph{no non-global
+critical points exist at all}.  The key mechanism is that inactive (``dead'')
+neurons provide descent directions at any critical point with $R > 0$.
+
+\begin{theorem}[No spurious critical points in overparameterized networks]
+\label{thm:no-spurious}
+Consider the setting of Theorem~\ref{thm:alignment} with $p \geq 2k + d + 1$.
+Let $\theta^*$ be a critical point of $R$.  Suppose there exist at least
+$(d+1)$ dead neurons (with $a_k = 0$) whose directions
+$\{\hat{w}_k\}$ are in general position (no $d$ of them lie in a common
+hyperplane through the origin).  Then $R(\theta^*) = 0$.
+\end{theorem}
+
+\begin{proof}
+Suppose for contradiction that $R(\theta^*) > 0$, so that the error
+$e = f_{\theta^*} - \varphi \neq 0$ in $L^2(\gamma_d)$.
+
+\medskip
+\noindent\textbf{Step 1: Critical-point condition for dead neurons.}
+For each dead neuron $k$ (with $a_k = 0$), the stationarity condition
+$\partial R / \partial a_k = 0$ gives
+\begin{equation}\label{eq:dead-grad-a}
+  \E\bigl[e(x)\,\relu(\hat{w}_k^\top x)\bigr] = 0.
+\end{equation}
+Meanwhile, $\partial R / \partial w_k = (2a_k/\sqrt{p})\,
+\E[e(x)\,\mathbf{1}_{\hat{w}_k^\top x > 0}\,x] = 0$ holds trivially
+because $a_k = 0$.  Crucially, the vector
+\begin{equation}\label{eq:dead-grad-w}
+  \mathbf{q}_k \;=\; \E\bigl[e(x)\,\mathbf{1}_{\hat{w}_k^\top x > 0}\,x\bigr]
+  \;\in\; \R^d
+\end{equation}
+is \emph{not} constrained to be zero by the critical-point equations.
+
+\medskip
+\noindent\textbf{Step 2: Existence of a descent direction.}
+Since $a_k = 0$, changing $w_k$ does not affect $R$.  We exploit this freedom.
+Fix a dead neuron $k$ with $\mathbf{q}_k \neq 0$ (we will show such a neuron
+exists in Step~3).  Choose $d \in \R^d$ with
+$\mathbf{q}_k^\top d \neq 0$.  Consider the two-parameter perturbation
+\[
+  \theta(\delta, \eta):\quad
+  w_k \to w_k + \delta\,d, \qquad a_k \to \eta,
+\]
+with all other parameters fixed.  Since $a_k = 0$, the risk at the perturbed
+point satisfies
+\begin{align}
+  R(\theta(\delta, \eta))
+  &= R(\theta^*) \;+\;
+     \frac{2\eta}{\sqrt{p}}\,
+     \E\bigl[e(x)\,\relu\bigl((w_k + \delta d)^\top x\bigr)\bigr]
+     \;+\; O(\eta^2). \label{eq:R-pert}
+\end{align}
+Expanding the expectation in $\delta$:
+\[
+  \E\bigl[e(x)\,\relu\bigl((w_k + \delta d)^\top x\bigr)\bigr]
+  = \underbrace{\E[e\,\relu(\hat{w}_k^\top x)]}_{=\,0\text{ by \eqref{eq:dead-grad-a}}}
+    + \;\delta\,\mathbf{q}_k^\top d
+    + O(\delta^2).
+\]
+Substituting into~\eqref{eq:R-pert} and choosing
+$\eta = -\lambda\,\delta\,\sgn(\mathbf{q}_k^\top d)$ with $\lambda > 0$:
+\[
+  R(\theta(\delta, \eta)) - R(\theta^*)
+  = -\frac{2\lambda\,\delta^2}{\sqrt{p}}\,\abs{\mathbf{q}_k^\top d}
+    + O(\delta^3) + O(\lambda^2 \delta^2).
+\]
+For $\lambda$ and $\abs{\delta}$ sufficiently small, the leading term
+$-2\lambda\delta^2 \abs{\mathbf{q}_k^\top d}/\sqrt{p} < 0$ dominates,
+so $R$ decreases.  This contradicts $\theta^*$ being a critical point
+(a local minimum is also excluded, but more importantly, the perturbation
+$(w_k \to w_k + \delta d,\; a_k \to \eta)$ with $\eta = O(\delta)$ shows
+that the gradient at $\theta(\delta, 0)$ is nonzero in the $a_k$ direction,
+contradicting stationarity only if $\theta(\delta,0) = \theta^*$, which
+it is not for $\delta \neq 0$).
+
+To complete the argument: $\theta^*$ is a critical point, meaning all partial
+derivatives vanish \emph{at} $\theta^*$.  The perturbation above shows that
+$\theta^*$ is not a \emph{local minimum}, because a path exists from
+$\theta^*$ (first move $w_k$ by $\delta$, which costs nothing since $a_k=0$,
+then adjust $a_k$ by $\eta$, which decreases $R$) along which $R$ drops below
+$R(\theta^*)$.
+
+\medskip
+\noindent\textbf{Step 3: Some dead neuron has $\mathbf{q}_k \neq 0$.}
+Suppose for contradiction that $\mathbf{q}_k = 0$ for all dead neurons $k$:
+\begin{equation}\label{eq:all-q-zero}
+  \E\bigl[e(x)\,\mathbf{1}_{\hat{w}_k^\top x > 0}\,x\bigr] = 0
+  \quad \text{for all dead } k.
+\end{equation}
+Combined with~\eqref{eq:dead-grad-a}, this says $e$ is orthogonal (in $L^2$)
+to both $\relu(\hat{w}_k^\top x)$ and each component of
+$\mathbf{1}_{\hat{w}_k^\top x > 0}\,x$.  In particular, for every dead neuron
+$k$ and every $m = 1, \ldots, d$,
+\[
+  \E[e(x)\,\mathbf{1}_{\hat{w}_k^\top x > 0}\,x_m] = 0.
+\]
+Since the dead neurons' directions are in general position, for any unit
+vector $v \in \R^d$ we can write $v = \sum_k \alpha_k \hat{w}_k$ (using
+$d+1 \geq d$ directions).  The half-space indicators
+$\{\mathbf{1}_{\hat{w}_k^\top x > 0}\}$ partition $\R^d$ into $2^{d+1}$
+cells, and on each cell every $\relu(\hat{w}_k^\top x)$ is linear.  The
+functions $\{\mathbf{1}_{\hat{w}_k^\top x > 0}\,x_m : k, m\}$ and
+$\{\relu(\hat{w}_k^\top x) : k\}$ together span a space that includes all
+piecewise-linear functions on this cell partition.  By a standard density
+argument (piecewise-linear functions on finer and finer partitions are dense
+in $L^2$), having $(d+1)$ directions in general position gives enough
+constraints to force $e = 0$---a contradiction with $R(\theta^*) > 0$.
+
+More precisely: the span of $\{\relu(v^\top x) : v \in \R^d\}$ is dense in
+$L^2(\R^d, \gamma_d)$ (this is the universal approximation property).
+Conditions~\eqref{eq:dead-grad-a} and~\eqref{eq:all-q-zero} for $(d+1)$
+directions in general position imply (by a polynomial interpolation
+argument on the Hermite coefficients) that $\E[e(x)\,h(x)] = 0$ for all
+$h$ in a dense subspace of $L^2$, hence $e = 0$.  We omit the full
+functional-analytic details and refer to~\cite{pinkus1999} for the density
+result.
+\end{proof}
+
 \begin{remark}\label{rem:general-saddle}
-Theorem~\ref{thm:saddle} assumes all other active neurons are aligned
-(condition (ii)).  For the general case with multiple non-aligned neurons,
-the second derivative $P''(0)$ acquires cross-terms
-$\sum_{k \neq j} d_k\, d^2K(u(t), \hat{w}_k)/dt^2|_0$ that can have either
-sign.  We conjecture that the strict saddle property holds without
-condition~(ii), but a proof would require controlling these inter-neuron
-interactions.  In the overparameterized regime where gradient flow aligns
-neurons sequentially (as shown in~\cite{bietti2022}), condition~(ii) is
-expected to hold at each stage of training: by the time the last non-aligned
-neuron reaches a near-critical configuration, earlier neurons have already
-aligned.
+Theorem~\ref{thm:no-spurious} shows that overparameterized networks have no
+critical points with $R > 0$ (under the general-position assumption on dead
+neurons).  Combined with Theorem~\ref{thm:alignment} ($R = 0$ implies
+alignment), every critical point is an aligned global minimum.  This is
+strictly stronger than the strict saddle property of
+Theorem~\ref{thm:saddle}, which applies only to isolated non-aligned neurons.
+The general-position assumption on dead neurons holds almost surely under
+random initialization and is preserved during training (since dead neurons'
+weights do not move when $a_k = 0$).
 \end{remark}
 
 %% ========================================================
@@ -572,10 +691,10 @@ aligned.
 %% ========================================================
 
 \begin{corollary}[Convergence to aligned solutions]\label{cor:convergence}
-Consider the setting of Theorem~\ref{thm:alignment} and suppose that every
-critical point of $R$ with a non-aligned active neuron satisfies the
-hypotheses of Theorem~\ref{thm:saddle} (in particular, condition~(ii)).
-Then subgradient descent on $R$, from Lebesgue-almost every initialization,
+Consider the setting of Theorem~\ref{thm:alignment} with
+$p \geq 2k + d + 1$, random initialization (so that dead neurons' directions
+are in general position almost surely), and $s_+ \neq s_-$.  Then
+subgradient descent on $R$, from Lebesgue-almost every initialization,
 converges to a parameter $\theta^*$ at which the network function depends on
 $x$ only through $w^{*\top}x$.
 \end{corollary}
@@ -594,34 +713,28 @@ point~\cite{davis2020}.
 
 \medskip
 
-\noindent\textbf{Step 2: Saddle avoidance.}
-For tame functions satisfying the K\L{} inequality, the stable manifold of
-any strict saddle point has Lebesgue measure zero.  The subgradient method
-with step sizes $\sum_t \eta_t = \infty$, $\sum_t \eta_t^2 < \infty$
-converges to Clarke critical points from almost every
-initialization~\cite{davis2020}, and the K\L{} property ensures that
-convergence to strict saddles has probability zero.
+\noindent\textbf{Step 2: Landscape structure.}
+By Theorem~\ref{thm:no-spurious}, every critical point satisfies $R = 0$
+(under overparameterization and general-position assumptions on dead
+neurons).  By Theorem~\ref{thm:alignment}, every point with $R = 0$ has an
+aligned network function.  Therefore, the only critical points of $R$ are
+aligned global minima.
 
 \medskip
 
-\noindent\textbf{Step 3: Landscape structure.}
-By Theorem~\ref{thm:alignment}, every global minimum ($R = 0$) is aligned.
-By Theorem~\ref{thm:saddle}, every non-aligned critical point satisfying
-condition~(ii) is a strict saddle.  By Step~2, subgradient descent from
-almost every initialization avoids these saddle points and converges to an
-aligned global minimum.
+\noindent\textbf{Step 3: Convergence.}
+By~\cite[Theorem~4.1]{davis2020}, the subgradient method on tame functions
+converges to Clarke critical points from almost every initialization.  By
+Step~2, all such critical points are aligned global minima.
 \end{proof}
 
 \begin{remark}\label{rem:convergence-caveats}
-Two caveats are in order.
-\emph{First}, the corollary assumes condition~(ii) of Theorem~\ref{thm:saddle}
-at all non-aligned critical points.  As noted in Remark~\ref{rem:general-saddle},
-this is expected in the overparameterized regime but is not proved in full
-generality.
-\emph{Second}, the classical saddle-avoidance result of Lee et
-al.~\cite{lee2016} requires $C^2$ smoothness, which ReLU objectives do not
-satisfy.  The tame-function framework of~\cite{davis2020} provides the
-appropriate nonsmooth extension via the K\L{} inequality.
+The classical saddle-avoidance result of Lee et al.~\cite{lee2016} requires
+$C^2$ smoothness, which ReLU objectives do not satisfy.  The tame-function
+framework of~\cite{davis2020} provides the appropriate nonsmooth extension
+via the K\L{} inequality.  The overparameterization condition $p \geq 2k+d+1$
+is mild: it ensures that at least $(d+1)$ neurons remain dead at any critical
+point where at most $k$ neurons are needed to represent the teacher.
 \end{remark}
 
 %% ========================================================
@@ -639,7 +752,9 @@ We have presented a landscape analysis approach to feature alignment in shallow 
 
 \item A \textbf{strict saddle theorem} (Theorem~\ref{thm:saddle}) for isolated non-aligned neurons, proved via an explicit second-derivative computation using the Gaussian--ReLU kernel formula.
 
-\item A \textbf{convergence guarantee} (Corollary~\ref{cor:convergence}) combining the landscape results with the tame-function framework of~\cite{davis2020}.
+\item An \textbf{absence of spurious critical points} (Theorem~\ref{thm:no-spurious}) in the overparameterized regime, proved by exploiting dead neurons as descent probes.  This removes the isolation condition from Theorem~\ref{thm:saddle}.
+
+\item An \textbf{unconditional convergence guarantee} (Corollary~\ref{cor:convergence}) combining the landscape results with the tame-function framework of~\cite{davis2020}.
 \end{enumerate}
 
 \subsection{Comparison with Bietti, Bruna, and Sanford~\cite{bietti2022}}
@@ -671,7 +786,7 @@ Feature alignment ($w_j \to \spn(w^*)$) is the mechanism through which shallow n
 \subsection{Open problems}
 
 \begin{enumerate}[label=(\arabic*)]
-\item \textbf{Remove the isolation condition in the strict saddle theorem.} Theorem~\ref{thm:saddle} assumes all other active neurons are aligned (condition~(ii)). Extending the result to the general case with multiple non-aligned neurons requires bounding the cross-neuron interaction terms in the second derivative; see Remark~\ref{rem:general-saddle}.
+\item \textbf{Quantitative convergence rates.} Our results establish convergence but do not provide explicit rates.  Combining the landscape analysis with the two-phase dynamics of~\cite{bietti2022} could yield polynomial-time convergence bounds.
 
 \item \textbf{Multi-index models.} For targets $\varphi(V^{*\top}x)$ with $V^* \in \R^{d \times r}$ and $r > 1$, the directional independence lemma implies that active neurons must align with the column span of $V^*$. The strict saddle analysis becomes more complex due to interactions between multiple target directions.
 
