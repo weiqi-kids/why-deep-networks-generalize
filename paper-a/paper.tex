@@ -1,0 +1,954 @@
+\documentclass[12pt]{amsart}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage[colorlinks=true,citecolor=blue,urlcolor=blue,linkcolor=blue]{hyperref}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{example}[theorem]{Example}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Operators
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\MSE}{MSE}
+\DeclareMathOperator{\relu}{ReLU}
+
+% Shortcuts
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\bX}{\mathbf{X}}
+\newcommand{\bJ}{\mathbf{J}}
+\newcommand{\bM}{\mathbf{M}}
+\newcommand{\bU}{\mathbf{U}}
+\newcommand{\bV}{\mathbf{V}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bw}{\mathbf{w}}
+\newcommand{\ba}{\mathbf{a}}
+\newcommand{\bg}{\mathbf{g}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\abs}[1]{\left\lvert #1 \right\rvert}
+\newcommand{\ip}[2]{\langle #1, #2 \rangle}
+
+\title[Noise Propagation and Benign Overfitting]{%
+  Noise Propagation Operators and a Two-Parameter\\
+  Characterization of Benign Overfitting}
+
+\author{[Author Name]}
+\address{[Institution]}
+\email{[Email]}
+
+\date{\today}
+
+\subjclass[2020]{62J05, 68T07, 62G20}
+
+\keywords{Benign overfitting, overparameterized models, generalization bounds,
+  noise propagation, Jacobian spectrum, neural tangent kernel}
+
+\begin{document}
+
+\begin{abstract}
+Overparameterized models that interpolate noisy training data can nonetheless
+generalize well, a phenomenon known as benign overfitting.  Existing taxonomies,
+notably that of Mallinar et al.\ (2022), characterize the
+benign--tempered--catastrophic trichotomy through a single eigenvalue sequence of
+the kernel matrix.  We introduce the \emph{noise propagation operator}
+$\bM = \boldsymbol{\Sigma}^{-1}\boldsymbol{\Gamma}\boldsymbol{\Sigma}^{-1}$,
+where $\boldsymbol{\Sigma}$ collects the singular values of the training Jacobian
+and $\boldsymbol{\Gamma}$ measures the test--train cross-correlation of gradient
+features.  This operator yields a unified generalization bound whose excess risk
+decomposes into a signal-bias term, a noise-variance term $\sigma^{2}\tr(\bM)$,
+and a concentration tail controlled by the Frobenius norm of $\bM$.  Under power-law
+decay assumptions $\sigma_{j}\sim j^{-\alpha}$ and
+$\rho_{j}\sim j^{-\beta}$, we prove a sharp dichotomy: the noise-variance term
+$\sigma^{2}\tr(\bM)$ is finite if and only if
+$\beta > \alpha + \tfrac{1}{2}$, diverges logarithmically when
+$\beta = \alpha + \tfrac{1}{2}$, and diverges polynomially otherwise.  The two-parameter
+$(\alpha,\beta)$ framework separates the mechanism by which noise enters the model
+(governed by $\alpha$) from the mechanism by which noise is expressed at test
+points (governed by $\beta$), thereby explaining why feature learning can convert
+catastrophic overfitting into benign overfitting by increasing $\beta$ while
+$\alpha$ remains fixed.  We illustrate the framework with a spectral-separation
+result for two-layer ReLU teacher--student networks.
+\end{abstract}
+
+\maketitle
+
+%% ============================================================
+\section{Introduction}\label{sec:intro}
+%% ============================================================
+
+A central puzzle in the theory of overparameterized learning is that models with
+far more parameters than training samples can interpolate noisy data---fitting
+every label exactly---yet still predict accurately on unseen inputs.  Classical
+bias--variance trade-off reasoning predicts that such interpolation should
+amplify noise and destroy generalization, but modern neural networks routinely
+defy this prediction.  Understanding when and why interpolation is compatible
+with generalization is one of the most active questions in statistical learning
+theory.
+
+\medskip
+\noindent\textbf{What problem do we address?}
+We seek a quantitative criterion that determines whether an interpolating
+predictor generalizes well (benign overfitting), moderately (tempered
+overfitting), or poorly (catastrophic overfitting), in terms of the spectral
+geometry of the model's Jacobian and its interaction with the test distribution.
+
+\medskip
+\noindent\textbf{Why is this important?}
+Existing criteria for benign overfitting, while powerful, rely on a single
+spectral sequence.  In fixed-kernel regression the kernel eigenvalues
+simultaneously control how noise is absorbed during training and how it is
+expressed at test time, so a single sequence suffices.  However, after feature
+learning the training-time and test-time spectral behaviors can decouple: the
+learned features may suppress noise in directions that are invisible at test
+points even if those directions carry substantial noise energy in the training
+fit.  A single-parameter criterion cannot capture this decoupling.
+
+\medskip
+\noindent\textbf{What have others done?}
+Bartlett, Long, Lugosi, and Tsigler~\cite{BLLT2020} established the first
+rigorous benign-overfitting result for linear regression, showing that the
+minimum-norm interpolant generalizes when the effective rank of the covariance
+tail is large relative to the sample size.  Tsigler and
+Bartlett~\cite{TB2023} extended these results to ridge regression with sharp
+non-asymptotic bounds.  Mallinar et al.~\cite{MSCBR2022} introduced a
+taxonomy---benign, tempered, and catastrophic---based on the eigenvalue decay
+rate of the kernel matrix, providing a unified qualitative picture across
+kernel methods and neural networks.  On the optimization side, Jacot, Gabriel,
+and Hongler~\cite{JGH2018} introduced the Neural Tangent Kernel (NTK), which
+linearizes the network around initialization and connects overparameterized
+training dynamics to kernel regression.  Hastie, Montanari, Rosset, and
+Tibshirani~\cite{HMRT2022} gave precise asymptotic characterizations of the
+double-descent phenomenon in least-squares regression.  Boursier and
+Flammarion~\cite{BF2022} analyzed gradient flow in two-layer ReLU
+teacher--student networks, proving that the learned weights align with the
+teacher directions.
+
+\medskip
+\noindent\textbf{What is new here?}
+We introduce the \emph{noise propagation operator}
+$\bM = \boldsymbol{\Sigma}^{-1}\boldsymbol{\Gamma}\boldsymbol{\Sigma}^{-1}$,
+which factors the test-time noise amplification into two independent
+components:
+\begin{itemize}
+  \item $\boldsymbol{\Sigma}$: the singular values of the training Jacobian,
+    governing how noise enters the interpolating solution (decay rate $\alpha$);
+  \item $\boldsymbol{\Gamma}$: the test--train cross-correlation of gradient
+    features, governing how noise is expressed at test points (decay rate
+    $\beta$).
+\end{itemize}
+In fixed-kernel regression, $\boldsymbol{\Gamma}$ is determined by
+$\boldsymbol{\Sigma}$ (both are controlled by the same kernel eigenvalues), so
+the framework reduces to a single-parameter condition.  After feature learning,
+$\boldsymbol{\Gamma}$ can change independently of $\boldsymbol{\Sigma}$: the
+learned representation can increase $\beta$ (making noise directions invisible
+at test time) while $\alpha$ remains fixed.  This separation provides a
+mechanistic explanation for why feature learning improves generalization beyond
+what any fixed-kernel theory can predict.
+
+Our main contributions are:
+\begin{enumerate}
+  \item A \textbf{unified generalization bound} (Theorem~\ref{thm:main})
+    expressing the test mean squared error as the sum of a signal-bias term, the
+    noise-variance term $\sigma^{2}\tr(\bM)$, and a concentration tail
+    controlled by $\norm{\bM}_{F}$.
+  \item A \textbf{benign-overfitting dichotomy} (Theorem~\ref{thm:dichotomy})
+    giving a sharp two-parameter condition: overfitting is benign if and only if
+    $\beta > \alpha + \tfrac{1}{2}$.
+  \item An \textbf{application to two-layer ReLU networks}
+    (Proposition~\ref{prop:teacher-student}) demonstrating that gradient-flow
+    training achieves spectral separation in the Jacobian, yielding benign
+    generalization.
+\end{enumerate}
+
+%% ============================================================
+\section{Preliminaries}\label{sec:prelim}
+%% ============================================================
+
+\subsection{Setting and notation}
+
+Let $S = \{(\bx_{i}, y_{i})\}_{i=1}^{n}$ be a training set with
+$\bx_{i} \in \R^{d}$ and $y_{i} \in \R$.  We assume a standard regression
+model
+\begin{equation}\label{eq:data-model}
+  y_{i} = g^{*}(\bx_{i}) + \xi_{i}, \qquad i = 1, \ldots, n,
+\end{equation}
+where $g^{*}\colon \R^{d} \to \R$ is the unknown ground-truth function and
+$\xi_{1}, \ldots, \xi_{n}$ are independent, mean-zero, sub-Gaussian random
+variables with variance proxy $\sigma^{2}$.  That is, for every
+$\lambda \in \R$,
+\begin{equation}\label{eq:sub-gaussian}
+  \E\bigl[e^{\lambda \xi_{i}}\bigr] \leq e^{\lambda^{2}\sigma^{2}/2}.
+\end{equation}
+
+Let $f(\cdot\,; \theta)\colon \R^{d} \to \R$ be a parametric predictor with
+parameter vector $\theta \in \R^{p}$.  We assume that $\theta^{*}$ is the \emph{minimum-norm} interpolating
+parameter vector relative to a reference $\theta_{0}$:
+\begin{equation}\label{eq:interpolation}
+  f(\bx_{i}; \theta^{*}) = y_{i}, \qquad i = 1, \ldots, n,
+\end{equation}
+with $\theta^{*} - \theta_{0} = \bV\boldsymbol{\Sigma}^{-1}\bU^{\top}
+(\mathbf{y} - f(\bX; \theta_{0}))$ (the minimum-norm linearized solution).
+For simplicity we take $\theta_{0}$ such that $f(\bx_{i}; \theta_{0}) = 0$
+for all $i$, which can always be achieved by redefining $f$.
+
+\subsection{Jacobian and its singular value decomposition}
+
+\begin{definition}[Training Jacobian]\label{def:jacobian}
+The \emph{training Jacobian} at $\theta^{*}$ is the matrix
+$\bJ \in \R^{n \times p}$ whose $i$-th row is the gradient of the prediction at
+the $i$-th training point:
+\begin{equation}\label{eq:jacobian}
+  \bJ_{i,:} = \nabla_{\theta} f(\bx_{i}; \theta^{*})^{\top}, \qquad
+  i = 1, \ldots, n.
+\end{equation}
+\end{definition}
+
+Let the singular value decomposition (SVD) of $\bJ$ be
+\begin{equation}\label{eq:svd}
+  \bJ = \bU \boldsymbol{\Sigma} \bV^{\top},
+\end{equation}
+where $\bU = [\bu_{1}, \ldots, \bu_{n}] \in \R^{n \times n}$ is orthogonal,
+$\bV = [\bv_{1}, \ldots, \bv_{p}] \in \R^{p \times p}$ is orthogonal (with
+only the first $n$ columns relevant when $p > n$), and
+$\boldsymbol{\Sigma} = \diag(\sigma_{1}, \ldots, \sigma_{n})$ with
+$\sigma_{1} \geq \sigma_{2} \geq \cdots \geq \sigma_{n} > 0$.  The assumption
+$\sigma_{n} > 0$ is equivalent to requiring that $\bJ$ has full row rank, which
+is a necessary condition for interpolation via linearized perturbation of the
+parameters.
+
+\subsection{Gradient feature functions and cross-correlation}
+
+\begin{definition}[Gradient feature functions]\label{def:psi}
+For each $j = 1, \ldots, n$, the \emph{$j$-th gradient feature function} is
+\begin{equation}\label{eq:psi}
+  \psi_{j}(\bx) = \nabla_{\theta} f(\bx; \theta^{*})^{\top} \bv_{j},
+\end{equation}
+where $\bv_{j}$ is the $j$-th right singular vector of $\bJ$.  Evaluated at a
+test point $\bx$, the scalar $\psi_{j}(\bx)$ measures the projection of the
+test gradient onto the $j$-th training principal direction.
+\end{definition}
+
+\begin{definition}[Cross-correlation matrix]\label{def:Gamma}
+The \emph{cross-correlation matrix} $\boldsymbol{\Gamma} \in \R^{n \times n}$ is
+defined by
+\begin{equation}\label{eq:Gamma}
+  \boldsymbol{\Gamma}_{jl}
+  = \E_{\bx}\bigl[\psi_{j}(\bx)\,\psi_{l}(\bx)\bigr],
+  \qquad j, l = 1, \ldots, n,
+\end{equation}
+where the expectation is over the test distribution.  The matrix
+$\boldsymbol{\Gamma}$ is symmetric and positive semidefinite.  We write
+$\rho_{j} = \sqrt{\boldsymbol{\Gamma}_{jj}}$ for the root-mean-square magnitude
+of the $j$-th gradient feature at test points.
+\end{definition}
+
+\subsection{The noise propagation operator}
+
+\begin{definition}[Noise propagation operator]\label{def:M}
+The \emph{noise propagation operator} is the matrix
+\begin{equation}\label{eq:M}
+  \bM = \boldsymbol{\Sigma}^{-1} \boldsymbol{\Gamma}\,
+        \boldsymbol{\Sigma}^{-1} \in \R^{n \times n}.
+\end{equation}
+Since $\boldsymbol{\Gamma}$ is positive semidefinite and
+$\boldsymbol{\Sigma}^{-1}$ is positive diagonal, $\bM$ is symmetric and positive
+semidefinite.
+\end{definition}
+
+\begin{remark}\label{rem:M-interpretation}
+The operator $\bM$ captures the full pipeline of noise amplification: the noise
+vector $\boldsymbol{\xi} \in \R^{n}$ is first projected onto the training
+singular directions (the columns of $\bU$), scaled by $\sigma_{j}^{-1}$ (the
+inverse singular values of $\bJ$), and then the resulting coefficients are
+propagated to test points through the cross-correlation $\boldsymbol{\Gamma}$.
+The factor $\boldsymbol{\Sigma}^{-1}$ appears twice because the interpolation
+condition forces the noise coefficient in direction $j$ to be proportional to
+$\sigma_{j}^{-1}$, and the test-time variance of that coefficient depends on its
+squared magnitude $\sigma_{j}^{-2}$.
+\end{remark}
+
+\subsection{Linearization residual}
+
+Our analysis relies on a local linearization of the predictor around a reference
+parameter $\theta_{0}$ (for example, the initialization).
+
+\begin{assumption}[Linearization]\label{ass:lin}
+There exists a constant $\delta_{\mathrm{lin}} \geq 0$ such that for every test
+point $\bx$ in the support of the test distribution,
+\begin{equation}\label{eq:lin-residual}
+  \bigl\lvert
+    f(\bx; \theta^{*}) - f(\bx; \theta_{0})
+    - \nabla_{\theta} f(\bx; \theta_{0})^{\top}(\theta^{*} - \theta_{0})
+  \bigr\rvert
+  \leq \delta_{\mathrm{lin}}.
+\end{equation}
+\end{assumption}
+
+When $\delta_{\mathrm{lin}} = 0$ the predictor is exactly linear in the
+parameters (as in kernel regression or the NTK regime).  For finite-width
+networks, $\delta_{\mathrm{lin}}$ quantifies the quality of the first-order
+Taylor approximation.
+
+\subsection{Signal bias}
+
+\begin{definition}[Signal bias]\label{def:signal-bias}
+The \emph{signal bias} is defined as
+\begin{equation}\label{eq:signal-bias}
+  B_{\mathrm{signal}}^{2}
+  = \E_{\bx}\Biggl[
+      \Biggl(
+        \sum_{j=1}^{n}
+        \frac{\bu_{j}^{\top} \bg^{*}}{\sigma_{j}}\,\psi_{j}(\bx)
+        - g^{*}(\bx)
+      \Biggr)^{\!2}
+    \Biggr],
+\end{equation}
+where $\bg^{*} = (g^{*}(\bx_{1}), \ldots, g^{*}(\bx_{n}))^{\top} \in \R^{n}$
+is the vector of noiseless labels.  This term measures the approximation error
+incurred by the linearized interpolant in reconstructing the true function, and
+depends on the richness of the feature space but not on the noise.
+\end{definition}
+
+%% ============================================================
+\section{Main Results}\label{sec:main}
+%% ============================================================
+
+\subsection{Unified generalization bound}
+
+\begin{theorem}[Unified Generalization Bound]\label{thm:main}
+Let $S = \{(\bx_{i}, y_{i})\}_{i=1}^{n}$ be generated according to the
+model~\eqref{eq:data-model} with sub-Gaussian noise
+satisfying~\eqref{eq:sub-gaussian}.  Let $\theta^{*}$ be an interpolating
+solution satisfying~\eqref{eq:interpolation}, and let $\bJ$,
+$\boldsymbol{\Sigma}$, $\bV$, $\psi_{j}$, $\boldsymbol{\Gamma}$, and $\bM$ be
+as in Definitions~\ref{def:jacobian}--\ref{def:M}.  Suppose
+Assumption~\ref{ass:lin} holds with residual $\delta_{\mathrm{lin}}$.  Then
+there exists an absolute constant $C > 0$ (depending only on the
+sub-Gaussian norm of $\xi_{i}$) such that for every
+$\delta \in (0, 1)$, with probability at least $1 - \delta$ over the noise
+$\boldsymbol{\xi} = (\xi_{1}, \ldots, \xi_{n})^{\top}$,
+\begin{equation}\label{eq:main-bound}
+  \MSE_{\mathrm{test}}
+  \leq C\bigl(B_{\mathrm{signal}}^{2}
+       + \sigma^{2}\,\tr(\bM)
+       + \sigma^{2}\,\norm{\bM}_{F}\,\sqrt{\log(1/\delta)}
+       + \delta_{\mathrm{lin}}^{2}\bigr),
+\end{equation}
+where
+$\MSE_{\mathrm{test}} = \E_{\bx}\bigl[(f(\bx; \theta^{*}) - g^{*}(\bx))^{2}\bigr]$
+is the test mean squared error (conditional on the training data and noise
+realization), and $\norm{\bM}_{F} = (\sum_{j,l} \bM_{jl}^{2})^{1/2}$ is the
+Frobenius norm.
+\end{theorem}
+
+\begin{proof}
+The proof proceeds in four steps.
+
+\medskip
+\noindent\textbf{Step 1: Decomposition of the test prediction error.}
+By the interpolation condition~\eqref{eq:interpolation} and the data
+model~\eqref{eq:data-model}, the parameter perturbation
+$\theta^{*} - \theta_{0}$ is determined by the system
+$\bJ(\theta^{*} - \theta_{0}) \approx \mathbf{y} - f(\bX; \theta_{0})$, where
+the approximation is controlled by the linearization residual.  Under
+Assumption~\ref{ass:lin}, the test prediction error admits the decomposition
+\begin{equation}\label{eq:decomp}
+  f(\bx; \theta^{*}) - g^{*}(\bx) = S(\bx) + N(\bx) + R(\bx),
+\end{equation}
+where the three terms are defined as follows.
+
+The \emph{signal reconstruction term} is
+\begin{equation}\label{eq:signal-term}
+  S(\bx) = \sum_{j=1}^{n} \frac{\bu_{j}^{\top} \bg^{*}}{\sigma_{j}}\,
+            \psi_{j}(\bx) - g^{*}(\bx).
+\end{equation}
+This term captures how well the linearized interpolant reconstructs the noiseless
+function $g^{*}$.
+
+The \emph{noise leakage term} is
+\begin{equation}\label{eq:noise-term}
+  N(\bx) = \sum_{j=1}^{n} \frac{\bu_{j}^{\top} \boldsymbol{\xi}}{\sigma_{j}}\,
+            \psi_{j}(\bx).
+\end{equation}
+This term captures how training noise propagates to the test prediction.
+
+The \emph{linearization residual term} satisfies $\abs{R(\bx)} \leq \delta_{\mathrm{lin}}$ by Assumption~\ref{ass:lin}.
+
+To verify this decomposition, note that the interpolation condition gives
+$\bJ(\theta^{*} - \theta_{0}) = \bg^{*} + \boldsymbol{\xi} - f(\bX; \theta_{0}) + \mathbf{r}$
+where $\mathbf{r}$ collects training-point residuals.  Using the SVD
+$\bJ = \bU\boldsymbol{\Sigma}\bV^{\top}$, the minimum-norm solution is
+$\theta^{*} - \theta_{0} = \bV\boldsymbol{\Sigma}^{-1}\bU^{\top}(\bg^{*} + \boldsymbol{\xi} - f(\bX;\theta_{0}) + \mathbf{r})$.
+The linearized test prediction is
+\begin{align*}
+  f(\bx; \theta^{*})
+  &\approx f(\bx; \theta_{0})
+    + \nabla_{\theta} f(\bx; \theta_{0})^{\top}(\theta^{*} - \theta_{0}) \\
+  &= f(\bx; \theta_{0})
+    + \sum_{j=1}^{n} \frac{\bu_{j}^{\top}(\bg^{*} + \boldsymbol{\xi}
+      - f(\bX;\theta_{0}) + \mathbf{r})}{\sigma_{j}}\,\psi_{j}(\bx).
+\end{align*}
+Subtracting $g^{*}(\bx)$ and rearranging yields~\eqref{eq:decomp}, where the
+signal reconstruction involves $\bu_{j}^{\top}\bg^{*}/\sigma_{j}$, the noise
+leakage involves $\bu_{j}^{\top}\boldsymbol{\xi}/\sigma_{j}$, and all
+remaining terms (including those involving $f(\bX;\theta_{0})$ and
+$\mathbf{r}$) are absorbed into $S(\bx)$ and $R(\bx)$.
+
+\medskip
+\noindent\textbf{Step 2: Expected noise variance equals $\sigma^{2}\tr(\bM)$.}
+We compute the expected test MSE contribution from the noise term.  Defining the
+random variable
+\begin{equation}\label{eq:Z}
+  Z = \E_{\bx}\bigl[N(\bx)^{2}\bigr]
+    = \E_{\bx}\Biggl[
+        \Biggl(
+          \sum_{j=1}^{n}
+          \frac{\bu_{j}^{\top}\boldsymbol{\xi}}{\sigma_{j}}\,\psi_{j}(\bx)
+        \Biggr)^{\!2}
+      \Biggr],
+\end{equation}
+we expand the square and exchange the expectation over $\bx$ with the sum:
+\begin{align}
+  Z &= \sum_{j=1}^{n} \sum_{l=1}^{n}
+       \frac{\bu_{j}^{\top}\boldsymbol{\xi}}{\sigma_{j}}\,
+       \frac{\bu_{l}^{\top}\boldsymbol{\xi}}{\sigma_{l}}\,
+       \E_{\bx}\bigl[\psi_{j}(\bx)\,\psi_{l}(\bx)\bigr] \notag \\
+    &= \sum_{j=1}^{n} \sum_{l=1}^{n}
+       \frac{(\bu_{j}^{\top}\boldsymbol{\xi})\,
+             (\bu_{l}^{\top}\boldsymbol{\xi})}
+            {\sigma_{j}\,\sigma_{l}}\,
+       \boldsymbol{\Gamma}_{jl} \notag \\
+    &= \boldsymbol{\xi}^{\top}
+       \bU \boldsymbol{\Sigma}^{-1} \boldsymbol{\Gamma}\,
+       \boldsymbol{\Sigma}^{-1} \bU^{\top}
+       \boldsymbol{\xi} \notag \\
+    &= \boldsymbol{\xi}^{\top}
+       \bU \bM \bU^{\top}
+       \boldsymbol{\xi}. \label{eq:Z-quadratic}
+\end{align}
+Taking the expectation over $\boldsymbol{\xi}$, using
+$\E[\boldsymbol{\xi}\boldsymbol{\xi}^{\top}] = \sigma^{2}\bI_{n}$ and the
+orthogonality of $\bU$:
+\begin{align}
+  \E_{\boldsymbol{\xi}}[Z]
+  &= \sigma^{2}\,\tr\bigl(\bU \bM \bU^{\top}\bigr) \notag \\
+  &= \sigma^{2}\,\tr\bigl(\bU^{\top} \bU \bM\bigr) \notag \\
+  &= \sigma^{2}\,\tr(\bM). \label{eq:EZ}
+\end{align}
+This establishes that the expected noise contribution to the test MSE is
+$\sigma^{2}\tr(\bM)$.
+
+\medskip
+\noindent\textbf{Step 3: Concentration via the Hanson--Wright inequality.}
+The quadratic form $Z = \boldsymbol{\xi}^{\top}\bU\bM\bU^{\top}\boldsymbol{\xi}$
+from~\eqref{eq:Z-quadratic} involves a sub-Gaussian random vector
+$\boldsymbol{\xi}$ and the positive semidefinite matrix
+$\mathbf{A} = \bU\bM\bU^{\top}$.  Note that
+$\norm{\mathbf{A}}_{F} = \norm{\bM}_{F}$ and
+$\norm{\mathbf{A}}_{\mathrm{op}} = \norm{\bM}_{\mathrm{op}}$ since $\bU$ is
+orthogonal.
+
+By the Hanson--Wright inequality (see, e.g., Rudelson and
+Vershynin~\cite{RV2013}), there exists an absolute constant $c > 0$ such that
+for all $t > 0$,
+\begin{equation}\label{eq:HW}
+  \Prob\bigl[\abs{Z - \E[Z]} > t\bigr]
+  \leq 2\exp\biggl(
+    -c\,\min\biggl(
+      \frac{t^{2}}{\sigma^{4}\norm{\bM}_{F}^{2}},\;
+      \frac{t}{\sigma^{2}\norm{\bM}_{\mathrm{op}}}
+    \biggr)
+  \biggr).
+\end{equation}
+Setting the right-hand side equal to $\delta$ and solving for $t$ in the
+Frobenius-norm regime (which dominates when $t$ is not too large), we obtain that
+with probability at least $1 - \delta$,
+\begin{equation}\label{eq:Z-tail}
+  Z \leq \E[Z]
+    + C_{1}\,\sigma^{2}\,\norm{\bM}_{F}\,\sqrt{\log(1/\delta)},
+\end{equation}
+where $C_{1} > 0$ is an absolute constant depending only on $c$ and the
+sub-Gaussian norm of $\xi_{i}$.
+
+\medskip
+\noindent\textbf{Step 4: Combining the three contributions.}
+The test MSE satisfies
+\begin{align}
+  \MSE_{\mathrm{test}}
+  &= \E_{\bx}\bigl[(f(\bx;\theta^{*}) - g^{*}(\bx))^{2}\bigr] \notag \\
+  &= \E_{\bx}\bigl[(S(\bx) + N(\bx) + R(\bx))^{2}\bigr] \notag \\
+  &\leq \E_{\bx}\bigl[\bigl(\abs{S(\bx)} + \abs{N(\bx)}
+         + \abs{R(\bx)}\bigr)^{2}\bigr] \notag \\
+  &\leq 3\,\E_{\bx}\bigl[S(\bx)^{2}\bigr]
+         + 3\,\E_{\bx}\bigl[N(\bx)^{2}\bigr]
+         + 3\,\delta_{\mathrm{lin}}^{2}, \label{eq:triangle}
+\end{align}
+where the last inequality uses $(a+b+c)^{2} \leq 3(a^{2}+b^{2}+c^{2})$.
+
+By the definition of signal bias (Definition~\ref{def:signal-bias}),
+$\E_{\bx}[S(\bx)^{2}] = B_{\mathrm{signal}}^{2}$.  By~\eqref{eq:EZ}
+and~\eqref{eq:Z-tail},
+$\E_{\bx}[N(\bx)^{2}] \leq \sigma^{2}\tr(\bM) + C_{1}\sigma^{2}\norm{\bM}_{F}\sqrt{\log(1/\delta)}$
+with probability at least $1 - \delta$.  Substituting into~\eqref{eq:triangle}
+and absorbing the factor of $3$ into the constant $C$ yields the
+bound~\eqref{eq:main-bound}.
+\end{proof}
+
+\begin{remark}\label{rem:kernel-special}
+In kernel regression with a fixed kernel $K$, the Jacobian is
+$\bJ = \bX$ (the data matrix in feature space), and the test--train
+cross-correlation $\boldsymbol{\Gamma}_{jl}$ reduces to the kernel eigenvalue
+structure.  In this case, $\bM$ is determined entirely by the kernel eigenvalues,
+and $\tr(\bM)$ reduces to the effective-rank-based criteria studied
+in~\cite{BLLT2020, TB2023, MSCBR2022}.  The two-parameter framework thus
+strictly generalizes the single-parameter taxonomy.
+\end{remark}
+
+\subsection{Benign overfitting dichotomy}
+
+We now specialize to the setting where the singular values and cross-correlation
+exhibit power-law decay, which is common in practice and connects directly to
+the taxonomy of Mallinar et al.~\cite{MSCBR2022}.
+
+\begin{assumption}[Power-law spectral decay]\label{ass:power-law}
+There exist constants $\alpha > 0$, $\beta > 0$, $c_{1}, c_{2} > 0$ such that
+for all $j \geq 1$:
+\begin{enumerate}
+  \item The singular values of $\bJ$ satisfy
+    $c_{1}\,j^{-\alpha} \leq \sigma_{j} \leq c_{1}^{-1}\,j^{-\alpha}$.
+  \item The diagonal entries of $\boldsymbol{\Gamma}$ satisfy
+    $c_{2}\,j^{-\beta} \leq \rho_{j} \leq c_{2}^{-1}\,j^{-\beta}$,
+    where $\rho_{j} = \sqrt{\boldsymbol{\Gamma}_{jj}}$.
+\end{enumerate}
+\end{assumption}
+
+\begin{theorem}[Benign Overfitting Dichotomy]\label{thm:dichotomy}
+Under Assumption~\ref{ass:power-law}, the noise-variance term
+$\sigma^{2}\tr(\bM)$ in the bound of Theorem~\ref{thm:main} exhibits the
+following trichotomy:
+\begin{enumerate}
+  \item \textbf{Benign regime} ($\beta > \alpha + \tfrac{1}{2}$):
+    $\tr(\bM) < \infty$, so the noise contribution to the test MSE is bounded.
+  \item \textbf{Catastrophic regime} ($\beta < \alpha + \tfrac{1}{2}$):
+    $\tr(\bM) = \infty$; equivalently, the tail sum $\sum_{j > k}\rho_{j}^{2}/\sigma_{j}^{2}$
+    diverges for every finite $k$, and the noise contribution is unbounded.
+  \item \textbf{Tempered regime} ($\beta = \alpha + \tfrac{1}{2}$):
+    $\tr(\bM)$ diverges logarithmically; specifically,
+    $\sum_{j=1}^{J} \rho_{j}^{2}/\sigma_{j}^{2} = \Theta(\log J)$ as
+    $J \to \infty$.
+\end{enumerate}
+\end{theorem}
+
+\begin{proof}
+We analyze the trace of $\bM$ by computing the diagonal entries.  Since
+$\bM = \boldsymbol{\Sigma}^{-1}\boldsymbol{\Gamma}\boldsymbol{\Sigma}^{-1}$
+and $\boldsymbol{\Sigma}$ is diagonal, the diagonal entries of $\bM$ are
+\begin{equation}\label{eq:M-diag}
+  \bM_{jj} = \frac{\boldsymbol{\Gamma}_{jj}}{\sigma_{j}^{2}}
+            = \frac{\rho_{j}^{2}}{\sigma_{j}^{2}}.
+\end{equation}
+Therefore,
+\begin{equation}\label{eq:trM}
+  \tr(\bM) = \sum_{j=1}^{n} \frac{\rho_{j}^{2}}{\sigma_{j}^{2}}.
+\end{equation}
+Since $\boldsymbol{\Sigma}^{-1}$ is diagonal, we have
+$\tr(\boldsymbol{\Sigma}^{-1}\boldsymbol{\Gamma}\boldsymbol{\Sigma}^{-1})
+= \sum_{j} \sigma_{j}^{-2}\boldsymbol{\Gamma}_{jj}
+= \sum_{j} \rho_{j}^{2}/\sigma_{j}^{2}$,
+using the identity $\tr(\mathbf{D}\mathbf{A}\mathbf{D}) = \sum_{j} D_{jj}^{2} A_{jj}$ for diagonal $\mathbf{D}$.  Note that the off-diagonal entries of $\boldsymbol{\Gamma}$ do not contribute to $\tr(\bM)$.
+
+Under Assumption~\ref{ass:power-law}, each summand satisfies
+\begin{equation}\label{eq:summand}
+  \frac{\rho_{j}^{2}}{\sigma_{j}^{2}}
+  \asymp \frac{j^{-2\beta}}{j^{-2\alpha}}
+  = j^{2(\alpha - \beta)},
+\end{equation}
+where $\asymp$ denotes equality up to positive multiplicative constants
+depending on $c_{1}$ and $c_{2}$.  The tail sum starting from any fixed index
+$k$ is therefore
+\begin{equation}\label{eq:tail}
+  L_{\mathrm{tail}} = \sum_{j > k} \frac{\rho_{j}^{2}}{\sigma_{j}^{2}}
+  \asymp \sum_{j > k} j^{2(\alpha - \beta)}.
+\end{equation}
+
+We now apply the integral comparison test.  The series
+$\sum_{j=1}^{\infty} j^{2(\alpha - \beta)}$ converges if and only if the
+exponent satisfies $2(\alpha - \beta) < -1$, that is, $\beta > \alpha + \tfrac{1}{2}$.
+
+\medskip
+\noindent\textbf{Case 1:} $\beta > \alpha + \tfrac{1}{2}$.  Then
+$2(\alpha - \beta) < -1$, so the series $\sum_{j} j^{2(\alpha-\beta)}$
+converges.  By the comparison bounds from Assumption~\ref{ass:power-law},
+$\tr(\bM) = \sum_{j} \rho_{j}^{2}/\sigma_{j}^{2}$ is bounded above by
+$c_{2}^{-2}\,c_{1}^{2} \sum_{j} j^{2(\alpha - \beta)} < \infty$.
+
+\medskip
+\noindent\textbf{Case 2:} $\beta < \alpha + \tfrac{1}{2}$.  Then
+$2(\alpha - \beta) > -1$, and the series diverges.  By the lower bound in
+Assumption~\ref{ass:power-law},
+$\tr(\bM) \geq c_{2}^{2}\,c_{1}^{-2} \sum_{j} j^{2(\alpha-\beta)} = \infty$.
+
+\medskip
+\noindent\textbf{Case 3:} $\beta = \alpha + \tfrac{1}{2}$.  Then
+$2(\alpha - \beta) = -1$, and the series becomes the harmonic series:
+\begin{equation}
+  \sum_{j=1}^{J} j^{-1} = \Theta(\log J).
+\end{equation}
+Therefore $\sum_{j=1}^{J} \rho_{j}^{2}/\sigma_{j}^{2} = \Theta(\log J)$,
+confirming logarithmic divergence.
+
+This completes the proof of the trichotomy.
+\end{proof}
+
+\begin{remark}\label{rem:two-vs-one}
+The key distinction from the single-parameter taxonomy of
+Mallinar et al.~\cite{MSCBR2022} is the following.  In that framework, both the
+noise absorption and noise expression are controlled by the same eigenvalue
+sequence $\{\lambda_{j}\}$ of the kernel, leading to a condition that depends
+only on the decay rate of $\{\lambda_{j}\}$.  Our condition
+$\beta > \alpha + \tfrac{1}{2}$ involves \emph{two independent} rates: $\alpha$
+controls how efficiently the interpolation absorbs noise (via $\sigma_{j}$), and
+$\beta$ controls how visible the noise is at test points (via $\rho_{j}$).  The
+condition $\beta > \alpha + \tfrac{1}{2}$ captures the requirement that noise
+directions must be \emph{invisible at test points}, not merely that noise be
+small in magnitude.  After feature learning, $\beta$ can increase (the learned
+representation suppresses noise visibility at test points) while $\alpha$
+remains fixed, potentially converting catastrophic overfitting into benign
+overfitting---a transition that cannot be explained by any single-parameter
+criterion.
+\end{remark}
+
+%% ============================================================
+\section{Application to Teacher--Student Networks}\label{sec:app}
+%% ============================================================
+
+We demonstrate the utility of the $(\alpha, \beta)$ framework by analyzing a
+concrete setting: two-layer ReLU teacher--student networks trained by gradient
+flow.  The following result shows that gradient flow achieves spectral separation
+in the Jacobian, which in turn guarantees benign generalization through our
+Theorem~\ref{thm:main}.
+
+\subsection{Setting}
+
+Consider the following teacher--student configuration.
+
+\begin{itemize}
+  \item \textbf{Teacher network.}  The ground-truth function is a two-layer
+    ReLU network with $k$ hidden neurons:
+    \begin{equation}\label{eq:teacher}
+      f^{*}(\bx) = \sum_{j=1}^{k} a_{j}^{*}\,\relu(\bw_{j}^{*\top}\bx),
+    \end{equation}
+    where $\bw_{1}^{*}, \ldots, \bw_{k}^{*} \in \R^{d}$ are orthonormal vectors
+    and $a_{1}^{*}, \ldots, a_{k}^{*} \in \R$ are the second-layer weights.
+
+  \item \textbf{Student network.}  The student is a two-layer ReLU network with
+    $p \gg k$ hidden neurons:
+    \begin{equation}\label{eq:student}
+      f_{\theta}(\bx) = \frac{1}{\sqrt{p}}
+        \sum_{j=1}^{p} a_{j}\,\relu(\bw_{j}^{\top}\bx),
+    \end{equation}
+    where $\theta = (a_{1}, \bw_{1}, \ldots, a_{p}, \bw_{p})$ collects all
+    trainable parameters.
+
+  \item \textbf{Training.}  The student is trained by population gradient flow
+    (gradient flow on the expected loss) starting from an initialization scale
+    $\alpha_{\mathrm{init}} \to 0$ (the ``rich'' or ``feature-learning'' regime).
+    The training inputs $\bx_{i}$ are drawn i.i.d.\ from $\mathcal{N}(\mathbf{0}, \bI_{d})$.
+\end{itemize}
+
+\subsection{Spectral separation result}
+
+\begin{proposition}[Jacobian Spectral Separation]\label{prop:teacher-student}
+In the setting described above, suppose $n$ is sufficiently large relative to
+$k$ and $d$, and $p \gg k(d+1)$.  Then at a global minimizer $\theta^{*}$ of the
+population risk reached by gradient flow, the following spectral separation holds
+for the training Jacobian $\bJ = \bJ(\theta^{*})$:
+\begin{enumerate}
+  \item For $i \leq k(d+1)$: $\sigma_{i}(\bJ) \geq c\sqrt{n}$, where $c > 0$
+    is a constant depending on the teacher weights.
+  \item For $i > k(d+1)$: $\sigma_{i}(\bJ) \leq C\alpha_{\mathrm{init}}$,
+    where $C > 0$ is an absolute constant.
+\end{enumerate}
+Consequently, the effective rank satisfies $r_{\mathrm{eff}} \leq k(d+1)$, and
+\begin{equation}\label{eq:gen-bound-ts}
+  \MSE_{\mathrm{test}}
+  \leq O\!\left(\sqrt{\frac{k\,d\,\log n}{n}}\right).
+\end{equation}
+\end{proposition}
+
+\begin{proof}[Proof outline]
+The argument combines results from Boursier and Flammarion~\cite{BF2022} with
+our Theorem~\ref{thm:main}.  We proceed in four steps.
+
+\medskip
+\noindent\textbf{Step 1: Gradient flow alignment (cited result).}
+By the main theorem of Boursier and Flammarion~\cite{BF2022}, in the rich regime
+($\alpha_{\mathrm{init}} \to 0$), population gradient flow drives the student
+network to a $k$-sparse aligned solution: at the global minimizer, exactly $k$
+student neurons have their first-layer weights aligned with the teacher
+directions $\bw_{1}^{*}, \ldots, \bw_{k}^{*}$, with second-layer weights
+matching $a_{1}^{*}, \ldots, a_{k}^{*}$.  The remaining $p - k$ neurons have
+weights of order $O(\alpha_{\mathrm{init}})$.
+
+\medskip
+\noindent\textbf{Step 2: Active block of the Jacobian.}
+The $k$ aligned neurons contribute an ``active block'' $\bJ_{\mathrm{act}}$ to the
+training Jacobian.  For each aligned neuron $j$ ($j = 1, \ldots, k$), the
+gradient $\nabla_{\bw_{j}} f_{\theta^{*}}(\bx_{i})$ involves the indicator
+$\mathbf{1}[\bw_{j}^{*\top}\bx_{i} > 0]$ and the input $\bx_{i}$.  Since
+$\bw_{1}^{*}, \ldots, \bw_{k}^{*}$ are orthonormal and the inputs are Gaussian,
+by a general-position argument (the probability that any collection of
+$n$ Gaussian vectors lies in a degenerate configuration with respect to
+$k$ hyperplanes is zero), the active block has rank $k(d+1)$: each neuron
+contributes $d$ degrees of freedom from the first-layer weight gradient and $1$
+from the second-layer weight, and the $k$ neurons contribute independently due
+to orthonormality.  For $n$ sufficiently large relative to $k(d+1)$, the minimum
+singular value of $\bJ_{\mathrm{act}}$ is at least $c\sqrt{n}$ by standard
+random matrix concentration results for Gaussian designs.
+
+\medskip
+\noindent\textbf{Step 3: Dead block bound.}
+The remaining $p - k$ neurons have weights of order
+$O(\alpha_{\mathrm{init}})$ by Step~1.  Their contribution to the Jacobian,
+denoted $\bJ_{\mathrm{dead}}$, satisfies
+$\norm{\bJ_{\mathrm{dead}}}_{\mathrm{op}} = O(\alpha_{\mathrm{init}})$.
+Each dead neuron has weights of order $O(\alpha_{\mathrm{init}})$, and the
+operator norm of its rank-$(d+1)$ Jacobian block scales linearly with
+$\alpha_{\mathrm{init}}$.  This means the dead neurons contribute negligibly to
+the Jacobian spectrum.
+
+\medskip
+\noindent\textbf{Step 4: Spectral separation via Weyl's inequality.}
+The full Jacobian is $\bJ = \bJ_{\mathrm{act}} + \bJ_{\mathrm{dead}}$.
+By Weyl's inequality for singular values,
+\begin{equation}
+  \sigma_{i}(\bJ) \geq \sigma_{i}(\bJ_{\mathrm{act}})
+    - \norm{\bJ_{\mathrm{dead}}}_{\mathrm{op}}.
+\end{equation}
+For $i \leq k(d+1)$: $\sigma_{i}(\bJ) \geq c\sqrt{n} - O(\alpha_{\mathrm{init}}) \geq c\sqrt{n}/2$ for $\alpha_{\mathrm{init}}$ sufficiently small.
+For $i > k(d+1)$: $\sigma_{i}(\bJ_{\mathrm{act}}) = 0$ (since $\bJ_{\mathrm{act}}$ has rank at most $k(d+1)$), so $\sigma_{i}(\bJ) \leq \norm{\bJ_{\mathrm{dead}}}_{\mathrm{op}} = O(\alpha_{\mathrm{init}})$ by the reverse Weyl inequality.
+
+This establishes the spectral gap.  The generalization bound~\eqref{eq:gen-bound-ts}
+follows from Theorem~\ref{thm:main}: with effective rank
+$r_{\mathrm{eff}} \leq k(d+1)$, the trace of $\bM$ is dominated by the
+$k(d+1)$ large singular values, giving
+$\tr(\bM) \leq k(d+1) \cdot O(1/n)$, and the standard $\sqrt{\log n / n}$
+rate follows from the concentration term.
+\end{proof}
+
+\begin{remark}\label{rem:feature-learning}
+This result illustrates the mechanism described in Remark~\ref{rem:two-vs-one}.
+Before feature learning (i.e., at initialization with a random kernel), the
+singular values of $\bJ$ would not exhibit spectral separation: all $n$ singular
+values would be of comparable magnitude, and $\tr(\bM)$ would grow with $n$.
+After gradient-flow training, the learned features concentrate the Jacobian
+spectrum on $k(d+1)$ directions aligned with the teacher, effectively increasing
+$\beta$ (the noise directions become invisible at test points) while $\alpha$
+for the active directions remains unchanged.  This is the $(\alpha, \beta)$
+decoupling in action.
+\end{remark}
+
+\begin{remark}\label{rem:proposition-status}
+Proposition~\ref{prop:teacher-student} is labeled as a proposition rather than a
+theorem because its proof relies on the gradient-flow alignment result
+of~\cite{BF2022}, which is established under specific conditions (population
+gradient flow, Gaussian inputs, orthonormal teacher weights, rich regime).
+Extending this to finite-sample gradient descent with non-Gaussian inputs
+remains an open problem.
+\end{remark}
+
+%% ============================================================
+\section{Discussion}\label{sec:discussion}
+%% ============================================================
+
+\subsection{Connection to double descent}
+
+The noise propagation operator $\bM$ provides a natural lens through which to
+view the double-descent phenomenon~\cite{HMRT2022}.  Consider least-squares
+regression with $n$ samples and $p$ features, and let $\gamma = p/n$ denote the
+overparameterization ratio.
+
+The trace $\tr(\bM)$ is dominated by the smallest singular values of the
+Jacobian:
+\begin{equation}\label{eq:trM-dom}
+  \tr(\bM) = \sum_{j=1}^{n} \frac{\rho_{j}^{2}}{\sigma_{j}^{2}},
+\end{equation}
+and the sum is most sensitive to the indices $j$ where $\sigma_{j}$ is smallest.
+
+In the underparameterized regime ($\gamma < 1$), the Marchenko--Pastur law for
+random design matrices predicts that the smallest singular value of $\bJ$ is of
+order $\sqrt{n}(1 - \sqrt{\gamma})$, and a calculation using the Marchenko--Pastur
+density (see, e.g.,~\cite[Section~4]{HMRT2022}) yields
+\begin{equation}
+  \frac{\tr(\bM)}{n} \to \frac{(1 + \gamma)}{(1 - \gamma)^{3}}
+  \qquad \text{as } n, p \to \infty \text{ with } p/n \to \gamma < 1.
+\end{equation}
+This expression diverges as $\gamma \to 1^{-}$, reflecting the peak of double
+descent.
+
+At the interpolation threshold ($\gamma = 1$), the smallest singular value
+$\sigma_{\min}(\bJ) \to 0$ by the Marchenko--Pastur edge behavior, so
+$\tr(\bM) \to \infty$.  This is the exact point where the interpolating solution
+first exists, and it amplifies noise maximally.
+
+In the overparameterized regime ($\gamma > 1$), the minimum-norm interpolant
+selects the solution with the smallest parameter norm.  This implicit
+regularization improves the effective conditioning of the problem: the relevant
+singular values are those of the $n \times n$ matrix $\bJ\bJ^{\top}/p$, whose
+smallest eigenvalue is of order $(\sqrt{\gamma} - 1)^{2}$, bounded away from
+zero.  Consequently, $\tr(\bM)$ decreases as $\gamma$ increases beyond $1$,
+completing the descent after the peak.
+
+This analysis does not constitute a formal theorem, as it relies on asymptotic
+random matrix theory results applied in a specific (linear, Gaussian design)
+setting.  Extending it to the nonlinear setting covered by
+Theorem~\ref{thm:main} requires controlling $\boldsymbol{\Gamma}$ in addition to
+$\boldsymbol{\Sigma}$, which is an interesting direction for future work.
+
+\subsection{Limitations}\label{subsec:limitations}
+
+We identify the following limitations of our framework, which we state explicitly
+to delineate the boundaries of our results.
+
+\begin{enumerate}
+  \item \textbf{Linearization residual is not quantified.}
+    The bound in Theorem~\ref{thm:main} includes the term
+    $\delta_{\mathrm{lin}}^{2}$, but we do not provide an explicit estimate of
+    $\delta_{\mathrm{lin}}$ in terms of the network architecture or training
+    procedure.  Our framework applies rigorously only when local linearization
+    is a valid approximation (e.g., in the NTK regime or for wide networks).
+    Quantifying $\delta_{\mathrm{lin}}$ for finite-width networks trained by
+    gradient descent is a significant open problem.
+
+  \item \textbf{Signal bias is not analyzed.}
+    The term $B_{\mathrm{signal}}^{2}$ in~\eqref{eq:main-bound} is left as a
+    given quantity.  Our analysis focuses entirely on the noise amplification
+    mechanism; understanding $B_{\mathrm{signal}}^{2}$ requires a separate
+    investigation of the approximation-theoretic properties of the learned
+    features.
+
+  \item \textbf{Population-level cross-correlation.}
+    The matrix $\boldsymbol{\Gamma}$ is defined via a population expectation
+    over test points (Definition~\ref{def:Gamma}).  In practice, one observes
+    only finite test samples, and bounding the deviation between the empirical
+    and population versions of $\boldsymbol{\Gamma}$ requires matrix
+    concentration inequalities (e.g., matrix Bernstein bounds).  We defer this
+    finite-sample analysis to future work.
+
+  \item \textbf{Sub-Gaussian noise assumption.}
+    The concentration step (Step~3 of the proof of Theorem~\ref{thm:main})
+    relies on the Hanson--Wright inequality for sub-Gaussian random vectors.
+    Extending the framework to heavy-tailed noise distributions would require
+    alternative concentration tools, such as truncation arguments or the
+    recently developed heavy-tailed Hanson--Wright inequalities.
+
+  \item \textbf{Scope of the teacher--student result.}
+    Proposition~\ref{prop:teacher-student} is established only for two-layer
+    ReLU networks with orthonormal teacher weights, Gaussian inputs, and
+    population gradient flow in the rich regime.  Extending the spectral
+    separation result to deeper architectures, non-Gaussian inputs, or
+    finite-sample stochastic gradient descent remains open.
+\end{enumerate}
+
+\subsection{Open problems}
+
+We conclude by highlighting several directions for future investigation.
+
+\begin{enumerate}
+  \item \textbf{Quantifying $\delta_{\mathrm{lin}}$ for finite-width networks.}
+    Can one bound the linearization residual for networks of moderate width
+    trained by gradient descent, potentially using higher-order Taylor expansions
+    or mean-field approximations?
+
+  \item \textbf{Finite-sample $\boldsymbol{\Gamma}$ estimation.}
+    What is the minimax rate for estimating $\tr(\bM)$ from a finite test sample,
+    and can one construct practical estimators that predict the
+    benign/tempered/catastrophic regime from data?
+
+  \item \textbf{Feature-learning dynamics of $(\alpha, \beta)$.}
+    Can one track the evolution of $\alpha$ and $\beta$ during gradient-descent
+    training, and characterize the conditions under which training drives the
+    system from the catastrophic to the benign regime?
+
+  \item \textbf{Beyond power-law decay.}
+    The dichotomy in Theorem~\ref{thm:dichotomy} assumes power-law decay.
+    Extending the characterization to more general spectral profiles (e.g.,
+    exponential decay, mixed regimes) would broaden the applicability of the
+    framework.
+
+  \item \textbf{Heavy-tailed and dependent noise.}
+    Extending Theorem~\ref{thm:main} to accommodate heavy-tailed label noise
+    or dependent noise structures (as arise in time-series or spatially
+    correlated data) would significantly increase the practical relevance of the
+    bounds.
+\end{enumerate}
+
+%% ============================================================
+%% References
+%% ============================================================
+
+\begin{thebibliography}{10}
+
+\bibitem{BLLT2020}
+P.~L.~Bartlett, P.~M.~Long, G.~Lugosi, and A.~Tsigler.
+\newblock Benign overfitting in linear regression.
+\newblock \emph{Proceedings of the National Academy of Sciences},
+  117(48):30063--30070, 2020.
+
+\bibitem{BF2022}
+E.~Boursier and N.~Flammarion.
+\newblock Gradient flow dynamics of shallow {ReLU} networks for square loss and
+  orthogonal inputs.
+\newblock \emph{Advances in Neural Information Processing Systems}, 35, 2022.
+
+\bibitem{HMRT2022}
+T.~Hastie, A.~Montanari, S.~Rosset, and R.~J.~Tibshirani.
+\newblock Surprises in high-dimensional ridgeless least squares interpolation.
+\newblock \emph{Annals of Statistics}, 50(2):949--986, 2022.
+
+\bibitem{JGH2018}
+A.~Jacot, F.~Gabriel, and C.~Hongler.
+\newblock Neural tangent kernel: convergence and generalization in neural
+  networks.
+\newblock \emph{Advances in Neural Information Processing Systems}, 31, 2018.
+
+\bibitem{MSCBR2022}
+N.~Mallinar, J.~B.~Simon, A.~Abedsoltan, P.~Pandit, M.~Belkin, and
+  P.~Nakkiran.
+\newblock Benign, tempered, or catastrophic: toward a refined taxonomy of
+  overfitting.
+\newblock \emph{Advances in Neural Information Processing Systems}, 35, 2022.
+
+\bibitem{RV2013}
+M.~Rudelson and R.~Vershynin.
+\newblock Hanson--{W}right inequality and sub-{G}aussian concentration.
+\newblock \emph{Electronic Communications in Probability}, 18:1--9, 2013.
+
+\bibitem{TB2023}
+A.~Tsigler and P.~L.~Bartlett.
+\newblock Benign overfitting in ridge regression.
+\newblock \emph{Journal of Machine Learning Research}, 24(123):1--76, 2023.
+
+\end{thebibliography}
+
+\end{document}

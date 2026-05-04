@@ -1,0 +1,720 @@
+\documentclass[11pt]{amsart}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{enumitem}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue,
+  citecolor=blue,
+  urlcolor=blue
+}
+
+%%% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{claim}[theorem]{Claim}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{example}[theorem]{Example}
+\newtheorem{remark}[theorem]{Remark}
+\newtheorem{assumption}[theorem]{Assumption}
+
+%%% Macros
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\inner}[2]{\langle #1, #2 \rangle}
+\newcommand{\norm}[1]{\| #1 \|}
+\newcommand{\abs}[1]{| #1 |}
+\newcommand{\relu}{\mathrm{relu}}
+\newcommand{\spn}{\mathrm{span}}
+\newcommand{\sgn}{\mathrm{sgn}}
+\newcommand{\supp}{\mathrm{supp}}
+\DeclareMathOperator{\tr}{tr}
+
+\begin{document}
+
+\title[Landscape Analysis for Feature Alignment]{A Landscape Analysis Approach to Feature Alignment\\in Shallow ReLU Networks for Single-Index Models}
+
+\author{[Author Name]}
+\address{[Institution]}
+\email{[Email]}
+
+\date{\today}
+
+\subjclass[2020]{Primary 68T07; Secondary 62M45, 90C26}
+
+\keywords{feature alignment, ReLU networks, single-index models, landscape analysis, benign overfitting}
+
+\begin{abstract}
+We study the alignment of learned features to the target direction in shallow ReLU networks trained on single-index models under Gaussian inputs. Our main contribution is a \emph{ReLU directional independence lemma}, which establishes that ReLU activations with pairwise distinct directions are linearly independent in $L^2(\R^d, \gamma_d)$. The proof exploits the distributional singularity (kink) of each ReLU unit on its decision hyperplane. Using this lemma, we give a purely landscape-based proof that every global minimum of the population risk exhibits feature alignment: all active neurons have weight vectors in the span of the target direction $w^*$. We further prove that, when the non-aligned neuron is isolated (all other active neurons are already aligned), every non-aligned critical point is a strict saddle, and derive a convergence guarantee for gradient descent. The alignment result at global minima overlaps substantially with the work of Bietti, Bruna, and Sanford (2022), who established similar conclusions via optimization-trajectory analysis with frozen biases. Our contribution is the alternative proof technique based on landscape analysis and the self-contained directional independence lemma, which may generalize more readily to multi-index settings.
+\end{abstract}
+
+\maketitle
+
+%% ========================================================
+\section{Introduction}\label{sec:intro}
+%% ========================================================
+
+A central question in the theory of deep learning is how overparameterized neural networks generalize despite having far more parameters than training samples. For shallow networks trained on \emph{single-index models}---targets of the form $\varphi(w^{*\top} x)$ for an unknown direction $w^* \in \R^d$---a key mechanism underlying generalization is \emph{feature alignment}: the learned weight vectors $w_j$ collapse into the span of $w^*$, effectively reducing the learning problem from $d$ dimensions to one.
+
+\subsection{Prior work}
+
+Bietti, Bruna, and Sanford~\cite{bietti2022} proved that for shallow neural networks with frozen biases, the population gradient flow recovers the target direction $w^*$ in single-index models with information exponent $\kappa = 1$. Their proof proceeds via a direct analysis of the optimization trajectory, establishing that the signal component of each neuron's weight grows while the noise component shrinks.
+
+Damian, Lee, and Soltanolkotabi~\cite{damian2022} showed that neural networks can learn low-dimensional representations via gradient descent, providing finite-sample guarantees. Ba, Erdogdu, Suzuki, Wang, Wu, and Yang~\cite{ba2022} gave precise high-dimensional asymptotics for feature learning after one pass of SGD. Abbe et al.~\cite{abbe2022} identified the staircase property governing the sequential learning of features. Pinkus~\cite{pinkus1999} studied linear independence of ridge functions for sigmoidal activations, establishing results in a classical approximation-theoretic framework.
+
+On the optimization side, Lee, Simchowitz, Jordan, and Recht~\cite{lee2016} proved that gradient descent converges to local minimizers for smooth objectives. Davis, Drusvyatskiy, Kakade, and Lee~\cite{davis2020} extended convergence guarantees to nonsmooth tame (semialgebraic) functions, which is the appropriate setting for ReLU networks.
+
+\subsection{Contribution}
+
+We provide an alternative proof that global minima of the population risk in shallow ReLU networks for single-index models exhibit feature alignment. Our approach is purely landscape-based and rests on two ingredients:
+
+\begin{enumerate}[label=(\roman*)]
+\item A \textbf{ReLU directional independence lemma} (Lemma~\ref{lem:relu-indep}), which shows that ReLU functions with pairwise distinct directions are linearly independent in $L^2(\R^d, \gamma_d)$. The proof uses a ``kink argument'' formalized via distributional derivatives: the second-order distributional derivative of $\relu(v_k^\top x)$ along the direction $v_k$ contains a Dirac delta component on the hyperplane $\{x : v_k^\top x = 0\}$, which cannot be canceled by smooth contributions from other terms.
+
+\item A direct application of this lemma to show that any representation of the target $\varphi(w^{*\top}x)$ (which is a function of a single direction) as a sum of ReLU units must have all active units aligned with $w^*$ (\textbf{Theorem~\ref{thm:alignment}}).
+\end{enumerate}
+
+We also present a \textbf{claim} (Claim~\ref{claim:saddle}) that non-aligned critical points are strict saddles, with an intuitive argument but without a complete proof. Conditional on this claim, we derive a convergence guarantee (Corollary~\ref{cor:convergence}).
+
+\subsection{Relation to prior work}
+
+Our main technical contribution---the ReLU directional independence lemma (Lemma~\ref{lem:relu-indep}) and its distributional-derivative proof---is, to the best of our knowledge, new. The closest result in the literature is Pinkus~\cite{pinkus1999} for sigmoidal activations, whose proof via analytic continuation does not apply to ReLU. The landscape-based proof of alignment (Theorem~\ref{thm:alignment}) is likewise a new proof technique: it characterizes global minima directly, without tracking the optimization trajectory.
+
+The alignment \emph{conclusion}---that gradient-trained shallow networks recover the target direction in single-index models---has been established by Bietti, Bruna, and Sanford~\cite{bietti2022} via trajectory analysis with frozen biases. Our setting differs in that we do not freeze biases but restrict to positively homogeneous CPL targets; these are incomparable assumptions. The landscape approach has the potential advantage of generalizing to multi-index settings where trajectory analysis becomes more complex, though this extension remains future work.
+
+\subsection{Organization}
+
+Section~\ref{sec:prelim} introduces the setting and notation. Section~\ref{sec:lemma} presents the ReLU directional independence lemma with a full proof. Section~\ref{sec:alignment} proves that global minima are aligned. Section~\ref{sec:saddle} states and partially argues the strict saddle claim. Section~\ref{sec:convergence} derives the conditional convergence corollary. Section~\ref{sec:discussion} discusses implications and open problems.
+
+%% ========================================================
+\section{Preliminaries}\label{sec:prelim}
+%% ========================================================
+
+\subsection{Notation}
+
+We write $\gamma_d$ for the standard Gaussian measure on $\R^d$, i.e., the distribution $\mathcal{N}(0, I_d)$. For $v \in \R^d \setminus \{0\}$, we write $\hat{v} = v / \norm{v}$ for the unit vector in the direction of $v$. The ReLU activation is $\relu(t) = \max(t, 0)$. We write $L^2(\R^d, \gamma_d)$ for the Hilbert space of square-integrable functions with respect to $\gamma_d$, equipped with the inner product
+\[
+\inner{f}{g}_{L^2(\gamma_d)} = \int_{\R^d} f(x) g(x) \, d\gamma_d(x).
+\]
+For a hyperplane $H = \{x \in \R^d : v^\top x = 0\}$, we denote by $\sigma_H$ the $(d{-}1)$-dimensional Hausdorff measure restricted to $H$, and by $\gamma_H$ the standard Gaussian measure on $H$ (viewed as a $(d{-}1)$-dimensional subspace with the induced Gaussian).
+
+We say two nonzero vectors $v_i, v_j \in \R^d$ have \emph{distinct directions} if $\hat{v}_i \neq \pm \hat{v}_j$.
+
+\subsection{Student network}
+
+We consider a shallow (one-hidden-layer) ReLU network with $p$ hidden neurons:
+\begin{equation}\label{eq:student}
+f_\theta(x) = \frac{1}{\sqrt{p}} \sum_{j=1}^{p} a_j \, \relu(w_j^\top x),
+\end{equation}
+where $\theta = (a_1, w_1, \ldots, a_p, w_p)$ with $a_j \in \R$ and $w_j \in \R^d$. A neuron $j$ is called \emph{active} if $a_j \neq 0$ and $w_j \neq 0$ (neurons with $w_j = 0$ contribute the constant $\relu(0) = 0$ and are ignored).
+
+\subsection{Target function}
+
+The target is a single-index model:
+\begin{equation}\label{eq:target}
+y = \varphi(w^{*\top} x),
+\end{equation}
+where $w^* \in \R^d$ with $\norm{w^*} = 1$, and $\varphi : \R \to \R$ is a continuous piecewise linear (CPL) function that is positively homogeneous of degree one, i.e., $\varphi(\lambda t) = \lambda \varphi(t)$ for all $\lambda > 0$.
+
+\begin{remark}\label{rem:cpl-relu}
+Any positively homogeneous CPL function $\varphi$ can be written as
+\begin{equation}\label{eq:cpl-decomp}
+\varphi(t) = s_+ \, \relu(t) + s_- \, \relu(-t)
+\end{equation}
+for constants $s_+, s_- \in \R$. Substituting $t = w^{*\top} x$, we obtain
+\begin{equation}\label{eq:target-relu}
+\varphi(w^{*\top} x) = s_+ \, \relu(w^{*\top} x) + s_- \, \relu(-w^{*\top} x).
+\end{equation}
+Thus the target is a finite linear combination of ReLU functions in directions $w^*$ and $-w^*$.
+\end{remark}
+
+\begin{remark}\label{rem:general-cpl}
+For general (non-homogeneous) CPL targets with breakpoints $t_1 < \cdots < t_K$, one would write $\varphi(t) = c_0 + c_1 t + \sum_k \alpha_k \relu(t - t_k) + \sum_k \beta_k \relu(-(t-t_k))$, which requires bias terms $\relu(w^{*\top}x - t_k)$ in the network. The directional independence lemma extends to this setting (distinct affine hyperplanes produce distinct kinks), but we restrict to the homogeneous case for clarity.
+\end{remark}
+
+\subsection{Population risk}
+
+The population risk is
+\begin{equation}\label{eq:risk}
+R(\theta) = \E_{x \sim \mathcal{N}(0, I_d)} \left[ \left( f_\theta(x) - \varphi(w^{*\top} x) \right)^2 \right].
+\end{equation}
+
+\begin{assumption}[Information exponent $\kappa = 1$]\label{ass:kappa}
+The first Hermite coefficient of $\varphi$ is nonzero:
+\[
+\mu_1 = \E_{z \sim \mathcal{N}(0,1)}[z \, \varphi(z)] \neq 0.
+\]
+\end{assumption}
+
+For the homogeneous CPL target $\varphi(t) = s_+ \relu(t) + s_- \relu(-t)$, a direct computation gives $\mu_1 = (s_+ - s_-)/2$, so Assumption~\ref{ass:kappa} holds whenever $s_+ \neq s_-$, i.e., whenever $\varphi$ is not an even function.
+
+\subsection{Distributional derivatives}\label{sec:distrib}
+
+We recall standard facts from distribution theory that will be used in the proof of Lemma~\ref{lem:relu-indep}. A locally integrable function $u$ on $\R^d$ defines a distribution via $\inner{u}{\phi} = \int u(x) \phi(x) \, dx$ for test functions $\phi \in C_c^\infty(\R^d)$. The distributional directional derivative along $v \in \R^d$ is defined by
+\[
+\inner{D_v u}{\phi} = -\inner{u}{D_v \phi} = -\int u(x) \, (v \cdot \nabla \phi(x)) \, dx.
+\]
+
+\begin{proposition}\label{prop:relu-deriv}
+Let $v \in \R^d \setminus \{0\}$ and define $H_v = \{x \in \R^d : v^\top x = 0\}$. Then:
+\begin{enumerate}[label=(\alph*)]
+\item The first distributional directional derivative of $\relu(v^\top x)$ along $v$ is
+\[
+D_v \relu(v^\top x) = \norm{v}^2 \, \mathbf{1}_{\{v^\top x > 0\}}.
+\]
+\item The second distributional directional derivative of $\relu(v^\top x)$ along $v$ is
+\[
+D_v^2 \relu(v^\top x) = \norm{v}^3 \, \delta_{H_v},
+\]
+where $\delta_{H_v}$ denotes the Dirac delta distribution (surface measure) on $H_v$: for any $\phi \in C_c^\infty(\R^d)$,
+\begin{equation}\label{eq:delta-hyperplane}
+\inner{\delta_{H_v}}{\phi} = \int_{H_v} \phi \, d\sigma_{H_v},
+\end{equation}
+with $\sigma_{H_v}$ the $(d{-}1)$-dimensional Hausdorff measure on $H_v$.
+\end{enumerate}
+\end{proposition}
+
+\begin{proof}
+We introduce orthogonal coordinates adapted to $v$. Let $e_1 = v/\norm{v}$ and extend to an orthonormal basis $\{e_1, e_2, \ldots, e_d\}$ of $\R^d$. Write $x = t e_1 + y$ where $t = v^\top x / \norm{v} \in \R$ and $y \in e_1^\perp \cong \R^{d-1}$. In these coordinates, $v^\top x = \norm{v} t$, and the Lebesgue measure decomposes as $dx = dt \, dy$.
+
+\medskip
+
+\noindent (a) For any $\phi \in C_c^\infty(\R^d)$:
+\begin{align*}
+\inner{D_v \relu(v^\top x)}{\phi}
+&= -\int_{\R^d} \relu(v^\top x) \, (v \cdot \nabla \phi(x)) \, dx \\
+&= -\int_{\R^{d-1}} \int_{-\infty}^{\infty} \relu(\norm{v} t) \cdot \norm{v} \frac{\partial \phi}{\partial t}(t, y) \, dt \, dy \\
+&= -\norm{v}^2 \int_{\R^{d-1}} \int_0^{\infty} t \, \frac{\partial \phi}{\partial t}(t, y) \, dt \, dy.
+\end{align*}
+Integrating by parts in $t$ (the boundary term at $t = \infty$ vanishes by compact support, and the boundary term at $t = 0$ gives $0 \cdot \phi(0, y) = 0$):
+\begin{align*}
+&= -\norm{v}^2 \int_{\R^{d-1}} \left( \bigl[t \, \phi(t,y)\bigr]_0^\infty - \int_0^\infty \phi(t,y) \, dt \right) dy \\
+&= \norm{v}^2 \int_{\R^{d-1}} \int_0^\infty \phi(t,y) \, dt \, dy \\
+&= \norm{v}^2 \int_{\{v^\top x > 0\}} \phi(x) \, dx.
+\end{align*}
+This confirms $D_v \relu(v^\top x) = \norm{v}^2 \, \mathbf{1}_{\{v^\top x > 0\}}$.
+
+\medskip
+
+\noindent (b) Applying $D_v$ to the indicator function from part (a):
+\begin{align*}
+\inner{D_v^2 \relu(v^\top x)}{\phi}
+&= -\norm{v}^2 \int_{\{v^\top x > 0\}} (v \cdot \nabla \phi(x)) \, dx \\
+&= -\norm{v}^3 \int_{\R^{d-1}} \int_0^\infty \frac{\partial \phi}{\partial t}(t,y) \, dt \, dy \\
+&= -\norm{v}^3 \int_{\R^{d-1}} \bigl[\phi(\infty, y) - \phi(0, y)\bigr] \, dy \\
+&= \norm{v}^3 \int_{\R^{d-1}} \phi(0, y) \, dy.
+\end{align*}
+Now, $\{x : t = 0\} = H_v$, and the parameterization $y \mapsto y$ (with $t = 0$) maps $\R^{d-1}$ isometrically onto $H_v$ (since $\{e_2, \ldots, e_d\}$ is an orthonormal basis for $H_v$), so $d\sigma_{H_v} = dy$. Thus
+\[
+\inner{D_v^2 \relu(v^\top x)}{\phi} = \norm{v}^3 \int_{H_v} \phi \, d\sigma_{H_v}.
+\]
+For the purposes of Lemma~\ref{lem:relu-indep}, only the fact that $D_v^2 \relu(v^\top x)$ is a \emph{nonzero positive multiple} of $\delta_{H_v}$ matters, so the exact constant is not essential.
+\end{proof}
+
+%% ========================================================
+\section{ReLU Directional Independence}\label{sec:lemma}
+%% ========================================================
+
+The following lemma is the key technical tool of this paper.
+
+\begin{lemma}[ReLU directional independence]\label{lem:relu-indep}
+Let $d \geq 2$ and let $v_1, \ldots, v_m \in \R^d \setminus \{0\}$ have pairwise distinct directions, i.e., $\hat{v}_i \neq \pm \hat{v}_j$ for all $i \neq j$. Then the functions $\{\relu(v_i^\top x)\}_{i=1}^m$ are linearly independent in $L^2(\R^d, \gamma_d)$.
+
+Moreover, for any nonzero $v \in \R^d$, the pair $\{\relu(v^\top x),\, \relu(-v^\top x)\}$ is linearly independent in $L^2(\R^d, \gamma_d)$, and more generally, $\{\relu(v_1^\top x), \ldots, \relu(v_m^\top x)\}$ is linearly independent whenever the $v_i$ are pairwise non-proportional (i.e., $v_i \neq \lambda v_j$ for any $\lambda > 0$ and $i \neq j$).
+\end{lemma}
+
+\begin{proof}
+Suppose there exist constants $c_1, \ldots, c_m \in \R$ such that
+\begin{equation}\label{eq:lin-dep}
+\sum_{i=1}^{m} c_i \, \relu(v_i^\top x) = 0 \quad \text{in } L^2(\R^d, \gamma_d).
+\end{equation}
+Since each $\relu(v_i^\top x)$ is continuous and the equality holds $\gamma_d$-almost everywhere, it holds Lebesgue-almost everywhere on $\R^d$. A continuous function that vanishes Lebesgue-almost everywhere vanishes everywhere, so
+\begin{equation}\label{eq:lin-dep-pointwise}
+\sum_{i=1}^{m} c_i \, \relu(v_i^\top x) = 0 \quad \text{for all } x \in \R^d.
+\end{equation}
+This equality holds in particular in the distributional sense. We show $c_k = 0$ for each $k \in \{1, \ldots, m\}$.
+
+\medskip
+
+\noindent\textbf{Step 1: Identifying the singular hyperplane.}
+Fix $k \in \{1, \ldots, m\}$ and consider the hyperplane
+\[
+H_k = \{x \in \R^d : v_k^\top x = 0\}.
+\]
+
+\medskip
+
+\noindent\textbf{Step 2: Singularity of the $k$-th term.}
+By Proposition~\ref{prop:relu-deriv}(b),
+\[
+D_{v_k}^2 \relu(v_k^\top x) = \norm{v_k}^3 \, \delta_{H_k},
+\]
+which is a positive distribution supported on $H_k$.
+
+\medskip
+
+\noindent\textbf{Step 3: Regularity of the remaining terms near generic points of $H_k$.}
+Fix $i \neq k$. Since $\hat{v}_i \neq \pm \hat{v}_k$, the vectors $v_i$ and $v_k$ are linearly independent ($d \geq 2$). The hyperplanes $H_i = \{x : v_i^\top x = 0\}$ and $H_k$ are distinct, and $H_i \cap H_k$ is a subspace of codimension $2$ in $\R^d$, hence has $(d{-}1)$-dimensional Hausdorff measure zero as a subset of $H_k$.
+
+Define the \emph{generic locus}:
+\[
+H_k^{\mathrm{gen}} = H_k \setminus \bigcup_{i \neq k} H_i = \{x \in H_k : v_i^\top x \neq 0 \text{ for all } i \neq k\}.
+\]
+Since the union is finite and each $H_i \cap H_k$ has $\sigma_{H_k}$-measure zero, the set $H_k^{\mathrm{gen}}$ has full $\sigma_{H_k}$-measure in $H_k$ and is open and dense in $H_k$.
+
+For any $x_0 \in H_k^{\mathrm{gen}}$ and any $i \neq k$, we have $v_i^\top x_0 \neq 0$. By continuity, there exists an open ball $B(x_0, r_i) \subset \R^d$ such that $v_i^\top x$ has constant sign on $B(x_0, r_i)$. On this ball, $\relu(v_i^\top x)$ equals either $v_i^\top x$ (a linear function) or $0$. In both cases, $\relu(v_i^\top x)$ is $C^\infty$ on $B(x_0, r_i)$.
+
+\medskip
+
+\noindent\textbf{Step 4: Localization and differentiation.}
+Fix $x_0 \in H_k^{\mathrm{gen}}$. Let $U = \bigcap_{i \neq k} B(x_0, r_i)$, which is open. On $U$, every $\relu(v_i^\top x)$ for $i \neq k$ is $C^\infty$.
+
+Apply $D_{v_k}^2$ to both sides of~\eqref{eq:lin-dep-pointwise} on $U$:
+\[
+0 = c_k \, D_{v_k}^2 \relu(v_k^\top x)\big|_U + \sum_{i \neq k} c_i \, D_{v_k}^2 \relu(v_i^\top x)\big|_U.
+\]
+
+For each $i \neq k$, the function $\relu(v_i^\top x)$ is $C^\infty$ on $U$ and equals either the linear function $v_i^\top x$ or the zero function. The second directional derivative $D_{v_k}^2$ of any linear function vanishes, as does that of the zero function. Therefore $D_{v_k}^2 \relu(v_i^\top x)\big|_U = 0$ for all $i \neq k$, and we obtain
+\begin{equation}\label{eq:ck-delta}
+c_k \, \norm{v_k}^3 \, \delta_{H_k}\big|_U = 0 \quad \text{as a distribution on } U.
+\end{equation}
+
+\medskip
+
+\noindent\textbf{Step 5: Concluding $c_k = 0$.}
+Since $x_0 \in H_k \cap U$, the intersection $H_k \cap U$ contains an open neighborhood of $x_0$ within $H_k$. Choose a nonnegative test function $\psi \in C_c^\infty(U)$ with $\psi(x_0) > 0$. Since $\psi$ is continuous and positive at $x_0 \in H_k$, and $H_k \cap U$ contains an open neighborhood of $x_0$ in $H_k$ (a $(d{-}1)$-dimensional set with $d \geq 2$), we have
+\[
+\inner{\delta_{H_k}\big|_U}{\psi} = \int_{H_k \cap U} \psi \, d\sigma_{H_k} > 0.
+\]
+From~\eqref{eq:ck-delta}, $c_k \norm{v_k}^3 \int_{H_k \cap U} \psi \, d\sigma_{H_k} = 0$. Since $\norm{v_k}^3 > 0$ and the integral is strictly positive, we conclude $c_k = 0$.
+
+\medskip
+
+Since $k \in \{1, \ldots, m\}$ was arbitrary, we have $c_1 = \cdots = c_m = 0$, establishing linear independence under the $\hat{v}_i \neq \pm \hat{v}_j$ condition.
+
+For the antipodal extension, suppose $c_1 \relu(v^\top x) + c_2 \relu(-v^\top x) = 0$ for all $x$. On the open half-space $\{x : v^\top x > 0\}$, $\relu(v^\top x) = v^\top x > 0$ and $\relu(-v^\top x) = 0$, so $c_1 (v^\top x) = 0$, which forces $c_1 = 0$. By symmetry, evaluating on $\{x : v^\top x < 0\}$ gives $c_2 = 0$. For the general non-proportional case, partition the $v_i$ into equivalence classes under the relation $v_i \sim v_j$ iff $\hat{v}_i = \pm \hat{v}_j$. Each class contains at most two elements $\{v, -v'\}$ with $v' = \lambda v$ for some $\lambda > 0$, which are independent by the half-space argument above. The classes are mutually independent by the kink argument (Steps 1--5), since directions from different classes satisfy $\hat{v}_i \neq \pm \hat{v}_j$. Combining these two levels of independence gives the full result.
+\end{proof}
+
+\begin{remark}\label{rem:d1}
+The assumption $d \geq 2$ is necessary. In $d = 1$, for any $a > 0$ we have $\relu(ax) = a \, \relu(x)$, so the functions $\{\relu(v_i x)\}$ with $v_i > 0$ are all scalar multiples of $\relu(x)$ and hence linearly dependent.
+\end{remark}
+
+\begin{remark}\label{rem:pinkus}
+Pinkus~\cite{pinkus1999} established related linear independence results for sigmoidal activations using analytic continuation arguments. The ReLU case requires a different approach because ReLU is not smooth. Our distributional argument is tailored to the piecewise-linear structure of ReLU and exploits the singularity (kink) directly.
+\end{remark}
+
+%% ========================================================
+\section{Alignment at Global Minima}\label{sec:alignment}
+%% ========================================================
+
+\begin{theorem}[Global minima are aligned]\label{thm:alignment}
+Consider the student network~\eqref{eq:student}, the positively homogeneous CPL target~\eqref{eq:target} with $\norm{w^*} = 1$, and the population risk~\eqref{eq:risk}. Let $\theta^*$ be any parameter vector with $R(\theta^*) = 0$. Then for every neuron $j$ with $a_j \neq 0$, either $w_j \in \spn(w^*)$ or neuron $j$ belongs to a group of neurons sharing a common direction $d' \notin \{w^*, -w^*\}$ whose net contribution to $f_{\theta^*}$ is zero.
+
+In particular, the function $f_{\theta^*}$ depends on $x$ only through $w^{*\top}x$, confirming feature alignment at the functional level.
+\end{theorem}
+
+\begin{proof}
+The proof proceeds in four steps.
+
+\medskip
+
+\noindent\textbf{Step 1: Exact representation.}
+Since $R(\theta^*) = 0$, we have $f_{\theta^*}(x) = \varphi(w^{*\top}x)$ for $\gamma_d$-a.e.\ $x$. Both sides are continuous, so equality holds pointwise:
+\begin{equation}\label{eq:exact-fit}
+\frac{1}{\sqrt{p}} \sum_{j=1}^{p} a_j \, \relu(w_j^\top x) = \varphi(w^{*\top} x) \quad \text{for all } x \in \R^d.
+\end{equation}
+
+\medskip
+
+\noindent\textbf{Step 2: Grouping by direction.}
+Among the active neurons ($a_j \neq 0$ and $w_j \neq 0$), let $\{d_1', \ldots, d_L'\}$ be the set of distinct unit directions $\hat{w}_j = w_j/\norm{w_j}$. Using $\relu(w_j^\top x) = \norm{w_j} \relu(\hat{w}_j^\top x)$, define for each $\ell = 1, \ldots, L$:
+\[
+b_\ell = \frac{1}{\sqrt{p}} \sum_{\substack{j: a_j \neq 0 \\ \hat{w}_j = d_\ell'}} a_j \norm{w_j}.
+\]
+Then~\eqref{eq:exact-fit} becomes
+\begin{equation}\label{eq:grouped}
+\sum_{\ell=1}^{L} b_\ell \, \relu(d_\ell'^\top x) = \varphi(w^{*\top} x) \quad \text{for all } x \in \R^d.
+\end{equation}
+
+\medskip
+
+\noindent\textbf{Step 3: Representing the target.}
+By Remark~\ref{rem:cpl-relu}, $\varphi(w^{*\top}x) = s_+ \relu(w^{*\top}x) + s_- \relu(-w^{*\top}x)$. Substituting into~\eqref{eq:grouped} and rearranging:
+\begin{equation}\label{eq:combined}
+\sum_{\ell=1}^{L} b_\ell \, \relu(d_\ell'^\top x) - s_+ \, \relu(w^{*\top}x) - s_- \, \relu(-w^{*\top}x) = 0.
+\end{equation}
+Collect terms by distinct directions. Let $\mathcal{D}$ be the set of all distinct unit directions among $\{d_1', \ldots, d_L', w^*, -w^*\}$. For each $e \in \mathcal{D}$, let $B_e$ be the total coefficient of $\relu(e^\top x)$ in~\eqref{eq:combined}. Then
+\[
+\sum_{e \in \mathcal{D}} B_e \, \relu(e^\top x) = 0 \quad \text{for all } x \in \R^d.
+\]
+
+\medskip
+
+\noindent\textbf{Step 4: Applying the lemma and concluding.}
+The vectors in $\mathcal{D}$ are unit vectors that are pairwise non-proportional: for distinct $e, e' \in \mathcal{D}$, we have $e \neq \lambda e'$ for any $\lambda > 0$ (since the elements of $\mathcal{D}$ are distinct unit vectors, and distinct unit vectors with $e = \lambda e'$ and $\lambda > 0$ would require $e = e'$). Note that $\mathcal{D}$ may contain an antipodal pair $(w^*, -w^*)$. By the extended form of Lemma~\ref{lem:relu-indep} (non-proportional version), the functions $\{\relu(e^\top x)\}_{e \in \mathcal{D}}$ are linearly independent. Therefore $B_e = 0$ for all $e \in \mathcal{D}$.
+
+For any $d_\ell' \notin \{w^*, -w^*\}$, the coefficient $B_{d_\ell'}$ equals $b_\ell$ (the target contributes nothing in direction $d_\ell'$). Thus $b_\ell = 0$, meaning the net contribution of all neurons with direction $d_\ell'$ is zero. This establishes the theorem: every non-aligned direction has zero net contribution, so $f_{\theta^*}$ is a function of $w^{*\top}x$ alone.
+\end{proof}
+
+\begin{remark}\label{rem:functional}
+The conclusion is stated at the \emph{functional} level: the network function depends only on $w^{*\top}x$. At the \emph{parameter} level, it is possible for individual neurons to have $w_j \notin \spn(w^*)$ as long as they cancel within their direction group ($b_\ell = 0$). Such cancellations are non-generic and do not affect the computed function.
+\end{remark}
+
+%% ========================================================
+\section{Strict Saddle Property}\label{sec:saddle}
+%% ========================================================
+
+We now prove that non-aligned critical points of $R$ are strict saddle points,
+under the assumption that the non-aligned neuron is the only one not in
+$\spn(w^*)$.  The proof uses an explicit second-derivative computation along
+the rotation path, exploiting the Gaussian--ReLU inner product formula.
+
+\subsection{Gaussian--ReLU kernel and its derivatives}
+
+For unit vectors $u, v \in \R^d$ with $x \sim \mathcal{N}(0, I_d)$, define
+\begin{equation}\label{eq:kernel}
+  K(u,v) = \E[\relu(u^\top x)\,\relu(v^\top x)]
+  = \frac{1}{2\pi}\bigl(\sin\theta + (\pi - \theta)\cos\theta\bigr),
+\end{equation}
+where $\theta = \arccos(u^\top v) \in [0,\pi]$.  Note $K(u,u) = 1/2$ and
+$K(u,-u) = 0$.
+
+Consider a rotation path $u(t) = \cos(t)\,\hat{w} + \sin(t)\,\tilde{w}$
+on the unit sphere in the $\hat{w}$--$\tilde{w}$ plane.  For a fixed unit
+vector $v$, let $\mu(t) = u(t)^\top v$ and $\theta(t) = \arccos(\mu(t))$.
+
+\begin{lemma}\label{lem:kernel-deriv}
+Along the rotation path $u(t)$, with $\mu'(0) = \tilde{w}^\top v$ and
+$\mu''(0) = -\hat{w}^\top v$:
+\begin{align}
+  \frac{d}{dt}K(u(t),v)\Big|_{t=0}
+  &= \frac{1}{2\pi}(\pi - \theta_0)\,(\tilde{w}^\top v),
+  \label{eq:dK}\\[4pt]
+  \frac{d^2}{dt^2}K(u(t),v)\Big|_{t=0}
+  &= \frac{1}{2\pi}\biggl[
+    \frac{(\tilde{w}^\top v)^2}{\sin\theta_0}
+    - (\pi - \theta_0)(\hat{w}^\top v)
+  \biggr],
+  \label{eq:d2K}
+\end{align}
+where $\theta_0 = \arccos(\hat{w}^\top v)$.
+\end{lemma}
+
+\begin{proof}
+From~\eqref{eq:kernel}, $dK/d\theta = -(1/2\pi)(\pi-\theta)\sin\theta$
+and $d\theta/d\mu = -1/\sin\theta$.  By the chain rule,
+$dK/d\mu = (1/2\pi)(\pi-\theta)$ and $dK/dt = (dK/d\mu)\mu'$.  Differentiating
+again: $d^2K/dt^2 = (d^2K/d\mu^2)(\mu')^2 + (dK/d\mu)\mu''$.  Since
+$d^2K/d\mu^2 = (1/2\pi)/\sin\theta$ (obtained by differentiating
+$dK/d\mu = (1/2\pi)(\pi - \arccos\mu)$), the result follows.
+\end{proof}
+
+\subsection{Main result}
+
+\begin{theorem}[Strict saddle for isolated non-aligned neurons]\label{thm:saddle}
+Consider the setting of Theorem~\ref{thm:alignment} with $d \geq 2$ and
+$\varphi(t) = s_+\relu(t) + s_-\relu(-t)$ where $s_+ \neq s_-$.
+Let $\theta^*$ be a critical point of $R$ at which:
+\begin{enumerate}[label=(\roman*)]
+  \item there exists an active neuron $j$ with $\hat{w}_j \notin \{w^*, -w^*\}$;
+  \item every other active neuron $k \neq j$ satisfies
+    $\hat{w}_k \in \{w^*, -w^*\}$.
+\end{enumerate}
+Then $g''(0) < 0$, where $g(t) = R(\theta^*(t))$ is the risk along the rotation
+path that moves $w_j$ toward $w^*$.  In particular, $\theta^*$ is a strict
+saddle point.
+\end{theorem}
+
+\begin{proof}
+Let $r = \norm{w_j}$, $\hat{w} = \hat{w}_j$,
+$\varphi_0 = \arccos(\hat{w}^\top w^*) \in (0,\pi)$, and
+$c = a_j r / \sqrt{p}$.  Define
+\[
+  \tilde{w}
+  = \frac{w^* - (\hat{w}^\top w^*)\hat{w}}
+         {\norm{w^* - (\hat{w}^\top w^*)\hat{w}}}
+\]
+so that $\tilde{w}^\top w^* = \sin\varphi_0 > 0$ and
+$\hat{w}^\top w^* = \cos\varphi_0$.
+
+\medskip
+\noindent\textbf{Step 1: Reduction to kernel derivatives.}
+Write the network function as
+$f_{\theta^*}(x) = D_+ \relu(w^{*\top}x) + D_- \relu(-w^{*\top}x)
+  + c\,\relu(\hat{w}^\top x)$,
+where $D_{\pm} = \sum_{k:\,\hat{w}_k = \pm w^*} a_k\norm{w_k}/\sqrt{p}$
+collect the aligned neurons' contributions.
+Define $\Delta_+ = D_+ - s_+$ and $\Delta_- = D_- - s_-$.
+
+Only the term $c\,\relu(u(t)^\top x)$ depends on $t$ (via the rotation
+$u(t) = \cos(t)\hat{w} + \sin(t)\tilde{w}$), so
+\begin{equation}\label{eq:g-P}
+  g(t) = \text{const} + 2c\,P(t),
+\end{equation}
+where
+$P(t) = \Delta_+ K(u(t), w^*) + \Delta_- K(u(t), -w^*)$.
+
+\medskip
+\noindent\textbf{Step 2: First derivative and critical-point condition.}
+By~\eqref{eq:dK}, with $\tilde{w}^\top w^* = \sin\varphi_0$ and
+$\tilde{w}^\top(-w^*) = -\sin\varphi_0$:
+\[
+  P'(0) = \frac{\sin\varphi_0}{2\pi}
+  \bigl[\Delta_+(\pi - \varphi_0) - \Delta_-\varphi_0\bigr].
+\]
+Since $\theta^*$ is a critical point, $g'(0) = 2c\,P'(0) = 0$.  Because
+$c \neq 0$ (neuron $j$ is active) and $\sin\varphi_0 > 0$, we obtain
+\begin{equation}\label{eq:crit-cond}
+  \Delta_+(\pi - \varphi_0) = \Delta_-\varphi_0.
+\end{equation}
+
+\medskip
+\noindent\textbf{Step 3: Second derivative.}
+By~\eqref{eq:d2K}, with the angles $\theta_0 = \varphi_0$ for $v = w^*$ and
+$\theta_0 = \pi - \varphi_0$ for $v = -w^*$:
+\begin{align*}
+  \frac{d^2}{dt^2}K(u(t), w^*)\Big|_0
+  &= \frac{1}{2\pi}\bigl[\sin\varphi_0 - (\pi-\varphi_0)\cos\varphi_0\bigr],\\
+  \frac{d^2}{dt^2}K(u(t), -w^*)\Big|_0
+  &= \frac{1}{2\pi}\bigl[\sin\varphi_0 + \varphi_0\cos\varphi_0\bigr].
+\end{align*}
+Therefore,
+\begin{align*}
+  P''(0)
+  &= \frac{\Delta_+ + \Delta_-}{2\pi}\sin\varphi_0
+     + \frac{-\Delta_+(\pi-\varphi_0) + \Delta_-\varphi_0}{2\pi}\cos\varphi_0.
+\end{align*}
+By the critical-point condition~\eqref{eq:crit-cond}, the cosine term vanishes:
+\begin{equation}\label{eq:P2}
+  P''(0) = \frac{(\Delta_+ + \Delta_-)\sin\varphi_0}{2\pi}.
+\end{equation}
+
+\medskip
+\noindent\textbf{Step 4: Determining the sign via the amplitude condition.}
+The critical-point condition $\partial R / \partial a_j = 0$ gives
+$\E[e(x)\,\relu(\hat{w}^\top x)] = 0$, where
+$e = f_{\theta^*} - \varphi$.  Expanding:
+\[
+  \Delta_+ K(w^*, \hat{w}) + \Delta_- K(-w^*, \hat{w}) + \frac{c}{2} = 0,
+\]
+since $K(\hat{w},\hat{w}) = 1/2$.  Hence
+\begin{equation}\label{eq:c-val}
+  c = -2\bigl[\Delta_+ K(\varphi_0) + \Delta_- K(\pi - \varphi_0)\bigr].
+\end{equation}
+
+\medskip
+\noindent\textbf{Step 5: Sign analysis.}
+From~\eqref{eq:g-P}, \eqref{eq:P2}, and~\eqref{eq:c-val}:
+\[
+  g''(0) = 2c \cdot P''(0)
+  = \frac{-2\bigl[\Delta_+ K(\varphi_0) + \Delta_- K(\pi-\varphi_0)\bigr]
+    \cdot (\Delta_+ + \Delta_-)\sin\varphi_0}{\pi}.
+\]
+We now show each factor has a definite sign.
+
+\emph{(a) $\Delta_+$ and $\Delta_-$ have the same sign.}
+By~\eqref{eq:crit-cond}, $\Delta_+ = \Delta_-\varphi_0/(\pi-\varphi_0)$.
+Since $\varphi_0 \in (0,\pi)$, both $\varphi_0$ and $\pi - \varphi_0$ are
+positive, so $\sgn(\Delta_+) = \sgn(\Delta_-)$.
+
+\emph{(b) $\Delta_+ + \Delta_- \neq 0$.}
+If $\Delta_+ + \Delta_- = 0$, then $\Delta_- \pi/(\pi-\varphi_0) = 0$, so
+$\Delta_- = 0$ and $\Delta_+ = 0$.  By~\eqref{eq:c-val}, $c = 0$, hence
+$a_j = 0$, contradicting the assumption that neuron $j$ is active.
+
+\emph{(c) The bracket $\Delta_+ K(\varphi_0) + \Delta_- K(\pi-\varphi_0)$
+has the same sign as $\Delta_+ + \Delta_-$.}
+Since $K(\varphi_0) > 0$ and $K(\pi-\varphi_0) \geq 0$ for
+$\varphi_0 \in (0,\pi)$, and $\Delta_+, \Delta_-$ share the same sign,
+this bracket has that common sign.
+
+Combining (a)--(c): the product
+$[\Delta_+ K(\varphi_0) + \Delta_- K(\pi-\varphi_0)] \cdot (\Delta_+ + \Delta_-)$
+is strictly positive.  With the prefactor $-2\sin\varphi_0/\pi < 0$, we
+conclude $g''(0) < 0$.
+\end{proof}
+
+\begin{remark}\label{rem:general-saddle}
+Theorem~\ref{thm:saddle} assumes all other active neurons are aligned
+(condition (ii)).  For the general case with multiple non-aligned neurons,
+the second derivative $P''(0)$ acquires cross-terms
+$\sum_{k \neq j} d_k\, d^2K(u(t), \hat{w}_k)/dt^2|_0$ that can have either
+sign.  We conjecture that the strict saddle property holds without
+condition~(ii), but a proof would require controlling these inter-neuron
+interactions.  In the overparameterized regime where gradient flow aligns
+neurons sequentially (as shown in~\cite{bietti2022}), condition~(ii) is
+expected to hold at each stage of training: by the time the last non-aligned
+neuron reaches a near-critical configuration, earlier neurons have already
+aligned.
+\end{remark}
+
+%% ========================================================
+\section{Convergence of Gradient Descent}\label{sec:convergence}
+%% ========================================================
+
+\begin{corollary}[Convergence to aligned solutions]\label{cor:convergence}
+Consider the setting of Theorem~\ref{thm:alignment} and suppose that every
+critical point of $R$ with a non-aligned active neuron satisfies the
+hypotheses of Theorem~\ref{thm:saddle} (in particular, condition~(ii)).
+Then subgradient descent on $R$, from Lebesgue-almost every initialization,
+converges to a parameter $\theta^*$ at which the network function depends on
+$x$ only through $w^{*\top}x$.
+\end{corollary}
+
+\begin{proof}
+The proof combines three ingredients.
+
+\medskip
+
+\noindent\textbf{Step 1: Tameness.}
+The population risk $R(\theta)$ is definable in the o-minimal structure
+$\R_{\mathrm{an}, \exp}$ (it is an integral of a semialgebraic integrand
+against the Gaussian measure).  In particular, $R$ satisfies the
+Kurdyka--\L{}ojasiewicz (K\L{}) inequality at every critical
+point~\cite{davis2020}.
+
+\medskip
+
+\noindent\textbf{Step 2: Saddle avoidance.}
+For tame functions satisfying the K\L{} inequality, the stable manifold of
+any strict saddle point has Lebesgue measure zero.  The subgradient method
+with step sizes $\sum_t \eta_t = \infty$, $\sum_t \eta_t^2 < \infty$
+converges to Clarke critical points from almost every
+initialization~\cite{davis2020}, and the K\L{} property ensures that
+convergence to strict saddles has probability zero.
+
+\medskip
+
+\noindent\textbf{Step 3: Landscape structure.}
+By Theorem~\ref{thm:alignment}, every global minimum ($R = 0$) is aligned.
+By Theorem~\ref{thm:saddle}, every non-aligned critical point satisfying
+condition~(ii) is a strict saddle.  By Step~2, subgradient descent from
+almost every initialization avoids these saddle points and converges to an
+aligned global minimum.
+\end{proof}
+
+\begin{remark}\label{rem:convergence-caveats}
+Two caveats are in order.
+\emph{First}, the corollary assumes condition~(ii) of Theorem~\ref{thm:saddle}
+at all non-aligned critical points.  As noted in Remark~\ref{rem:general-saddle},
+this is expected in the overparameterized regime but is not proved in full
+generality.
+\emph{Second}, the classical saddle-avoidance result of Lee et
+al.~\cite{lee2016} requires $C^2$ smoothness, which ReLU objectives do not
+satisfy.  The tame-function framework of~\cite{davis2020} provides the
+appropriate nonsmooth extension via the K\L{} inequality.
+\end{remark}
+
+%% ========================================================
+\section{Discussion}\label{sec:discussion}
+%% ========================================================
+
+\subsection{Summary of contributions}
+
+We have presented a landscape analysis approach to feature alignment in shallow ReLU networks for single-index models. The main contributions are:
+
+\begin{enumerate}[label=(\arabic*)]
+\item A \textbf{ReLU directional independence lemma} (Lemma~\ref{lem:relu-indep}) with a self-contained proof via distributional derivatives and the kink argument.
+
+\item A \textbf{proof that global minima are aligned} (Theorem~\ref{thm:alignment}), following directly from the lemma.
+
+\item A \textbf{strict saddle theorem} (Theorem~\ref{thm:saddle}) for isolated non-aligned neurons, proved via an explicit second-derivative computation using the Gaussian--ReLU kernel formula.
+
+\item A \textbf{convergence guarantee} (Corollary~\ref{cor:convergence}) combining the landscape results with the tame-function framework of~\cite{davis2020}.
+\end{enumerate}
+
+\subsection{Comparison with Bietti, Bruna, and Sanford~\cite{bietti2022}}
+
+The alignment result at global minima overlaps with~\cite{bietti2022}. The main differences are:
+
+\begin{itemize}
+\item \textbf{Proof technique}: We use landscape analysis (characterizing critical points); \cite{bietti2022} uses trajectory analysis (tracking gradient flow dynamics). Our approach does not require understanding the dynamics at intermediate times.
+
+\item \textbf{Setting}: The work~\cite{bietti2022} includes frozen biases, while we consider the homogeneous (bias-free) case. The bias-free setting restricts the target class but avoids the frozen-bias assumption.
+
+\item \textbf{Completeness}: The trajectory analysis in~\cite{bietti2022} yields a complete convergence proof. Our convergence result (Corollary~\ref{cor:convergence}) is conditional on the unproved Claim~\ref{claim:saddle}.
+\end{itemize}
+
+We do not claim that our approach supersedes~\cite{bietti2022}. The landscape perspective is complementary, with potential advantages for extensions to richer settings.
+
+\subsection{Implications for generalization}
+
+Feature alignment ($w_j \to \spn(w^*)$) is the mechanism through which shallow networks overcome the curse of dimensionality for single-index targets:
+
+\begin{enumerate}[label=(\roman*)]
+\item The effective dimension of the learning problem collapses from $d$ to $1$.
+
+\item The Jacobian spectrum of the trained network exhibits signal--noise separation: top singular values correspond to the target direction, while remaining singular values are small.
+
+\item In the noise propagation framework, where test error scales as $\sigma^2 \tr(M)$ with $M = \Sigma^{-1}\Gamma\Sigma^{-1}$ the noise propagation operator, alignment increases the effective decay rate $\beta$ of the test-train cross-correlation eigenvalues. This facilitates the benign overfitting condition $\beta > \alpha + 1/2$ (where $\sigma_j \sim j^{-\alpha}$ and $\rho_j \sim j^{-\beta}$). The detailed development of this connection, including the definition of $M$ and the proof of the $\beta > \alpha + 1/2$ dichotomy, will appear in a separate paper on the noise propagation framework.
+\end{enumerate}
+
+\subsection{Open problems}
+
+\begin{enumerate}[label=(\arabic*)]
+\item \textbf{Remove the isolation condition in the strict saddle theorem.} Theorem~\ref{thm:saddle} assumes all other active neurons are aligned (condition~(ii)). Extending the result to the general case with multiple non-aligned neurons requires bounding the cross-neuron interaction terms in the second derivative; see Remark~\ref{rem:general-saddle}.
+
+\item \textbf{Multi-index models.} For targets $\varphi(V^{*\top}x)$ with $V^* \in \R^{d \times r}$ and $r > 1$, the directional independence lemma implies that active neurons must align with the column span of $V^*$. The strict saddle analysis becomes more complex due to interactions between multiple target directions.
+
+\item \textbf{Non-homogeneous targets.} Extending Theorem~\ref{thm:alignment} to non-homogeneous CPL targets (with biases) requires a version of Lemma~\ref{lem:relu-indep} for affine ReLU functions $\relu(v^\top x + b)$. The kink argument extends naturally---distinct affine hyperplanes produce distinct distributional singularities---but parallel hyperplanes (same direction, different offset) require additional care.
+
+\item \textbf{Finite-sample regime.} Our results concern the population risk. In the finite-sample regime with $n$ training points and inputs $x_i \sim \mathcal{N}(0, I_d)$, the empirical risk landscape may have additional critical points. The signal-noise competition at scale $n = \Theta(d^\kappa)$ provides a natural sample complexity threshold.
+
+\item \textbf{Deep networks.} For networks with $L > 2$ layers, alignment becomes a layer-by-layer representation learning problem: the first layer should align with the target subspace, middle layers learn the optimal hierarchical mapping, and the last layer performs linear readout. Extending the landscape approach to this setting is a significant open challenge.
+\end{enumerate}
+
+%% ========================================================
+%% References
+%% ========================================================
+
+\begin{thebibliography}{10}
+
+\bibitem{abbe2022}
+E.~Abbe, E.~Boix-Adser\`a, M.~S.~Brennan, G.~Bresler, and D.~Dhawan.
+\newblock The staircase property: How hierarchical structure can guide deep learning.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2022.
+
+\bibitem{ba2022}
+J.~Ba, M.~A.~Erdogdu, T.~Suzuki, Z.~Wang, D.~Wu, and G.~Yang.
+\newblock High-dimensional asymptotics of feature learning: How one gradient step improves the representation.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2022.
+
+\bibitem{bietti2022}
+A.~Bietti, J.~Bruna, and C.~Sanford.
+\newblock Learning single-index models with shallow neural networks.
+\newblock In \emph{Advances in Neural Information Processing Systems (NeurIPS)}, 2022.
+
+\bibitem{damian2022}
+A.~Damian, J.~D.~Lee, and M.~Soltanolkotabi.
+\newblock Neural networks can learn representations with gradient descent.
+\newblock In \emph{Conference on Learning Theory (COLT)}, 2022.
+
+\bibitem{davis2020}
+D.~Davis, D.~Drusvyatskiy, S.~Kakade, and J.~D.~Lee.
+\newblock Stochastic subgradient method converges on tame functions.
+\newblock \emph{Foundations of Computational Mathematics}, 20(1):119--154, 2020.
+
+\bibitem{lee2016}
+J.~D.~Lee, M.~Simchowitz, M.~I.~Jordan, and B.~Recht.
+\newblock Gradient descent only converges to minimizers.
+\newblock In \emph{Conference on Learning Theory (COLT)}, pages 1246--1257, 2016.
+
+\bibitem{pinkus1999}
+A.~Pinkus.
+\newblock Approximation theory of the MLP model in neural networks.
+\newblock \emph{Acta Numerica}, 8:143--195, 1999.
+
+\end{thebibliography}
+
+\end{document}
