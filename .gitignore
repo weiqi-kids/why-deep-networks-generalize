@@ -1,1 +1,20 @@
+.DS_Store
+mydatabase.db
+asvs-server.log
+docs/
 .proof-page/
+
+# Claude Code local settings
+.claude/
+
+# LaTeX build artifacts
+*.pdf
+*.aux
+*.log
+*.out
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+*.toc
+*.bbl
+*.blg
