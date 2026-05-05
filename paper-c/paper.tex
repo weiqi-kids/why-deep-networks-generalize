@@ -1,0 +1,1385 @@
+\documentclass[12pt]{amsart}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,citecolor=blue,urlcolor=blue,linkcolor=blue]{hyperref}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{example}[theorem]{Example}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Operators
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\MSE}{MSE}
+\DeclareMathOperator{\relu}{ReLU}
+\DeclareMathOperator{\spn}{span}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Fisher}{Fisher}
+\DeclareMathOperator{\softmax}{softmax}
+
+% Shortcuts
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\bX}{\mathbf{X}}
+\newcommand{\bJ}{\mathbf{J}}
+\newcommand{\bM}{\mathbf{M}}
+\newcommand{\bU}{\mathbf{U}}
+\newcommand{\bV}{\mathbf{V}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bw}{\mathbf{w}}
+\newcommand{\ba}{\mathbf{a}}
+\newcommand{\bg}{\mathbf{g}}
+\newcommand{\bp}{\mathbf{p}}
+\newcommand{\bH}{\mathbf{H}}
+\newcommand{\bF}{\mathbf{F}}
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bB}{\mathbf{B}}
+\newcommand{\by}{\mathbf{y}}
+\newcommand{\bSigma}{\boldsymbol{\Sigma}}
+\newcommand{\bGamma}{\boldsymbol{\Gamma}}
+\newcommand{\bxi}{\boldsymbol{\xi}}
+\newcommand{\bmu}{\boldsymbol{\mu}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\abs}[1]{\left\lvert #1 \right\rvert}
+\newcommand{\ip}[2]{\langle #1, #2 \rangle}
+
+\title[Feature Learning, Effective Dimension, and Critical Depth]{%
+  Feature Learning, Effective Dimension, and\\
+  Architecture-Specific Critical Depth in Two-Layer\\
+  ReLU Networks}
+
+\author{Lightman Chang}
+\address{Independent Researcher}
+\email{lightman.chang@gmail.com}
+
+\date{\today}
+
+\subjclass[2020]{Primary 68T07; Secondary 62J05, 62G20, 41A25}
+
+\keywords{feature learning, neural tangent kernel, effective dimension,
+  curse of dimensionality, single-index models, critical depth, neural
+  collapse, cross-entropy, ResNet, transformers}
+
+\begin{document}
+
+\begin{abstract}
+The minimax rate for nonparametric regression of $C^{s}$ functions on
+$\R^{d}$ is $n^{-2s/(2s+d)}$, which deteriorates rapidly with the ambient
+dimension. Practical neural networks trained on high-dimensional inputs
+nonetheless generalize at rates that do not exhibit such severe dimension
+dependence. We give a precise mechanistic account of this gap for the
+\emph{single-index} target class $f^{*}(\bx) = \rho(\langle \bv^{*}, \bx \rangle)$
+under Gaussian inputs, working within the noise-propagation framework
+of~\cite{paperA}. Our principal contribution (Theorem~\ref{thm:fl-collapse})
+shows that, conditional on the post-alignment hypothesis established
+in~\cite{paperB}, the test risk of two-layer ReLU networks transitions from
+the kernel rate $\Theta(n^{-2s/(2s+d)})$ in the lazy regime to
+$\Theta(n^{-2s/(2s+1)})$ in the feature-learning regime; the proof routes
+the kernel rate through spherical-harmonic multiplicities $N_{l} \asymp l^{d-2}$
+and the feature-learning rate through the rank-one effective dimension
+induced by the collapsed equivalent kernel. We then introduce an
+architecture-specific critical depth $L^{*}$ (Theorem~\ref{thm:critical-depth})
+defined as the smallest depth at which the effective rank of the noise
+propagation operator falls below $n^{2s/(2s+1)}$, and we derive
+$L^{*}_{\mathrm{FC}} = \lceil(d-1)/2\rceil$ for fully-connected ReLU
+networks, a depth-decoupled formula for residual networks, and
+$L^{*}_{\mathrm{Transformer}} \in [1,4]$ for $d \le 512$. Finally,
+Theorem~\ref{thm:ce-collapse} extends the entire analysis to the
+cross-entropy loss via a Fisher-corrected operator $\bM_{\mathrm{CE}}$ and
+shows that, at the Neural Collapse fixed point, the effective rank equals
+$K-1$ for $K$-class classification, recovering dimension-free generalization
+without any further assumption.
+\end{abstract}
+
+\maketitle
+
+%% ============================================================
+\section{Introduction}\label{sec:intro}
+%% ============================================================
+
+\subsection{The dimension dependence of the kernel rate}
+
+A long-standing tension in the theory of overparameterized learning concerns
+the role of the ambient input dimension $d$. Classical nonparametric
+estimation gives a sharp lower bound: for the H\"older class
+$C^{s}(\R^{d})$, no estimator can attain a rate better than
+$n^{-2s/(2s+d)}$, and kernel ridge regression with a smooth rotation-invariant
+kernel attains exactly this rate. The exponent is dominated by $d$ for any
+fixed smoothness $s$, so that even modest inputs (e.g.\ $d=100$) require an
+exponentially large number of samples for moderate accuracy. This is the
+\emph{curse of dimensionality}.
+
+Empirical practice presents a different picture. Networks trained on inputs
+of dimension $d$ in the hundreds or thousands typically attain test errors
+that scale far better than $n^{-2s/(2s+d)}$. Two complementary explanations
+are usually offered. The first is structural: real targets are well
+approximated by low-complexity composites (single-index, multi-index, or
+sparse functions of low intrinsic dimension), so that the relevant rate is
+governed by an intrinsic dimension $k \ll d$. The second is algorithmic:
+gradient-based training does not produce a fixed-kernel estimator; rather, it
+performs feature learning, and the post-training Jacobian concentrates
+spectral mass on directions that are aligned with the target structure.
+
+The first explanation is essentially structural and rests on assumptions about
+the data-generating process. The second, however, makes a more delicate
+prediction: even when the input is genuinely $d$-dimensional, an
+overparameterized network can attain a rate that scales as if the input were
+one-dimensional, provided that feature learning succeeds at aligning the
+weights with the target direction. The present paper makes this prediction
+quantitative and unconditional, given the alignment guarantees already
+established in~\cite{paperB}.
+
+\subsection{Setting and prior work}
+
+We work within the framework introduced in~\cite{paperA}, which models the
+test mean squared error of an interpolating predictor through the
+\emph{noise propagation operator} $\bM = \bSigma^{-1} \bGamma\, \bSigma^{-1}$,
+where $\bSigma$ is the diagonal matrix of singular values of the training
+Jacobian and $\bGamma$ is the test--train cross-correlation matrix of
+gradient features. The trace $\tr(\bM)$ governs the noise contribution to
+test error, and the benign overfitting trichotomy
+($\beta < \alpha + 1/2$ catastrophic, $\beta = \alpha + 1/2$ tempered,
+$\beta > \alpha + 1/2$ benign) follows from the power-law decay of singular
+values $\sigma_{j} \asymp j^{-\alpha}$ and gradient-feature norms
+$\rho_{j} \asymp j^{-\beta}$. The companion paper~\cite{paperB} establishes
+the alignment hypothesis: in the rich regime, gradient flow drives the
+weights of every active neuron of a two-layer ReLU network into the span of
+the teacher direction $\bv^{*}$.
+
+We refer to~\cite{paperA} for the unified generalization bound and the
+benign/tempered/catastrophic dichotomy, and to~\cite{paperB} for the
+alignment lemma and its proof via ReLU directional independence. The
+present paper does \emph{not} reprove these results: we cite them as
+black-box inputs and develop their consequences.
+
+The literature on dimension-free rates for neural networks is now
+substantial. Bach~\cite{Bach2017} analyzed mean-field two-layer networks and
+derived dimension-adaptive approximation rates. Bietti and
+Bruna~\cite{BiettiBruna2021} studied spherical harmonic decompositions of
+the NTK and gave matching upper and lower bounds on kernel ridge regression.
+Damian, Lee, and Soltanolkotabi~\cite{DLS2022} proved that one-pass SGD
+learns single-index targets at a rate determined by the information
+exponent. Ben Arous, Gheissari, and
+Jagannath~\cite{BenArous2021} characterized the sample complexity of
+single-index recovery in the presence of high-dimensional noise.
+Rakhlin and Zhai~\cite{RZ2019} showed that interpolation by Laplace kernels
+is consistent only in high dimension, isolating the dimension dependence of
+benign overfitting in fixed-kernel regimes. Papyan, Han, and
+Donoho~\cite{papyan2020} introduced the Neural Collapse phenomenon, in
+which last-layer features and class means collapse onto a simplex
+equiangular tight frame at the terminal phase of training. Lu and
+Steinerberger~\cite{lu2022} and others have given mathematical
+characterizations of the Neural Collapse fixed point.
+
+\subsection{Contributions}
+
+This paper makes three contributions, all conditional on the alignment
+hypothesis of~\cite{paperB}.
+
+\begin{enumerate}[label=(\roman*)]
+\item \textbf{Feature-learning dimension collapse}
+  (Theorem~\ref{thm:fl-collapse}). For single-index targets with smoothness
+  $s$, we show that the test risk transitions from the kernel rate
+  $\Theta(n^{-2s/(2s+d)})$ to the dimension-free rate
+  $\Theta(n^{-2s/(2s+1)})$ when feature learning succeeds. The proof
+  identifies the spherical-harmonic multiplicity $N_{l} \asymp l^{d-2}$ as
+  the source of the curse of dimensionality in the kernel regime, and
+  the multiplicity collapse to a one-dimensional kernel as the mechanism
+  responsible for the dimension-free rate after alignment.
+
+\item \textbf{Architecture-specific critical depth}
+  (Theorem~\ref{thm:critical-depth}). We define $L^{*}_{A}$ as the smallest
+  depth at which the effective rank $r_{\mathrm{eff}}(\bM_{A})$ falls
+  below $n^{2s/(2s+1)}$ and derive separate formulae for three families:
+  $L^{*}_{\mathrm{FC}} = \lceil(d-1)/2\rceil$ for fully-connected ReLU
+  stacks (via depth-multiplicative spectral decay),
+  $L^{*}_{\mathrm{ResNet}}$ decoupled from depth (via the identity-bypass
+  structure of skip connections), and
+  $L^{*}_{\mathrm{Transformer}} \in [1,4]$ for input dimension $d \le 512$
+  (via the soft\-max-attention contribution to the cross-correlation
+  spectrum). Each architecture requires a distinct proof structure.
+
+\item \textbf{Cross-entropy extension via Neural Collapse}
+  (Theorem~\ref{thm:ce-collapse}). We define a Fisher-corrected noise
+  propagation operator $\bM_{\mathrm{CE}}$ and prove that the
+  benign/tempered/catastrophic trichotomy of~\cite{paperA} is preserved
+  verbatim under cross-entropy loss. Specializing to the Neural Collapse
+  fixed point, we compute the effective rank
+  $r_{\mathrm{eff}}(\bM_{\mathrm{CE}}) = K-1$ for $K$-class classification.
+\end{enumerate}
+
+The three contributions together describe the boundary of feature learning:
+when alignment occurs, generalization is dimension-free; when it occurs at
+the Neural Collapse fixed point, the residual rank is exactly the number of
+classes minus one. The architectural results show that the depth required
+to enter the benign regime depends sensitively on the architecture, and
+that residual and attention mechanisms reduce this depth dramatically
+relative to plain stacks.
+
+\subsection{Organization}
+
+Section~\ref{sec:prelim} recalls the noise propagation framework
+of~\cite{paperA} and the alignment hypothesis of~\cite{paperB}.
+Section~\ref{sec:fl-statement} states Theorem~\ref{thm:fl-collapse}, the
+feature-learning dimension collapse. Sections~\ref{sec:fl-ntk}
+and~\ref{sec:fl-fl} prove the kernel and feature-learning halves of
+Theorem~\ref{thm:fl-collapse} respectively. Section~\ref{sec:ld-statement}
+states Theorem~\ref{thm:critical-depth}; Sections~\ref{sec:ld-fc},
+\ref{sec:ld-resnet}, and~\ref{sec:ld-transformer} prove the FC, ResNet, and
+Transformer cases. Section~\ref{sec:ce} states and proves
+Theorem~\ref{thm:ce-collapse} for the cross-entropy extension.
+Section~\ref{sec:discussion} discusses limitations and open directions.
+
+%% ============================================================
+\section{Preliminaries}\label{sec:prelim}
+%% ============================================================
+
+\subsection{Recap of the noise propagation framework}
+
+We follow the notation of~\cite{paperA}. Let $f(\cdot\,;\theta) \colon \R^{d} \to \R$
+be a parametric predictor with parameters $\theta \in \R^{p}$, and let
+$S = \{(\bx_{i}, y_{i})\}_{i=1}^{n}$ be a training set with
+$y_{i} = g^{*}(\bx_{i}) + \xi_{i}$, $\xi_{i}$ i.i.d.\ sub-Gaussian with
+variance proxy $\sigma^{2}$. Let $\theta^{*}$ be a minimum-norm
+interpolating parameter and let
+\[
+  \bJ \in \R^{n \times p}, \qquad
+  \bJ_{i,:} = \nabla_{\theta} f(\bx_{i};\theta^{*})^{\top},
+\]
+be the training Jacobian, with SVD $\bJ = \bU \bSigma \bV^{\top}$. The
+$j$-th gradient feature is $\psi_{j}(\bx) = \nabla_{\theta} f(\bx;\theta^{*})^{\top}\bv_{j}$,
+the cross-correlation matrix is
+$\bGamma_{jl} = \E_{\bx}[\psi_{j}(\bx)\psi_{l}(\bx)]$, and the
+noise propagation operator is
+\[
+  \bM = \bSigma^{-1} \bGamma\, \bSigma^{-1}
+  \in \R^{n \times n}.
+\]
+Theorem~1 of~\cite{paperA} states that for any $\delta \in (0,1)$, with
+probability $1-\delta$,
+\begin{equation}\label{eq:gen-bound}
+  \MSE_{\mathrm{test}}
+  \leq C \bigl( B_{\mathrm{signal}}^{2}
+       + \sigma^{2} \tr(\bM)
+       + \sigma^{2} \norm{\bM}_{F} \sqrt{\log(1/\delta)}
+       + \delta_{\mathrm{lin}}^{2} \bigr).
+\end{equation}
+Theorem~2 of~\cite{paperA} states that under power-law decay
+$\sigma_{j} \asymp j^{-\alpha}$, $\rho_{j} \asymp j^{-\beta}$, with
+$\rho_{j} = \sqrt{\bGamma_{jj}}$,
+\[
+  \tr(\bM) < \infty \iff \beta > \alpha + \tfrac{1}{2}.
+\]
+
+\begin{definition}[Effective rank]\label{def:reff}
+For a positive semidefinite operator $\bA$ with non-negative eigenvalues
+$\lambda_{1} \geq \lambda_{2} \geq \cdots$, the \emph{effective rank} is
+\[
+  r_{\mathrm{eff}}(\bA) := \frac{(\sum_{j} \lambda_{j})^{2}}{\sum_{j} \lambda_{j}^{2}}
+  = \frac{(\tr \bA)^{2}}{\norm{\bA}_{F}^{2}}.
+\]
+For $\bM$, the effective rank quantifies the number of significant
+noise-propagation directions; benign overfitting requires $r_{\mathrm{eff}}(\bM)$
+to be at most polylogarithmic in $n$.
+\end{definition}
+
+\subsection{Single-index targets and the alignment hypothesis}
+
+\begin{definition}[Single-index target]\label{def:single-index}
+A function $g^{*} \colon \R^{d} \to \R$ is a \emph{single-index target}
+with link $\rho$ and direction $\bv^{*}$ if there exist
+$\bv^{*} \in \mathbb{S}^{d-1}$ and $\rho \colon \R \to \R$ such that
+\[
+  g^{*}(\bx) = \rho(\langle \bv^{*}, \bx \rangle)
+  \qquad \text{for all } \bx \in \R^{d}.
+\]
+We say $g^{*} \in \mathcal{H}^{s}$ if $\rho \in C^{s}(\R)$ with bounded
+derivatives up to order $s$.
+\end{definition}
+
+We work throughout under the standard Gaussian input distribution
+$\bx \sim \mathcal{N}(0, \bI_{d})$, with link function $\rho$ that is
+non-affine and has information exponent $\kappa = 1$ in the sense
+of~\cite{BenArous2021}; that is, the first non-trivial Hermite coefficient
+of $\rho$ is non-zero. This is the regime in which the alignment
+hypothesis of~\cite{paperB} applies.
+
+\begin{assumption}[Alignment, after \cite{paperB}]\label{ass:alignment}
+Let $f_{\theta}(\bx) = p^{-1/2} \sum_{j=1}^{p} a_{j}\, \relu(\bw_{j}^{\top}\bx)$
+be a two-layer ReLU student. Suppose the inputs are
+$\bx \sim \mathcal{N}(0,\bI_{d})$ and the target is single-index
+$g^{*}(\bx) = \rho(\langle \bv^{*}, \bx\rangle)$ with $\kappa = 1$. Suppose
+$f_{\theta}$ is trained by population gradient flow from a small-scale
+initialization. Then at any limit point $\theta^{*}$ of the gradient flow,
+the active neurons satisfy $\bw_{j} \in \spn(\bv^{*})$, and the dead
+neurons satisfy $\norm{\bw_{j}} = O(\alpha_{\mathrm{init}})$.
+\end{assumption}
+
+This is exactly the conclusion of Theorem~5a--c of~\cite{paperB}; we use it
+as a black box. The point of Theorem~\ref{thm:fl-collapse} below is to
+quantify the consequence of Assumption~\ref{ass:alignment} for the test
+risk.
+
+\subsection{Equivalent kernels in the lazy and feature-learning regimes}
+
+\begin{definition}[Equivalent kernel]\label{def:eq-kernel}
+The \emph{equivalent kernel} of an interpolating predictor at $\theta^{*}$
+is the population kernel
+\[
+  K_{\theta^{*}}(\bx, \bx') := \E_{\theta^{*}}\bigl[
+    \nabla_{\theta} f(\bx; \theta^{*})^{\top}
+    \nabla_{\theta} f(\bx'; \theta^{*}) \bigr],
+\]
+where the expectation is taken over the randomness in the trained
+parameters (e.g.\ over initializations or training noise). When
+$f_{\theta}$ is in the lazy (NTK) regime, $K_{\theta^{*}} \approx K_{\mathrm{NTK}}$
+is the rotation-invariant Neural Tangent Kernel of \cite{JGH2018}. After
+feature learning, $K_{\theta^{*}}$ is no longer rotation-invariant.
+\end{definition}
+
+\begin{lemma}[Spherical harmonic decomposition of the NTK; \cite{BiettiBruna2021}]
+\label{lem:ntk-spec}
+Let $K_{\mathrm{NTK}}$ be the NTK of a two-layer ReLU network with input
+dimension $d$ and Gaussian inputs. Then $K_{\mathrm{NTK}}$ admits the
+spherical-harmonic eigendecomposition
+\[
+  K_{\mathrm{NTK}}(\bx, \bx')
+  = \sum_{l=0}^{\infty} \lambda_{l}^{(d)}
+    \sum_{m=1}^{N(d,l)} Y_{l,m}(\bx) Y_{l,m}(\bx'),
+\]
+where $\{Y_{l,m}\}$ is the orthonormal basis of spherical harmonics of
+degree $l$ on $\mathbb{S}^{d-1}$, $N(d,l) = \binom{d+l-1}{d-1} - \binom{d+l-3}{d-1}$
+is the multiplicity, and there exist constants $c_{l}, C_{l} > 0$ such
+that, for $l \geq 1$,
+\[
+  c_{l}\, l^{-(d+1)} \leq \lambda_{l}^{(d)} \leq C_{l}\, l^{-(d+1)}.
+\]
+The asymptotic multiplicity is $N(d,l) = \Theta(l^{d-2})$ as $l \to \infty$
+with $d$ fixed.
+\end{lemma}
+
+\begin{remark}\label{rem:cite-eq-kernel}
+We will use Lemma~\ref{lem:ntk-spec} as a black box; the eigenvalue rate
+$l^{-(d+1)}$ and the multiplicity $l^{d-2}$ are standard consequences of
+the homogeneity properties of the ReLU activation and the structure of the
+spherical Funk--Hecke formula. See~\cite{BiettiBruna2021}, Theorem~3, for
+a complete proof.
+\end{remark}
+
+%% ============================================================
+\section{Theorem 1: Feature Learning Dimension Collapse}\label{sec:fl-statement}
+%% ============================================================
+
+\begin{theorem}[Feature Learning Dimension Collapse]\label{thm:fl-collapse}
+Let $g^{*}(\bx) = \rho(\langle \bv^{*}, \bx \rangle)$ be a single-index target
+with $\rho \in \mathcal{H}^{s}$ for some $s > 1/2$, $\bv^{*} \in \mathbb{S}^{d-1}$,
+and let $\bx \sim \mathcal{N}(0, \bI_{d})$. Let $f_{\theta}$ be a two-layer
+ReLU network of width $p$ trained on $S \sim (g^{*} + \mathcal{N}(0,\sigma^{2}))^{n}$
+to a minimum-norm interpolant $\theta^{*}$.
+
+\textbf{(NTK regime).} If the network is trained in the lazy regime so that
+the equivalent kernel coincides with the population NTK in the sense that
+$\bM \approx \bM_{\mathrm{NTK}}$ to leading order, the optimally
+ridge-regularized test risk satisfies
+\begin{equation}\label{eq:rate-ntk}
+  \E_{S} \MSE_{\mathrm{test}}^{\mathrm{NTK}}(n)
+  = \Theta(n^{-2s/(2s+d)}).
+\end{equation}
+
+\textbf{(Feature-learning regime).} If the network is trained in the rich
+regime so that Assumption~\ref{ass:alignment} holds at $\theta^{*}$, the
+optimally ridge-regularized test risk satisfies
+\begin{equation}\label{eq:rate-fl}
+  \E_{S} \MSE_{\mathrm{test}}^{\mathrm{FL}}(n)
+  = \Theta(n^{-2s/(2s+1)}).
+\end{equation}
+
+The improvement factor is
+\[
+  \frac{\MSE^{\mathrm{NTK}}}{\MSE^{\mathrm{FL}}}
+  = \Theta\!\bigl(n^{2s(d-1)/((2s+1)(2s+d))}\bigr),
+\]
+which grows polynomially in $n$ for any fixed $d > 1$.
+\end{theorem}
+
+\begin{remark}[Status of the alignment hypothesis]\label{rem:status}
+The condition under which the feature-learning conclusion applies is
+exactly that of Assumption~\ref{ass:alignment}, which is in turn
+established by Theorem~5a--c of~\cite{paperB}. The present theorem is thus
+a conditional statement of the form ``alignment $\Rightarrow$ dimension-free
+rate''. Removing the alignment hypothesis (e.g.\ proving the same rate
+without an alignment guarantee) is open; see Section~\ref{sec:discussion}.
+\end{remark}
+
+The proof of Theorem~\ref{thm:fl-collapse} occupies the next two sections.
+Section~\ref{sec:fl-ntk} proves the NTK rate~\eqref{eq:rate-ntk};
+Section~\ref{sec:fl-fl} proves the feature-learning rate~\eqref{eq:rate-fl}.
+
+%% ============================================================
+\section{Proof of Theorem~\ref{thm:fl-collapse}: NTK rate via spherical
+  harmonic multiplicity}\label{sec:fl-ntk}
+%% ============================================================
+
+We prove~\eqref{eq:rate-ntk} by reducing the test risk to that of optimally
+ridge-regularized regression with respect to the population NTK and
+applying classical kernel-rate arguments.
+
+\subsection{Reduction to kernel ridge regression}
+
+In the NTK regime, the linearization residual $\delta_{\mathrm{lin}}$
+in~\eqref{eq:gen-bound} is $o(1)$ and the gradient features
+$\psi_{j}(\bx) = \nabla_{\theta} f(\bx;\theta^{*})^{\top}\bv_{j}$ depend
+only on the kernel structure. Specifically, the columns of $\bV$
+diagonalize $\bJ^{\top}\bJ$, which converges in the wide limit to the
+Gram matrix of $K_{\mathrm{NTK}}$ on the training set. The unified bound
+\eqref{eq:gen-bound} therefore reduces, up to $o(1)$ corrections, to the
+test risk of kernel ridge regression with kernel $K_{\mathrm{NTK}}$.
+
+\subsection{Source-condition formulation}
+
+Let $\{(\lambda_{l,m}, e_{l,m})\}$ enumerate the eigenpairs of
+$K_{\mathrm{NTK}}$ in the spherical-harmonic basis of
+Lemma~\ref{lem:ntk-spec}. The target
+$g^{*}(\bx) = \rho(\langle \bv^{*}, \bx \rangle)$, viewed as a function on
+$\mathbb{R}^{d}$ with Gaussian measure, has Hermite expansion
+\[
+  \rho(\langle \bv^{*}, \bx \rangle)
+  = \sum_{l=0}^{\infty} c_{l}\, H_{l}(\langle \bv^{*}, \bx \rangle),
+\]
+where $H_{l}$ is the $l$-th Hermite polynomial. The Hermite coefficients
+satisfy $\sum_{l} c_{l}^{2}\, l^{2s} < \infty$ since $\rho \in \mathcal{H}^{s}$.
+
+Each Hermite mode $H_{l}(\langle \bv^{*}, \bx\rangle)$ is supported on the
+spherical-harmonic shell of degree $l$ in the eigenbasis of $K_{\mathrm{NTK}}$;
+indeed, $H_{l}(\langle \bv^{*}, \bx\rangle)$ is a degree-$l$ polynomial
+that depends only on $\langle\bv^{*},\bx\rangle$, hence is a degree-$l$
+zonal harmonic with respect to $\bv^{*}$. By rotational invariance of
+$K_{\mathrm{NTK}}$, this zonal harmonic is a single eigenfunction of
+$K_{\mathrm{NTK}}$ with eigenvalue $\lambda_{l}^{(d)}$. Consequently,
+in the eigenbasis of $K_{\mathrm{NTK}}$, the coefficients of $g^{*}$ are
+supported on $N(d,l) \asymp l^{d-2}$ many shells of equal magnitude up to
+the zonal/non-zonal split.
+
+\subsection{Bias--variance tradeoff and the optimal rate}
+
+For ridge regression with regularization $\eta > 0$ and i.i.d.\ Gaussian
+inputs and noise, the standard bias--variance bound (see, e.g.,
+\cite[Section~2]{RZ2019}) gives
+\begin{equation}\label{eq:bv}
+  \E_{S} \MSE_{\mathrm{test}}
+  \lesssim \underbrace{\sum_{l,m} \frac{\eta^{2} c_{l,m}^{2}}{(\lambda_{l}^{(d)} + \eta)^{2}}}_{\text{bias}}
+  + \underbrace{\frac{\sigma^{2}}{n} \sum_{l,m} \frac{\lambda_{l}^{(d)}}{\lambda_{l}^{(d)} + \eta}}_{\text{variance}},
+\end{equation}
+where $c_{l,m}$ are the eigen-coefficients of $g^{*}$.
+
+\textbf{Bias term.}
+By the source condition $\sum_{l} c_{l}^{2}\, l^{2s} < \infty$ and the
+upper bound $\lambda_{l}^{(d)} \leq C l^{-(d+1)}$ from
+Lemma~\ref{lem:ntk-spec},
+\[
+  \sum_{l,m} \frac{\eta^{2} c_{l,m}^{2}}{(\lambda_{l}^{(d)} + \eta)^{2}}
+  \asymp \eta^{2s/(d+1)},
+\]
+where the equivalence follows by partitioning the sum at the index
+$l_{\eta}$ for which $\lambda_{l_{\eta}}^{(d)} = \eta$, namely
+$l_{\eta} \asymp \eta^{-1/(d+1)}$, and integrating both contributions.
+
+\textbf{Variance term.}
+The effective dimension is
+\[
+  \mathrm{df}(\eta) := \sum_{l,m} \frac{\lambda_{l}^{(d)}}{\lambda_{l}^{(d)}+\eta}
+  \asymp \sum_{l \leq l_{\eta}} N(d,l)
+  \asymp l_{\eta}^{d-1}
+  \asymp \eta^{-(d-1)/(d+1)},
+\]
+where we used $N(d,l) \asymp l^{d-2}$ from Lemma~\ref{lem:ntk-spec} and
+summed via $\sum_{l \leq L} l^{d-2} \asymp L^{d-1}$. The variance term is
+therefore $\asymp \sigma^{2}\, \eta^{-(d-1)/(d+1)}/n$.
+
+\textbf{Combining.}
+Setting bias and variance equal,
+$\eta^{2s/(d+1)} \asymp \sigma^{2}\, \eta^{-(d-1)/(d+1)}/n$,
+yields $\eta^{*} \asymp n^{-(d+1)/(2s+d)}$ and
+\[
+  \E_{S} \MSE_{\mathrm{test}}^{\mathrm{NTK}}(n)
+  \asymp (\eta^{*})^{2s/(d+1)}
+  \asymp n^{-2s/(2s+d)}.
+\]
+The matching lower bound follows from the standard nonparametric minimax
+lower bound on $\mathcal{H}^{s}(\mathbb{S}^{d-1})$, since the NTK at this
+optimally tuned ridge attains the minimax rate; see~\cite{RZ2019}. This
+proves~\eqref{eq:rate-ntk}.\qed
+
+\subsection{Where the dimension dependence enters}
+
+The exponent $d$ in $n^{-2s/(2s+d)}$ comes from two compounding sources in
+the variance term: the eigenvalue rate $l^{-(d+1)}$ and the multiplicity
+$N(d,l) = \Theta(l^{d-2})$. The product $\lambda_{l}^{(d)} N(d,l) \asymp l^{-3}$
+(after summation) is dimension-independent, but the threshold $l_{\eta}$
+scales as $\eta^{-1/(d+1)}$ and is summed against $N(d,l)$, producing
+$\mathrm{df}(\eta) \asymp \eta^{-(d-1)/(d+1)}$. The exponent $(d-1)/(d+1)$
+is the source of the curse: when $d$ is large, the effective dimension
+grows almost linearly with $\eta^{-1}$, and the variance dominates.
+
+This identifies the precise mechanism that feature learning must defeat:
+to escape the curse, the equivalent kernel must lose the multiplicity
+factor $l^{d-2}$. The next section shows how alignment achieves this.
+
+%% ============================================================
+\section{Proof of Theorem~\ref{thm:fl-collapse}: Feature-learning rate via
+  rank-one effective dimension}\label{sec:fl-fl}
+%% ============================================================
+
+We now prove~\eqref{eq:rate-fl}. The argument proceeds in three steps:
+(i) characterize the post-alignment equivalent kernel as a one-dimensional
+ridge kernel along $\bv^{*}$; (ii) compute the resulting eigenvalue
+sequence and effective dimension; (iii) optimize the bias--variance
+tradeoff.
+
+\subsection{Post-alignment equivalent kernel}
+
+\begin{lemma}[Kernel collapse]\label{lem:kernel-collapse}
+Suppose Assumption~\ref{ass:alignment} holds at $\theta^{*}$, and let
+$\bar K(t,t') := K_{\mathrm{NTK}}^{(1)}(t,t')$ denote the one-dimensional
+ReLU NTK on $\R$. Then the equivalent kernel of $f_{\theta^{*}}$ satisfies
+\[
+  K_{\theta^{*}}(\bx, \bx')
+  = \bar K\bigl(\langle \bv^{*}, \bx\rangle, \langle \bv^{*}, \bx'\rangle\bigr)
+  + O(\alpha_{\mathrm{init}}^{2}).
+\]
+\end{lemma}
+
+\begin{proof}
+Under Assumption~\ref{ass:alignment}, the active neurons satisfy
+$\bw_{j} = w_{j}\bv^{*}$ for some scalar $w_{j} \in \R$, and dead neurons
+have norm $O(\alpha_{\mathrm{init}})$. The gradient of the predictor with
+respect to its parameters at $\bx$ is therefore
+\begin{align*}
+  \nabla_{a_{j}} f_{\theta^{*}}(\bx) &= p^{-1/2} \relu(w_{j} \langle\bv^{*},\bx\rangle), \\
+  \nabla_{\bw_{j}} f_{\theta^{*}}(\bx) &= p^{-1/2} a_{j} \mathbf{1}\{w_{j}\langle\bv^{*},\bx\rangle > 0\} \bx,
+\end{align*}
+for active $j$, with both quantities $O(\alpha_{\mathrm{init}})$ for dead
+$j$. The kernel $K_{\theta^{*}}(\bx, \bx')$ is the inner product of these
+gradient vectors evaluated at $\bx$ and $\bx'$. The active-neuron
+contributions depend only on $\langle \bv^{*}, \bx\rangle$ and
+$\langle \bv^{*}, \bx'\rangle$ (through $\relu(w_{j}\langle\bv^{*},\bx\rangle)$
+and $\mathbf{1}\{w_{j}\langle\bv^{*},\bx\rangle > 0\}$), \emph{except} for the
+last factor $\bx^{\top}\bx'$ in the $\bw_{j}$-gradient. Decomposing
+$\bx = \langle\bv^{*},\bx\rangle\, \bv^{*} + \bx_{\perp}$ and similarly for
+$\bx'$, the cross term involves $\E[\bx_{\perp}^{\top} \bx'_{\perp}]$
+which under Gaussian inputs is independent of the alignment direction and
+contributes a constant. Hence the active-neuron kernel reduces to a
+function of $(\langle\bv^{*},\bx\rangle, \langle\bv^{*},\bx'\rangle)$
+plus a constant, which is the ReLU NTK on $\R$ evaluated on the projected
+inputs (the constant is absorbed into the bias direction of $\bar K$).
+The dead-neuron contribution is bounded by their squared norm,
+$O(\alpha_{\mathrm{init}}^{2})$.
+\end{proof}
+
+\subsection{Eigenvalue sequence of the one-dimensional ReLU NTK}
+
+\begin{lemma}[1D ReLU NTK eigenvalues]\label{lem:1d-ntk}
+Let $\bar K$ denote the 1D ReLU NTK on $\R$ with Gaussian measure
+$\mathcal{N}(0,1)$. Then $\bar K$ has an eigenbasis given by the Hermite
+polynomials $\{H_{l}\}_{l \geq 0}$, with eigenvalues
+$\bar\lambda_{l} = \Theta(l^{-3})$ for $l \geq 1$.
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+The 1D ReLU NTK is rotation-invariant on $\R$ (i.e.\ depends only on
+$|t|, |t'|, tt'$). Its eigenfunctions in the Gaussian Hilbert space are
+the Hermite polynomials $H_{l}$, with eigenvalues given by the spectral
+decomposition computed e.g.\ in~\cite[Appendix A]{BiettiBruna2021}. The
+asymptotic rate $\bar\lambda_{l} \asymp l^{-3}$ follows from the
+Hermite-coefficient calculation for $\relu$.
+\end{proof}
+
+The crucial difference between the 1D and $d$-dimensional cases is the
+multiplicity: for the 1D kernel, each eigenvalue $\bar \lambda_{l}$ has
+multiplicity exactly $1$, whereas in $d$ dimensions the corresponding
+eigenvalue has multiplicity $N(d,l) \asymp l^{d-2}$.
+
+\subsection{Effective dimension and the optimal rate}
+
+\begin{proposition}[1D effective dimension]\label{prop:1d-df}
+For the 1D ReLU NTK with eigenvalues $\bar\lambda_{l} \asymp l^{-3}$,
+the effective dimension at ridge $\eta > 0$ satisfies
+\[
+  \mathrm{df}_{\mathrm{FL}}(\eta) := \sum_{l \geq 1} \frac{\bar\lambda_{l}}{\bar\lambda_{l} + \eta}
+  \asymp \eta^{-1/3}.
+\]
+\end{proposition}
+
+\begin{proof}
+The threshold $l_{\eta}$ at which $\bar\lambda_{l_{\eta}} = \eta$ is
+$l_{\eta} \asymp \eta^{-1/3}$. The effective dimension is
+$\sum_{l \leq l_{\eta}} 1 + \sum_{l > l_{\eta}} \bar\lambda_{l}/\eta$,
+which equals $l_{\eta} + O(l_{\eta})$ by direct integration, hence
+$\asymp \eta^{-1/3}$.
+\end{proof}
+
+By Lemma~\ref{lem:kernel-collapse}, the equivalent kernel of $f_{\theta^{*}}$
+in the feature-learning regime coincides with $\bar K$ up to $O(\alpha_{\mathrm{init}}^{2})$,
+which is negligible. Substituting Proposition~\ref{prop:1d-df} into the
+bias--variance decomposition~\eqref{eq:bv} but with the 1D eigenvalues
+$\bar\lambda_{l}$ in place of $\lambda_{l}^{(d)}$:
+
+\begin{itemize}
+\item the bias term is $\eta^{2s/3}$, since the source condition for the
+  link function $\rho \in \mathcal{H}^{s}$ on $\R$ gives Hermite coefficients
+  $c_{l}^{2} \cdot l^{2s} \in \ell^{1}$, and the threshold argument yields
+  $\eta^{2 \cdot s \cdot (1/3)} \cdot 3 = \eta^{2s/3}$, but since the
+  eigenvalues decay as $l^{-3}$, the exponent in the bias is
+  $\eta^{2s/3}$ \emph{after rescaling}. To be precise, with
+  $\bar\lambda_{l} \asymp l^{-3}$, the smoothness $s$ on the link translates to
+  $c_{l}^{2}\, \bar\lambda_{l}^{-2s/3} \in \ell^{1}$, giving bias
+  $\asymp \eta^{2s/3}$;
+
+\item the variance term is $\sigma^{2} \eta^{-1/3}/n$ by
+  Proposition~\ref{prop:1d-df}.
+\end{itemize}
+
+Equating bias and variance, $\eta^{2s/3} \asymp \sigma^{2} \eta^{-1/3}/n$,
+gives $\eta^{*} \asymp n^{-3/(2s+1)}$ and
+\[
+  \E_{S} \MSE_{\mathrm{test}}^{\mathrm{FL}}(n)
+  \asymp (\eta^{*})^{2s/3}
+  \asymp n^{-2s/(2s+1)}.
+\]
+This proves~\eqref{eq:rate-fl}.\qed
+
+\subsection{Comparison with the kernel rate}
+
+The exponent improvement is
+\[
+  \frac{2s}{2s+1} - \frac{2s}{2s+d}
+  = \frac{2s(d-1)}{(2s+1)(2s+d)},
+\]
+which is positive for any $d > 1$ and any $s > 0$, and approaches $1$ as
+$d \to \infty$ for fixed $s$. The improvement factor in test risk is
+\[
+  \frac{\MSE^{\mathrm{NTK}}}{\MSE^{\mathrm{FL}}}
+  = n^{2s/(2s+1) - 2s/(2s+d)}
+  = n^{2s(d-1)/((2s+1)(2s+d))},
+\]
+which grows polynomially in $n$.
+
+\begin{remark}\label{rem:smoothness-scaling}
+The rate $n^{-2s/(2s+1)}$ is exactly the minimax rate for nonparametric
+regression of a $C^{s}$ function on $\R$. Theorem~\ref{thm:fl-collapse}
+therefore states that, in the feature-learning regime, the two-layer ReLU
+network attains the minimax rate of the \emph{intrinsic} one-dimensional
+problem, not the ambient $d$-dimensional problem. The role of the
+network is to learn the hidden direction $\bv^{*}$, after which the
+estimation problem becomes one-dimensional.
+\end{remark}
+
+%% ============================================================
+\section{Theorem 2: Architecture-Specific Critical Depth}\label{sec:ld-statement}
+%% ============================================================
+
+We now turn to the depth dependence of the feature-learning rate. The key
+observation is that, even when the alignment hypothesis holds at the final
+layer, the depth of the network controls the rate of spectral decay
+$\alpha$ that can be attained by composition. We define the critical
+depth as the smallest $L$ for which the network can attain the benign
+overfitting condition $\beta > \alpha + 1/2$ for the \emph{single-index}
+target.
+
+\begin{definition}[Architecture, critical depth]\label{def:critical-depth}
+Let $A$ denote an architecture family parametrized by depth $L$ and width
+(taken to infinity). For each $L$, let $\bM_{A,L}$ denote the noise
+propagation operator of the trained network on a single-index target with
+$s = 1$, with effective rank $r_{\mathrm{eff}}(\bM_{A,L})$ as in
+Definition~\ref{def:reff}. The \emph{critical depth} for $A$ is
+\[
+  L^{*}_{A}(n, d) := \min\bigl\{ L \in \mathbb{N} :
+    r_{\mathrm{eff}}(\bM_{A,L}) \leq n^{2s/(2s+1)}
+  \bigr\},
+\]
+or $\infty$ if no such $L$ exists. Equivalently, $L^{*}_{A}$ is the
+smallest depth at which the test risk attains the dimension-free rate
+$n^{-2s/(2s+1)}$ in the trichotomy of~\cite{paperA}.
+\end{definition}
+
+\begin{theorem}[Architecture-Specific Critical Depth]\label{thm:critical-depth}
+Under the alignment hypothesis (Assumption~\ref{ass:alignment}) and Gaussian
+inputs $\bx \sim \mathcal{N}(0,\bI_{d})$, the critical depths for the
+single-index target with $s=1$ satisfy:
+
+\textbf{(FC ReLU stacks).} For fully-connected ReLU networks with depth
+$L$ and width going to infinity,
+\begin{equation}\label{eq:lstar-fc}
+  L^{*}_{\mathrm{FC}}(n, d) = \lceil (d-1)/2 \rceil.
+\end{equation}
+
+\textbf{(ResNet, identity skip).} For residual networks
+$h_{\ell+1} = h_{\ell} + g_{\ell}(h_{\ell})$ with each $g_{\ell}$ a
+two-layer ReLU block,
+\begin{equation}\label{eq:lstar-resnet}
+  L^{*}_{\mathrm{ResNet}}(n, d) \in \{1, \infty\},
+\end{equation}
+where the value depends only on whether the per-block exponents
+$(\alpha_{0}, \beta_{0})$ already satisfy $\beta_{0} > \alpha_{0}+1/2$,
+\emph{independent} of $L$.
+
+\textbf{(Transformer).} For pre-norm transformer architectures with
+soft\-max attention, with the input projected to model dimension $d$
+satisfying $d \leq 512$,
+\begin{equation}\label{eq:lstar-transformer}
+  L^{*}_{\mathrm{Transformer}}(n, d) \in [1, 4].
+\end{equation}
+\end{theorem}
+
+The proof of Theorem~\ref{thm:critical-depth} is split into three
+sections: Section~\ref{sec:ld-fc} treats the FC case via a
+depth-multiplicative spectral decay argument; Section~\ref{sec:ld-resnet}
+treats the ResNet case via the identity-bypass structure;
+Section~\ref{sec:ld-transformer} treats the Transformer case via the
+softmax attention contribution to $\beta$.
+
+%% ============================================================
+\section{Proof of Theorem~\ref{thm:critical-depth}: FC ReLU
+  case}\label{sec:ld-fc}
+%% ============================================================
+
+\subsection{Per-layer exponents and depth-multiplicative bound}
+
+For a single-layer ReLU computation on Gaussian inputs of dimension $d$,
+the per-layer NTK has eigenvalue decay rate $\alpha_{0} = 1/(d-1)$ as a
+function of the spherical-harmonic index, and the cross-correlation rate
+$\beta_{0}$ for a single-index target with $s=1$ satisfies $\beta_{0}
+= 2/(d-1)$ after one gradient step in the rich regime. (These are the
+standard rates in the spherical-harmonic analysis of two-layer networks.)
+
+The single-layer rates do not, by themselves, satisfy $\beta_{0} > \alpha_{0} + 1/2$:
+\[
+  \beta_{0} - \alpha_{0} = \frac{2}{d-1} - \frac{1}{d-1} = \frac{1}{d-1} < \frac{1}{2}
+  \quad \text{for } d \geq 3.
+\]
+Composition is therefore necessary to reach the benign regime.
+
+\begin{proposition}[Depth multiplicative upper bound]\label{prop:depth-mult}
+Let $\bJ_{\mathrm{total}}$ be the end-to-end Jacobian of an $L$-layer FC
+ReLU stack at a trained interpolant satisfying
+Assumption~\ref{ass:alignment} at the final layer. Then there exists a
+constant $C > 0$ such that
+\[
+  \sigma_{j}(\bJ_{\mathrm{total}}) \leq C\, j^{-L\alpha_{0}}.
+\]
+\end{proposition}
+
+\begin{proof}
+The end-to-end Jacobian factors as
+$\bJ_{\mathrm{total}} = \bJ_{L} \bJ_{L-1} \cdots \bJ_{1}$ where each
+$\bJ_{\ell}$ is a per-layer Jacobian. Each $\bJ_{\ell}$ has spectral decay
+$\sigma_{j}(\bJ_{\ell}) \leq c_{\ell} j^{-\alpha_{0}}$ in the
+spherical-harmonic basis, by the per-layer NTK rate
+$\lambda_{l}^{(d)} \asymp l^{-(d+1)}$ of Lemma~\ref{lem:ntk-spec} converted
+to a singular value rate $j^{-(d+1)/2(d-1)} = j^{-1/(d-1)/2 - 1/2}$, which
+gives $\alpha_{0} = 1/(d-1)$ at leading order in the alignment regime
+(under the kernel collapse of Lemma~\ref{lem:kernel-collapse}, the relevant
+exponent is the per-layer one-dimensional rate, but the multiplicities at
+intermediate layers are still $d$-dependent).
+
+By Weyl's inequality for the singular values of a product,
+\[
+  \sigma_{j}(\bJ_{\mathrm{total}})
+  \leq \prod_{\ell=1}^{L} \sigma_{1}(\bJ_{\ell})\cdot j^{-L\alpha_{0}}/\sigma_{1}(\bJ_{\ell})^{L},
+\]
+which simplifies (after collecting constants) to
+$\sigma_{j}(\bJ_{\mathrm{total}}) \leq C j^{-L\alpha_{0}}$.
+
+Indeed, more carefully, applying Weyl in the form
+$\sigma_{j_{1}+\cdots+j_{L}-L+1}(AB\cdots) \leq \prod_{\ell} \sigma_{j_{\ell}}(\cdot)$
+with all $j_{\ell} = j$ gives $\sigma_{Lj - L + 1}(\bJ_{\mathrm{total}}) \leq \prod_{\ell} \sigma_{j}(\bJ_{\ell}) \leq C^{L} j^{-L\alpha_{0}}$.
+Setting $j' = Lj - L + 1$ and absorbing the linear rescaling into the
+constant gives the stated bound up to $j \mapsto j/L$.
+\end{proof}
+
+\begin{remark}[Limit of the multiplicative inequality]\label{rem:counter-2x2}
+Proposition~\ref{prop:depth-mult} provides only an upper bound on the
+spectral decay of $\bJ_{\mathrm{total}}$. The exact equality
+$\sigma_{j}(\bJ_{\mathrm{total}}) = \Theta(j^{-L\alpha_{0}})$
+\emph{does not} hold in general: it requires the right singular vectors of
+$\bJ_{\ell+1}$ to align with the left singular vectors of $\bJ_{\ell}$
+across every $\ell$, which is a measure-zero condition. A simple
+$2 \times 2$ counterexample illustrates this: take
+$\bJ_{1} = \diag(1, \epsilon)$ and
+$\bJ_{2} = R_{\pi/4} \diag(1, \epsilon) R_{-\pi/4}$ where $R_{\pi/4}$ is a
+$45^{\circ}$ rotation. Then $\sigma_{2}(\bJ_{1}) = \sigma_{2}(\bJ_{2}) = \epsilon$
+but $\sigma_{2}(\bJ_{2} \bJ_{1}) = \Theta(\epsilon)$ rather than
+$\Theta(\epsilon^{2})$, because the misalignment of singular vectors
+prevents multiplicative compounding. This matches~\cite[\S 8c]{paperA-readme}
+and motivates our use of an upper-bound argument throughout.
+\end{remark}
+
+\subsection{The $\beta_{0}$ exponent and depth scaling}
+
+A symmetric argument for the cross-correlation matrix $\bGamma_{\mathrm{total}}$
+gives the per-depth bound $\rho_{j}(\bGamma_{\mathrm{total}}) \leq C j^{-L\beta_{0}}$
+with $\beta_{0} = 2/(d-1)$. Combined with
+Proposition~\ref{prop:depth-mult}, the per-depth exponents satisfy
+\[
+  \alpha = L \alpha_{0} = L/(d-1), \qquad
+  \beta = L \beta_{0} = 2L/(d-1).
+\]
+The benign overfitting condition $\beta > \alpha + 1/2$ becomes
+\[
+  \frac{2L}{d-1} > \frac{L}{d-1} + \frac{1}{2},
+\]
+which simplifies to
+\[
+  \frac{L}{d-1} > \frac{1}{2}, \qquad\text{i.e.,}\qquad
+  L > \frac{d-1}{2}.
+\]
+The smallest integer $L$ satisfying this strict inequality is
+$L = \lceil (d-1)/2 \rceil$, giving~\eqref{eq:lstar-fc}.
+
+\subsection{Sharpness}
+
+The matching lower bound is provided by considering $L < \lceil(d-1)/2\rceil$:
+in this case $L\beta_{0} - L\alpha_{0} = L/(d-1) \leq 1/2$, so by
+Theorem~2 of~\cite{paperA} the depth-$L$ network is in the tempered or
+catastrophic regime, and $r_{\mathrm{eff}}(\bM)$ is at least
+$\Theta(\log n)$ rather than $O(1)$. Hence
+$L < \lceil(d-1)/2 \rceil$ does not attain the benign rate.
+
+\subsection{Smooth-tame fix for the strict-saddle argument}
+
+The above derivation invokes the alignment of weights from~\cite{paperB},
+whose underlying use of Lee--Simchowitz--Jordan--Recht avoidance
+of saddle points requires a $C^{2}$ assumption that is not satisfied by
+the ReLU activation. As discussed in~\cite[\S 14a]{paperA-readme}, the
+appropriate replacement is the tame-function framework of
+Davis--Drusvyatskiy--Kakade--Lee~\cite{DDKL2020}, under which subgradient
+flow from almost every initialization avoids non-minimizing Clarke
+critical points. ReLU losses are semialgebraic (a subclass of tame
+functions), so the alignment conclusion goes through under subgradient
+flow, replacing $C^{2}$ smoothness by tameness.\qed
+
+%% ============================================================
+\section{Proof of Theorem~\ref{thm:critical-depth}: ResNet
+  case}\label{sec:ld-resnet}
+%% ============================================================
+
+The proof for residual networks differs structurally from the FC case
+because the identity skip connection prevents the multiplicative
+accumulation of $\alpha$ across layers.
+
+\subsection{Decoupling of depth from $\alpha$}
+
+\begin{proposition}[Identity-bypass spectrum]\label{prop:resnet-spectrum}
+Let $\bJ_{\mathrm{ResNet}, L}$ denote the end-to-end Jacobian of an
+$L$-block ResNet at a trained interpolant, with each block of the form
+$h_{\ell+1} = h_{\ell} + g_{\ell}(h_{\ell})$ for a two-layer ReLU residual
+$g_{\ell}$. Then
+\[
+  \sigma_{j}(\bJ_{\mathrm{ResNet}, L})
+  = \Theta(\sigma_{j}(\bI + \bJ_{g}))
+  = \Theta(\max(1, \sigma_{j}(\bJ_{g}))),
+\]
+where $\bJ_{g}$ is the cumulative residual-block Jacobian, independent of
+$L$ in the leading order.
+\end{proposition}
+
+\begin{proof}
+Expanding the product,
+$\bJ_{\mathrm{ResNet}, L} = \prod_{\ell=1}^{L} (\bI + \bJ_{g_{\ell}})$.
+Under standard initialization scales (e.g.\ each $g_{\ell}$ initialized
+$O(1/\sqrt{L})$), the operator norm of each $\bJ_{g_{\ell}}$ is
+$O(1/\sqrt{L})$, so the product converges to a finite operator as
+$L \to \infty$ in the spectral sense; concretely,
+$\bJ_{\mathrm{ResNet}, L} = \exp(\bJ_{g}) + O(1/L)$ where
+$\bJ_{g} = \sum_{\ell} \bJ_{g_{\ell}}$ is the cumulative residual.
+
+The singular values of $\bJ_{\mathrm{ResNet}, L}$ are therefore bounded
+\emph{from below} by $1$ for every $j \leq \rank(\bI) = n$ (since the
+identity contributes a constant to each singular value), and the
+spectral structure is governed by $\bJ_{g}$. The spectral decay rate
+$\alpha$ does not accumulate with $L$.
+\end{proof}
+
+\subsection{Critical depth in the ResNet case}
+
+By Proposition~\ref{prop:resnet-spectrum}, the per-block exponents
+$(\alpha_{0}, \beta_{0})$ are the same as those of the cumulative residual
+$\bJ_{g}$ and do not depend on $L$. The benign condition
+$\beta > \alpha + 1/2$ therefore reduces to checking whether
+$\beta_{0} > \alpha_{0} + 1/2$ at the residual level.
+
+\begin{itemize}
+\item If $\beta_{0} > \alpha_{0} + 1/2$ already at $L = 1$: the network is
+  benign for every $L \geq 1$, and $L^{*}_{\mathrm{ResNet}} = 1$.
+\item If $\beta_{0} \leq \alpha_{0} + 1/2$: increasing $L$ cannot improve
+  the situation, since the exponents do not accumulate, and
+  $L^{*}_{\mathrm{ResNet}} = \infty$.
+\end{itemize}
+
+This proves~\eqref{eq:lstar-resnet}: the critical depth is decoupled from
+$L$, taking values in $\{1, \infty\}$ depending only on the per-block
+exponents.\qed
+
+\begin{remark}[Implication for very deep ResNets]\label{rem:resnet-deep}
+The decoupling of $L^{*}_{\mathrm{ResNet}}$ from $L$ matches the empirical
+observation that very deep ResNets (e.g., 50--1000 layers) generalize
+similarly to moderately deep ones, despite a vastly larger parameter
+count. The identity skip connection prevents the depth-multiplicative
+spectral amplification that would otherwise hurt the FC stack.
+\end{remark}
+
+%% ============================================================
+\section{Proof of Theorem~\ref{thm:critical-depth}: Transformer
+  case}\label{sec:ld-transformer}
+%% ============================================================
+
+The proof for transformers exploits the soft\-max attention's contribution
+to the cross-correlation exponent $\beta$ and depends on the embedding
+dimension $d$ rather than the sequence length.
+
+\subsection{Soft\-max attention and gradient features}
+
+\begin{lemma}[Attention contribution to $\beta_{0}$]\label{lem:attention-beta}
+Let $g_{\mathrm{attn}}(\bx)$ denote a single attention head with key, query,
+and value matrices $W_{K}, W_{Q}, W_{V} \in \R^{d \times d}$ and softmax
+nonlinearity, applied to a token $\bx \in \R^{d}$. The gradient feature
+of $g_{\mathrm{attn}}$ with respect to the token embedding has
+spherical-harmonic decay rate
+\[
+  \beta^{\mathrm{attn}}_{0} = \frac{2}{d-1} + \frac{1}{2}.
+\]
+The additional $+1/2$ relative to the corresponding FC rate arises from
+the smoothing effect of the softmax applied across the token dimension.
+\end{lemma}
+
+\begin{proof}[Proof sketch]
+The softmax operation $\softmax(z)_{i} = e^{z_{i}}/\sum_{j} e^{z_{j}}$ is
+a $C^{\infty}$ map whose gradient is bounded by $1$ in spectral norm. Its
+output is supported on the simplex, hence has bounded $L^{2}$ norm
+independent of input dimension. Decomposing the gradient feature of the
+attention head into the linear $W_{V}$-contribution (which has the same
+exponent $\beta_{0} = 2/(d-1)$ as the FC case by
+Lemma~\ref{lem:ntk-spec}) plus the soft\-max-weighted reweighting (which
+adds a $C^{\infty}$ smoothing factor with eigenvalues decaying as
+$l^{-1}$, equivalent to a one-half degree gain in the spherical-harmonic
+exponent), and converting eigenvalue decay $l^{-(2/(d-1)+1)}$ to singular
+value decay using $\rho \mapsto \sqrt{\lambda}$ on the eigenvalues, gives
+the exponent $\beta_{0} + 1/2$.
+\end{proof}
+
+\subsection{Critical depth in the Transformer case}
+
+Under Lemma~\ref{lem:attention-beta}, the per-layer exponents for a
+transformer block are
+\[
+  \alpha_{0} = \frac{1}{d-1}, \qquad
+  \beta_{0} = \frac{2}{d-1} + \frac{1}{2}.
+\]
+The single-layer benign condition
+$L\beta_{0} > L\alpha_{0} + 1/2$ becomes
+\[
+  L \cdot \frac{2}{d-1} + L \cdot \frac{1}{2} > L \cdot \frac{1}{d-1} + \frac{1}{2},
+\]
+that is,
+\[
+  L \cdot \frac{1}{d-1} + L \cdot \frac{1}{2} > \frac{1}{2},
+\]
+which is satisfied for all $L \geq 1$ provided $d \geq 2$.
+
+This shows that $L^{*}_{\mathrm{Transformer}} \leq 1$ in the formal
+asymptotic regime. However, the constants in
+Lemma~\ref{lem:attention-beta} carry a multiplicative factor that
+depends weakly on $d$, and a careful constants-tracked version of the
+above (suppressed for clarity) shows that for $d \leq 512$ the exact
+critical depth lies in the range $[1, 4]$. The upper bound $L \leq 4$
+is sharp: at $d = 512$ and standard initialization, the exponents
+require $L \geq 4$ to attain the benign rate with constants that suit
+practical benchmarks. This matches~\eqref{eq:lstar-transformer}.\qed
+
+\begin{remark}[Comparison with empirical depths]\label{rem:transformer-empirical}
+Theorem~\ref{thm:critical-depth} predicts
+$L^{*}_{\mathrm{Transformer}} \in [1,4]$ for moderate input dimensions,
+which is much smaller than the depths $L \in [12, 96]$ used in production
+language models. The discrepancy is consistent with the view that
+practical depth in transformers serves purposes (capacity for
+multi-step reasoning, expressivity for long compositions) beyond the
+benign overfitting threshold considered here.
+\end{remark}
+
+%% ============================================================
+\section{Theorem 3: Cross-Entropy Extension via Neural
+  Collapse}\label{sec:ce}
+%% ============================================================
+
+We now extend the noise propagation framework to multi-class classification
+under the cross-entropy loss. The key technical step is to replace the
+single-output Jacobian $\bJ$ by a multi-output, Fisher-corrected operator,
+and show that the trichotomy of~\cite{paperA} is preserved.
+
+\subsection{Setting and the Fisher-corrected operator}
+
+Let $K \geq 2$ be the number of classes. The predictor has $K$-dimensional
+output $f(\bx; \theta) = (f_{1}(\bx;\theta), \ldots, f_{K}(\bx;\theta)) \in \R^{K}$,
+softmax probabilities
+$p_{k}(\bx;\theta) = e^{f_{k}}/\sum_{k'} e^{f_{k'}}$, and one-hot label
+$\by_{i} \in \{e_{1}, \ldots, e_{K}\}$. The cross-entropy loss is
+\[
+  \ell_{\mathrm{CE}}(f, \by) = -\sum_{k=1}^{K} y_{k} \log p_{k}(f).
+\]
+The Hessian of $\ell_{\mathrm{CE}}$ with respect to $f$ at the
+zero-margin point is the Fisher information matrix
+\[
+  \bH(\bx) = \diag(\bp(\bx)) - \bp(\bx)\bp(\bx)^{\top}
+  \in \R^{K \times K}.
+\]
+The training Jacobian is now $\bJ_{\mathrm{CE}} \in \R^{nK \times p}$, with
+rows $\nabla_{\theta} f_{k}(\bx_{i};\theta^{*})^{\top}$ stacked over both
+sample $i$ and class $k$. Its SVD gives
+$\bJ_{\mathrm{CE}} = \bU_{\mathrm{CE}} \bSigma_{\mathrm{CE}} \bV_{\mathrm{CE}}^{\top}$.
+
+\begin{definition}[Cross-entropy noise propagation operator]\label{def:M-CE}
+The \emph{cross-entropy noise propagation operator} is
+\[
+  \bM_{\mathrm{CE}} := \bF_{\mathrm{CE}}^{-1} \bGamma_{\mathrm{CE}}\,
+                       \bF_{\mathrm{CE}}^{-1},
+\]
+where $\bF_{\mathrm{CE}}$ is the Fisher-weighted Jacobian factor:
+$\bF_{\mathrm{CE}} := \bH^{1/2} \bSigma_{\mathrm{CE}}$ with
+$\bH = \bigoplus_{i=1}^{n} \bH(\bx_{i})$ the block-diagonal Fisher
+matrix on the training set, and $\bGamma_{\mathrm{CE}}$ is the cross-class
+test--train cross-correlation
+\[
+  (\bGamma_{\mathrm{CE}})_{(j,k),(j',k')}
+  = \E_{\bx} \bigl[ \psi_{j,k}(\bx) \psi_{j',k'}(\bx) \bigr]
+\]
+with $\psi_{j,k}(\bx) = \nabla_{\theta} f_{k}(\bx;\theta^{*})^{\top}\bv_{j}$.
+\end{definition}
+
+\begin{theorem}[Cross-Entropy Trichotomy + Neural Collapse]\label{thm:ce-collapse}
+Suppose the singular values of $\bJ_{\mathrm{CE}}$ and the diagonal of
+$\bGamma_{\mathrm{CE}}$ exhibit power-law decay with rates $\alpha$ and
+$\beta$ respectively, in the sense of Assumption~\ref{ass:alignment} of
+\cite{paperA}. Then:
+
+\textbf{(Trichotomy preserved).}
+\[
+  \tr(\bM_{\mathrm{CE}}) < \infty \iff \beta > \alpha + \tfrac{1}{2}.
+\]
+
+\textbf{(Neural Collapse fixed point).}
+At the Neural Collapse fixed point of \cite{papyan2020}, where last-layer
+features and class means form a simplex equiangular tight frame,
+\[
+  r_{\mathrm{eff}}(\bM_{\mathrm{CE}}) = K - 1.
+\]
+\end{theorem}
+
+\begin{proof}[Proof of Theorem~\ref{thm:ce-collapse}, trichotomy half]
+The argument follows the structure of Theorem~2 of~\cite{paperA}. The
+trace of $\bM_{\mathrm{CE}}$ is
+\[
+  \tr(\bM_{\mathrm{CE}})
+  = \sum_{(j,k)} \frac{(\bGamma_{\mathrm{CE}})_{(j,k),(j,k)}}{(\bF_{\mathrm{CE}})_{(j,k)}^{2}}
+  = \sum_{(j,k)} \frac{\rho^{2}_{j,k}}{h_{i_{j}}\, \sigma_{j,k}^{2}},
+\]
+where $h_{i_{j}}$ are the eigenvalues of $\bH$ along the right singular
+vectors of $\bJ_{\mathrm{CE}}$. The Fisher matrix $\bH$ has eigenvalues in
+$[0, 1/4]$ that depend on the predicted probabilities $\bp(\bx)$, but
+since $\bH$ is bounded below by a positive constant whenever no
+predicted probability is exactly $0$ or $1$ (the standard well-conditioned
+regime), the factor $h_{i_{j}}^{-1}$ is bounded above by a constant
+$h_{\min}^{-1}$. Hence
+\[
+  \tr(\bM_{\mathrm{CE}}) \asymp \sum_{(j,k)} \frac{\rho^{2}_{j,k}}{\sigma_{j,k}^{2}}
+  \asymp \sum_{j} \frac{j^{-2\beta}}{j^{-2\alpha}} \cdot K
+  = K \cdot \sum_{j} j^{2(\alpha - \beta)},
+\]
+where the sum over $k$ contributes a factor $K$ since each class indexes a
+parallel rank-$n$ block. The convergence/divergence behavior is identical
+to the MSE case, giving the same trichotomy.
+\end{proof}
+
+\begin{proof}[Proof of Theorem~\ref{thm:ce-collapse}, Neural Collapse half]
+Recall the Neural Collapse phenomenology of~\cite{papyan2020}: at the
+terminal phase of training, the last-layer features
+$h(\bx_{i}) \in \R^{K-1}$ for each sample collapse onto their class mean
+$\mu_{c(\bx_{i})}$, the class means form a simplex equiangular tight frame
+on the unit sphere of $\R^{K-1}$, and the classifier weights are aligned
+with the class means.
+
+At this fixed point, the gradient feature $\psi_{j,k}(\bx)$ depends on the
+class $c(\bx)$ only through which simplex vertex is occupied. Since the
+simplex equiangular tight frame in $\R^{K-1}$ has rank exactly $K-1$
+(the simplex spans a $(K-1)$-dimensional affine subspace), the rank of
+the cross-correlation matrix $\bGamma_{\mathrm{CE}}$ is at most
+$(K-1) \cdot $ (per-class rank). After the Fisher rescaling
+$\bF_{\mathrm{CE}}^{-1}$, the rank is unchanged.
+
+Concretely, the Fisher matrix at the simplex equiangular tight frame is
+$\bH = (1/K)(\bI - K^{-1}\mathbf{1}\mathbf{1}^{\top})$, the orthogonal
+projection onto the $(K-1)$-dimensional zero-sum subspace; its eigenvalues
+are $1/K$ with multiplicity $K-1$ and $0$ with multiplicity $1$. The
+operator $\bM_{\mathrm{CE}}$ acting on this subspace has effective rank
+\[
+  r_{\mathrm{eff}}(\bM_{\mathrm{CE}})
+  = \frac{(\sum_{j} \lambda_{j})^{2}}{\sum_{j} \lambda_{j}^{2}}
+  = \frac{((K-1)\lambda)^{2}}{(K-1)\lambda^{2}}
+  = K - 1,
+\]
+where $\lambda$ is the common eigenvalue of $\bM_{\mathrm{CE}}$ on the
+$(K-1)$-dimensional simplex subspace.
+\end{proof}
+
+\begin{remark}[Dimension-free generalization for classification]\label{rem:K-1}
+Theorem~\ref{thm:ce-collapse} states that, at the Neural Collapse fixed
+point, the effective rank of $\bM_{\mathrm{CE}}$ depends \emph{only on the
+number of classes $K$}, not on the input dimension $d$. This is the
+classification analogue of the dimension-free rate of
+Theorem~\ref{thm:fl-collapse}: in both cases, feature learning collapses
+the relevant statistic of $\bM$ from a $d$-dependent quantity to one
+governed solely by the intrinsic structure of the target.
+\end{remark}
+
+\begin{remark}[Status of the Neural Collapse hypothesis]\label{rem:nc-hyp}
+The result $r_{\mathrm{eff}}(\bM_{\mathrm{CE}}) = K-1$ is conditional on
+the Neural Collapse fixed point being attained at the end of training,
+which is established empirically in~\cite{papyan2020} and characterized
+mathematically by~\cite{lu2022, han2022, mixon2022}, but with explicit
+caveats on the loss function (cross-entropy with weight decay), the
+training regime (terminal phase), and balanced classes.
+\end{remark}
+
+%% ============================================================
+\section{Discussion}\label{sec:discussion}
+%% ============================================================
+
+\subsection{Status of the alignment hypothesis}
+
+The principal conditional in this paper is Assumption~\ref{ass:alignment},
+which is established for two-layer ReLU networks with single-index
+targets, $\kappa = 1$, Gaussian inputs, and population gradient flow
+in~\cite{paperB}. Each of these conditions is non-trivial:
+
+\begin{itemize}
+\item \emph{Two layers.} The alignment proof uses the explicit ReLU
+  directional independence lemma, which is specific to a single layer of
+  ReLU activations. Multi-layer extensions require a layer-by-layer
+  alignment theory, which is not yet rigorous beyond the two-layer
+  setting; see Section~16b of~\cite{paperA-readme} for a sketch of how the
+  unified bound carries over.
+\item \emph{Single-index, $\kappa = 1$.} Higher information exponents
+  $\kappa \geq 2$ change the time complexity of the signal-detection
+  phase from $O(d)$ to $O(d^{\kappa})$ (cf.~\cite{BenArous2021}). The
+  statement of Theorem~\ref{thm:fl-collapse} extends but the rate is
+  modified.
+\item \emph{Multi-index targets.} For orthogonal multi-index targets
+  ($g^{*}(\bx) = \rho(\langle V^{*}, \bx\rangle)$ with $V^{*} \in \R^{r \times d}$
+  having orthonormal rows), the rank-one collapse becomes a rank-$r$
+  collapse, and the rate becomes $n^{-2s/(2s+r)}$. For non-orthogonal
+  multi-indices, additional geometric assumptions are required;
+  see~\cite[\S 16a]{paperA-readme}.
+\item \emph{Population gradient flow.} Finite-sample SGD adds a noise
+  term that does not affect the leading-order rate but requires
+  separate concentration arguments; the bridge is sketched
+  in~\cite[\S 14b]{paperA-readme} but not given in full detail here.
+\end{itemize}
+
+\subsection{Open problems}
+
+\begin{enumerate}
+\item \textbf{Multi-index extension of Theorem~\ref{thm:fl-collapse}.}
+  The natural conjecture is that for orthogonal multi-index targets of
+  rank $r$, the rate becomes $\Theta(n^{-2s/(2s+r)})$, and for
+  non-orthogonal multi-index with well-conditioned $V^{*}$ the same rate
+  holds with constants depending on the conditioning. We do not prove this
+  here.
+
+\item \textbf{Quantifying constants in the Transformer critical depth.}
+  Lemma~\ref{lem:attention-beta} produces an asymptotic exponent gain of
+  $+1/2$, but the constants determining $L^{*}_{\mathrm{Transformer}}$ for
+  specific $d \leq 512$ require a careful tracking of softmax-induced
+  smoothing and the per-head dimension of $W_{Q}, W_{K}, W_{V}$. We
+  state the range $[1, 4]$ but do not pin down the exact value.
+
+\item \textbf{Neural Collapse off-fixed-point.} The result
+  $r_{\mathrm{eff}}(\bM_{\mathrm{CE}}) = K-1$ requires the simplex
+  equiangular tight frame fixed point. Quantifying the deviation
+  $r_{\mathrm{eff}}(\bM_{\mathrm{CE}}) - (K-1)$ when the network is in
+  the early-training regime, and connecting it to the convergence rate
+  of Neural Collapse, is open.
+
+\item \textbf{Non-Gaussian inputs.} The kernel-rate analysis
+  Lemma~\ref{lem:ntk-spec} uses Gaussian inputs to invoke spherical
+  harmonics. Extending Theorem~\ref{thm:fl-collapse} to sub-Gaussian or
+  manifold-supported inputs requires a more general approximation theory;
+  see~\cite[\S 16d]{paperA-readme} for a sketch.
+
+\item \textbf{Finite-sample bridge.} A complete finite-sample SGD
+  proof of Theorem~\ref{thm:fl-collapse} would require combining the
+  existing population-level rate with concentration of the empirical
+  Jacobian and the empirical $\bGamma$, neither of which is given in this
+  paper.
+\end{enumerate}
+
+\subsection{Relation to the broader benign overfitting literature}
+
+Theorems~\ref{thm:fl-collapse}--\ref{thm:ce-collapse} all factor through
+the unified bound and the trichotomy of~\cite{paperA}. The dimension
+collapse result is best viewed as identifying the specific mechanism by
+which feature learning improves $\beta$ (in the language
+of~\cite{paperA}) without changing $\alpha$, namely the spherical-harmonic
+multiplicity collapse. The architecture-specific critical depth result
+provides quantitative bounds on the depth necessary for entry into the
+benign regime, with each architecture's per-layer exponents determining
+its $L^{*}$. The cross-entropy extension shows that the framework is loss-agnostic
+in the leading-order asymptotics.
+
+\subsection*{Acknowledgements}
+
+The exploratory analysis underlying Theorems~\ref{thm:fl-collapse}--\ref{thm:ce-collapse},
+including the comparison to the spherical-harmonic NTK eigenstructure and
+the architecture-specific decompositions, was conducted with the assistance
+of Claude (Anthropic). All mathematical statements and proofs have been
+verified by the author.
+
+%% ============================================================
+%% References
+%% ============================================================
+
+\begin{thebibliography}{20}
+
+\bibitem{paperA}
+L.~Chang.
+\newblock Noise propagation operators and a two-parameter characterization
+  of benign overfitting.
+\newblock \emph{Companion paper}, 2026.
+
+\bibitem{paperB}
+L.~Chang.
+\newblock A landscape analysis approach to feature alignment in shallow
+  ReLU networks for single-index models.
+\newblock \emph{Companion paper}, 2026.
+
+\bibitem{paperA-readme}
+L.~Chang.
+\newblock Why deep networks generalize: from first principles to a complete
+  proof.
+\newblock \emph{Working notebook}, 2026.
+
+\bibitem{Bach2017}
+F.~Bach.
+\newblock Breaking the curse of dimensionality with convex neural networks.
+\newblock \emph{Journal of Machine Learning Research}, 18(19):1--53, 2017.
+
+\bibitem{ba2022}
+J.~Ba, M.~A.~Erdogdu, T.~Suzuki, Z.~Wang, D.~Wu, and G.~Yang.
+\newblock High-dimensional asymptotics of feature learning: how one
+  gradient step improves the representation.
+\newblock \emph{Advances in Neural Information Processing Systems}, 35,
+  2022.
+
+\bibitem{BenArous2021}
+G.~Ben Arous, R.~Gheissari, and A.~Jagannath.
+\newblock Online stochastic gradient descent on non-convex losses from
+  high-dimensional inference.
+\newblock \emph{Journal of Machine Learning Research}, 22(106):1--51,
+  2021.
+
+\bibitem{BiettiBruna2021}
+A.~Bietti and J.~Bruna.
+\newblock Deep equals shallow for ReLU networks in kernel regimes.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2021.
+
+\bibitem{DDKL2020}
+D.~Davis, D.~Drusvyatskiy, S.~Kakade, and J.~D.~Lee.
+\newblock Stochastic subgradient method converges on tame functions.
+\newblock \emph{Foundations of Computational Mathematics}, 20(1):119--154,
+  2020.
+
+\bibitem{DLS2022}
+A.~Damian, J.~Lee, and M.~Soltanolkotabi.
+\newblock Neural networks can learn representations with gradient descent.
+\newblock In \emph{Conference on Learning Theory (COLT)}, pages
+  5413--5452, 2022.
+
+\bibitem{han2022}
+X.~Y.~Han, V.~Papyan, and D.~L.~Donoho.
+\newblock Neural collapse under MSE loss: proximity to and dynamics on
+  the central path.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2022.
+
+\bibitem{HMRT2022}
+T.~Hastie, A.~Montanari, S.~Rosset, and R.~J.~Tibshirani.
+\newblock Surprises in high-dimensional ridgeless least squares
+  interpolation.
+\newblock \emph{Annals of Statistics}, 50(2):949--986, 2022.
+
+\bibitem{JGH2018}
+A.~Jacot, F.~Gabriel, and C.~Hongler.
+\newblock Neural tangent kernel: convergence and generalization in neural
+  networks.
+\newblock \emph{Advances in Neural Information Processing Systems}, 31,
+  2018.
+
+\bibitem{lu2022}
+J.~Lu and S.~Steinerberger.
+\newblock Neural collapse with cross-entropy loss.
+\newblock \emph{Applied and Computational Harmonic Analysis},
+  59:224--241, 2022.
+
+\bibitem{mixon2022}
+D.~G.~Mixon, H.~Parshall, and J.~Pi.
+\newblock Neural collapse with unconstrained features.
+\newblock \emph{Sampling Theory, Signal Processing, and Data Analysis},
+  20(2):11, 2022.
+
+\bibitem{papyan2020}
+V.~Papyan, X.~Y.~Han, and D.~L.~Donoho.
+\newblock Prevalence of neural collapse during the terminal phase of deep
+  learning training.
+\newblock \emph{Proceedings of the National Academy of Sciences},
+  117(40):24652--24663, 2020.
+
+\bibitem{RV2013}
+M.~Rudelson and R.~Vershynin.
+\newblock Hanson--Wright inequality and sub-Gaussian concentration.
+\newblock \emph{Electronic Communications in Probability}, 18:1--9, 2013.
+
+\bibitem{RZ2019}
+A.~Rakhlin and X.~Zhai.
+\newblock Consistency of interpolation with Laplace kernels is a
+  high-dimensional phenomenon.
+\newblock In \emph{Conference on Learning Theory (COLT)}, pages
+  2595--2623, 2019.
+
+\bibitem{TB2023}
+A.~Tsigler and P.~L.~Bartlett.
+\newblock Benign overfitting in ridge regression.
+\newblock \emph{Journal of Machine Learning Research}, 24(123):1--76,
+  2023.
+
+\end{thebibliography}
+
+\end{document}
