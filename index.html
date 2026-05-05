@@ -17,7 +17,7 @@
 <meta property="og:site_name" content="weiqi.kids">
 <meta property="og:locale" content="zh_TW">
 <meta property="og:image" content="https://why-deep-networks-generalize.proof.weiqi.kids/note.png">
-<meta property="og:image:alt" content="深度網路為何泛化標題卡：從第一性原理到完整證明，包括噪聲傳播算子、Benign Overfitting、Feature Learning 等數學論證。">
+<meta property="og:image:alt" content="深度網路為何泛化標題卡 - 從第一性原理到完整證明，包括噪聲傳播算子、Benign Overfitting、Feature Learning 等數學論證">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
 
@@ -434,6 +434,58 @@ footer {
   background: var(--bg-hover);
   color: var(--text-primary);
 }
+
+/* === Download buttons === */
+.download-section {
+  margin-top: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  align-items: center;
+}
+.download-intro {
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+.download-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+.download-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding: 0.875rem 1.25rem;
+  background: var(--bg-base);
+  border: 2px solid var(--color-link);
+  border-radius: 0.5rem;
+  text-decoration: none;
+  color: var(--text-primary);
+  min-width: 14rem;
+  text-align: left;
+  transition: background 0.2s, transform 0.2s, box-shadow 0.2s;
+}
+.download-btn:hover {
+  background: var(--bg-surface);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+.download-btn:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+}
+.download-btn-title {
+  font-size: var(--text-base);
+  font-weight: 600;
+}
+.download-btn-meta {
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+}
 </style>
 <script type="application/ld+json">
 {
@@ -599,26 +651,23 @@ footer {
       </ol>
     </div>
 
-    <div class="download-section" style="margin-top:2rem;display:flex;flex-direction:column;gap:0.75rem;align-items:center;">
-      <p class="download-intro" style="font-size:var(--text-sm);color:var(--text-secondary);margin-bottom:0.25rem;">完整論文下載：</p>
-      <div class="download-buttons" style="display:flex;flex-wrap:wrap;gap:0.75rem;justify-content:center;">
-        <a href="paper-a/paper.pdf" data-paper="paper-a" target="_blank" rel="noopener"
-           aria-label="下載 Paper A 之 PDF 完整版"
-           style="display:inline-flex;flex-direction:column;align-items:flex-start;padding:0.875rem 1.25rem;background:var(--bg-base);border:2px solid var(--color-link);border-radius:0.5rem;text-decoration:none;color:var(--text-primary);min-width:14rem;text-align:left;transition:all 0.2s;">
-          <span style="font-size:var(--text-base);font-weight:600;">📄 Paper A：Noise Propagation Operators</span>
-          <span style="font-size:var(--text-xs);color:var(--text-muted);margin-top:0.25rem;">PDF · 16 頁 · 382 KB</span>
+    <div class="download-section">
+      <p class="download-intro">完整論文下載：</p>
+      <div class="download-buttons">
+        <a href="paper-a/paper.pdf" class="download-btn" data-paper="paper-a" target="_blank" rel="noopener"
+           aria-label="下載 Paper A 之 PDF 完整版">
+          <span class="download-btn-title">📄 Paper A：Noise Propagation Operators</span>
+          <span class="download-btn-meta">PDF · 16 頁 · 382 KB</span>
         </a>
-        <a href="paper-b/paper.pdf" data-paper="paper-b" target="_blank" rel="noopener"
-           aria-label="下載 Paper B 之 PDF 完整版"
-           style="display:inline-flex;flex-direction:column;align-items:flex-start;padding:0.875rem 1.25rem;background:var(--bg-base);border:2px solid var(--color-link);border-radius:0.5rem;text-decoration:none;color:var(--text-primary);min-width:14rem;text-align:left;transition:all 0.2s;">
-          <span style="font-size:var(--text-base);font-weight:600;">📄 Paper B：Landscape Analysis for Feature Alignment</span>
-          <span style="font-size:var(--text-xs);color:var(--text-muted);margin-top:0.25rem;">PDF · 16 頁 · 321 KB</span>
+        <a href="paper-b/paper.pdf" class="download-btn" data-paper="paper-b" target="_blank" rel="noopener"
+           aria-label="下載 Paper B 之 PDF 完整版">
+          <span class="download-btn-title">📄 Paper B：Landscape Analysis for Feature Alignment</span>
+          <span class="download-btn-meta">PDF · 16 頁 · 321 KB</span>
         </a>
-        <a href="paper-c/paper.pdf" data-paper="paper-c" target="_blank" rel="noopener"
-           aria-label="下載 Paper C 之 PDF 完整版"
-           style="display:inline-flex;flex-direction:column;align-items:flex-start;padding:0.875rem 1.25rem;background:var(--bg-base);border:2px solid var(--color-link);border-radius:0.5rem;text-decoration:none;color:var(--text-primary);min-width:14rem;text-align:left;transition:all 0.2s;">
-          <span style="font-size:var(--text-base);font-weight:600;">📄 Paper C：Feature Learning & Architecture-Specific Critical Depth</span>
-          <span style="font-size:var(--text-xs);color:var(--text-muted);margin-top:0.25rem;">PDF · 21 頁 · 420 KB</span>
+        <a href="paper-c/paper.pdf" class="download-btn" data-paper="paper-c" target="_blank" rel="noopener"
+           aria-label="下載 Paper C 之 PDF 完整版">
+          <span class="download-btn-title">📄 Paper C：Feature Learning & Architecture-Specific Critical Depth</span>
+          <span class="download-btn-meta">PDF · 21 頁 · 420 KB</span>
         </a>
       </div>
     </div>
