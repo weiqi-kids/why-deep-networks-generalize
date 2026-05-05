@@ -7,8 +7,7 @@ docs/
 # Claude Code local settings
 .claude/
 
-# LaTeX build artifacts
-*.pdf
+# LaTeX build artifacts (keep paper.pdf, exclude only intermediates)
 *.aux
 *.log
 *.out
