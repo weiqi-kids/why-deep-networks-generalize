@@ -100,16 +100,19 @@ induced by the collapsed equivalent kernel. We then introduce an
 architecture-specific critical depth $L^{*}$ (Theorem~\ref{thm:critical-depth})
 defined as the smallest depth at which the effective rank of the noise
 propagation operator falls below $n^{2s/(2s+1)}$, and we derive
-$L^{*}_{\mathrm{FC}} = \lceil(d-1)/2\rceil$ for fully-connected ReLU
-networks (with the per-layer exponent $\alpha_{0} = (d+1)/(2(d-1))$ from
-spherical-harmonic NTK eigenvalues, tracking depth-dependent constants
-explicitly) and a depth-decoupled formula for residual networks. The
+$L^{*}_{\mathrm{FC}} = \lfloor(d-1)/2\rfloor + 1 = \lceil d/2 \rceil$
+for fully-connected ReLU networks (with the per-layer exponent
+$\alpha_{0} = (d+1)/(2(d-1))$ from spherical-harmonic NTK eigenvalues;
+the rate carries a depth-dependent prefactor $L^{L\alpha_{0}} = \exp(\Theta(d \log d))$
+for $L = \Theta(d)$, tracked explicitly in
+Proposition~\ref{prop:depth-mult}) and a depth-decoupled formula
+for residual networks. The
 analogous result for transformer architectures is stated as a heuristic
 conjecture (Conjecture~\ref{conj:transformer}) pending a rigorous
 attention-head spectral computation. The cross-entropy extension via a
 Fisher-corrected operator $\bM_{\mathrm{CE}}$ and the rank-$(K-1)$ effective
-rank at the Neural Collapse fixed point are treated in the companion
-paper~\cite{paperD}.
+rank ($K$ = number of classes) at the Neural Collapse fixed point are
+treated in the companion paper~\cite{paperD}.
 \end{abstract}
 
 \maketitle
@@ -137,7 +140,7 @@ are usually offered. The first is structural: real targets are well
 approximated by low-complexity composites (single-index, multi-index, or
 sparse functions of low intrinsic dimension), so that the relevant rate is
 governed by an intrinsic dimension $k \ll d$. The second is algorithmic:
-gradient-based training does not produce a kernel-regime estimator; rather, it
+gradient-based training does not produce an NTK-regime estimator; rather, it
 performs feature learning, and the post-training Jacobian concentrates
 spectral mass on directions that are aligned with the target structure.
 
@@ -180,14 +183,14 @@ Bruna~\cite{BiettiBruna2021} studied spherical harmonic decompositions of
 the NTK and gave matching upper and lower bounds on kernel ridge regression.
 Damian, Lee, and Soltanolkotabi~\cite{DLS2022} proved that gradient
 descent learns single-index targets via a feature-learning step that
-escapes the kernel regime, attaining the dimension-free rate
+escapes the NTK regime, attaining the dimension-free rate
 $n^{-2s/(2s+1)}$.
 Ben Arous, Gheissari, and Jagannath~\cite{BenArous2021} characterized
 the sample complexity of online SGD for single-index recovery in terms
 of the information exponent $\kappa$, identifying the $\Theta(d^{\kappa})$
 sample threshold for signal detection. The two results are complementary:
 the latter analyzes the signal-detection phase (number of samples needed
-to escape from the kernel regime), while the former analyzes the rate
+to escape from the NTK regime), while the former analyzes the rate
 once detection has occurred.
 Rakhlin and Zhai~\cite{RZ2019} showed that interpolation by Laplace kernels
 is consistent only in high dimension, isolating the dimension dependence of
@@ -221,10 +224,10 @@ transformers.
   depth at which the effective rank $r_{\mathrm{eff}}(\bM_{A})$ falls
   below $n^{2s/(2s+1)}$. Using the per-layer singular-value exponent
   $\alpha_{0} = (d+1)/(2(d-1))$ from Lemma~\ref{lem:alpha0}, we derive
-  $L^{*}_{\mathrm{FC}} = \lceil(d-1)/2\rceil$ for fully-connected ReLU
-  stacks (via depth-multiplicative spectral decay; the depth-dependent
-  constant $L^{L\alpha_{0}}$ is tracked explicitly in
-  Proposition~\ref{prop:depth-mult}), and
+  $L^{*}_{\mathrm{FC}} = \lfloor(d-1)/2\rfloor + 1 = \lceil d/2 \rceil$
+  for fully-connected ReLU stacks (via depth-multiplicative spectral
+  decay; the depth-dependent constant $L^{L\alpha_{0}}$ is tracked
+  explicitly in Proposition~\ref{prop:depth-mult}), and
   $L^{*}_{\mathrm{ResNet}} \in \{1,\infty\}$ decoupled from depth (via the
   identity-bypass structure of skip connections).
   For transformers, we record the analogous heuristic prediction as an
@@ -245,10 +248,10 @@ for the abstract minimax-rate theory and the references therein for
 spherical NTK derivations). The dimension-free single-index rate
 $n^{-2s/(2s+1)}$ is established for one-pass SGD by Damian--Lee
 --Soltanolkotabi~\cite{DLS2022} and for one-step gradient by
-Ba--Mei--Misiakiewicz--Montanari~\cite{ba2022mei}. The new contribution
+Ba--Erdogdu--Suzuki--Wu--Zhang~\cite{ba2022mei}. The new contribution
 of this paper is the systematic identification of the spherical-harmonic
 multiplicity $N(d,l) \asymp l^{d-2}$ as the precise source of the curse
-in the kernel regime, the rank-one effective dimension as the mechanism
+in the NTK regime, the rank-one effective dimension as the mechanism
 of the rate under alignment, and the depth-multiplicative chain that gives
 $L^{*}_{\mathrm{FC}} = \Theta(d)$ for plain ReLU stacks. The
 ResNet decoupling and the transformer conjecture are, to our knowledge,
@@ -490,12 +493,12 @@ $\mathbb{R}^{d}$ with Gaussian measure, has Hermite expansion
   = \sum_{l=0}^{\infty} c_{l}\, H_{l}(\langle \bv^{*}, \bx \rangle),
 \]
 where $H_{l}$ is the $l$-th (probabilist's) Hermite polynomial. For a
-$C^{s}$ link function $\rho$, the standard Hermite-decay result is
-$|c_{l}|^{2} = O(l^{-2s-1/2})$ (where the additional $1/2$ relative to
-the Fourier case $|c_{l}|^{2} = O(l^{-2s})$ reflects the
-$(2^{l}\,l!)^{-1/2}$ Hermite normalization on Gaussian measure; see e.g.\
-\cite[Theorem 4.6]{AtkinsonHan2012}). In particular,
-$\sum_{l} c_{l}^{2}\, l^{2s-1/2} < \infty$ for $\rho \in C^{s}(\R)$,
+$C^{s}$ link function $\rho$, the standard Hermite-decay result on the
+Gaussian line is $|c_{l}|^{2} = O(l^{-2s})$ in the Hermite-normalized
+basis (this is the standard Sobolev source condition for the
+Ornstein--Uhlenbeck operator, see e.g.\
+\cite[Theorem~4.6]{AtkinsonHan2012}). In particular,
+$\sum_{l} c_{l}^{2}\, l^{2s} < \infty$ for $\rho \in C^{s}(\R)$,
 which is the source condition we use in the bias bound below.
 
 Each Hermite mode $H_{l}(\langle \bv^{*}, \bx\rangle)$ is supported on the
@@ -611,39 +614,51 @@ absorbed into the constant ``bias'' direction of the equivalent kernel).
 
 \begin{proof}
 Under Assumption~\ref{ass:alignment}, the active neurons satisfy
-$\bw_{j} = w_{j}\bv^{*}$ for some scalar $w_{j} \in \R$, and dead neurons
-have norm $O(\alpha_{\mathrm{init}})$. The gradient of the predictor with
-respect to its parameters at $\bx$ is therefore
-\begin{align*}
-  \nabla_{a_{j}} f_{\theta^{*}}(\bx) &= p^{-1/2} \relu(w_{j} \langle\bv^{*},\bx\rangle), \\
-  \nabla_{\bw_{j}} f_{\theta^{*}}(\bx) &= p^{-1/2} a_{j} \mathbf{1}\{w_{j}\langle\bv^{*},\bx\rangle > 0\} \bx,
-\end{align*}
-for active $j$, with both quantities $O(\alpha_{\mathrm{init}})$ for dead $j$.
-The pointwise kernel $K_{\theta^{*}}(\bx,\bx')$ contains a contribution from
-the $a_{j}$-gradients that is a function of
-$(\langle\bv^{*},\bx\rangle,\langle\bv^{*},\bx'\rangle)$ only, plus a
-contribution from the $\bw_{j}$-gradients that is the same function multiplied
-by $\bx^{\top}\bx'$. Decomposing
-$\bx^{\top}\bx' = \langle\bv^{*},\bx\rangle\langle\bv^{*},\bx'\rangle + \bx_{\perp}^{\top}\bx'_{\perp}$,
-the first term is again a function of $(\langle\bv^{*},\bx\rangle,\langle\bv^{*},\bx'\rangle)$.
-The second term, $\bx_{\perp}^{\top}\bx'_{\perp}$, is a random quantity that
-depends on the perpendicular components.
+$\bw_{j} = w_{j}\bv^{*}$ for some scalar $w_{j} \in \R$, and dead
+neurons have norm $O(\alpha_{\mathrm{init}})$. Write
+$t := \langle\bv^{*},\bx\rangle$, $t' := \langle\bv^{*},\bx'\rangle$
+for the projected coordinates, and decompose
+$\bx = t\,\bv^{*} + \bx_{\perp}$, $\bx' = t'\,\bv^{*} + \bx'_{\perp}$
+with $\bx_{\perp},\bx'_{\perp}$ Gaussian on the $(d-1)$-dimensional
+orthogonal complement of $\bv^{*}$.
 
-Integrating out $\bx_{\perp}$ and $\bx'_{\perp}$ (which are independent
-mean-zero Gaussian on the $(d-1)$-dimensional orthogonal complement of
-$\bv^{*}$ under the standard Gaussian input distribution),
-$\E[\bx_{\perp}^{\top}\bx'_{\perp}] = 0$ and $\E[\bx_{\perp}^{\top}\bx_{\perp}] = d-1$.
-The cross-term contribution to
-$\bar K^{\mathrm{pop}}_{\theta^{*}}(\bx,\bx')$ is therefore zero in
-expectation across the perpendicular components, while a diagonal Gaussian
-self-term contributes the constant $c_{0}$ that is independent of
-$(\langle\bv^{*},\bx\rangle,\langle\bv^{*},\bx'\rangle)$. Combining, the
-population equivalent kernel reduces to a function of
-$(\langle\bv^{*},\bx\rangle,\langle\bv^{*},\bx'\rangle)$ plus the constant
-$c_{0}$, which is exactly the one-dimensional ReLU NTK $\bar K$ on the
-projected inputs (with the constant absorbed into the bias direction). The
-dead-neuron contribution is bounded by their squared norm,
-$O(\alpha_{\mathrm{init}}^{2})$.
+The gradient of the predictor at $\bx$ has two pieces
+\begin{align*}
+  \nabla_{a_{j}} f_{\theta^{*}}(\bx)
+    &= p^{-1/2} \relu(w_{j} t), \\
+  \nabla_{\bw_{j}} f_{\theta^{*}}(\bx)
+    &= p^{-1/2} a_{j} \mathbf{1}\{w_{j} t > 0\}\,\bx,
+\end{align*}
+for active $j$ (both $O(\alpha_{\mathrm{init}})$ for dead $j$). Hence
+the pointwise kernel decomposes as
+\[
+  K_{\theta^{*}}(\bx,\bx') = A(t,t') + B(t,t')\,\bx^{\top}\bx',
+\]
+where $A,B$ are deterministic functions of the projected coordinates
+arising from summing over $j$. Decomposing
+$\bx^{\top}\bx' = t\,t' + \bx_{\perp}^{\top}\bx'_{\perp}$, the population
+equivalent kernel is
+\[
+  \bar K^{\mathrm{pop}}_{\theta^{*}}(\bx,\bx')
+  = \E_{\bx_{\perp},\bx'_{\perp}}\!\bigl[K_{\theta^{*}}(\bx,\bx')\bigr]
+  = A(t,t') + B(t,t')\,t\,t'
+    + B(t,t')\,\E[\bx_{\perp}^{\top}\bx'_{\perp}].
+\]
+Since $\bx_{\perp},\bx'_{\perp}$ are independent mean-zero Gaussian,
+$\E[\bx_{\perp}^{\top}\bx'_{\perp}] = 0$, and the perpendicular term
+\emph{vanishes} in expectation. Hence
+\[
+  \bar K^{\mathrm{pop}}_{\theta^{*}}(\bx,\bx')
+  = A(t,t') + B(t,t')\,t\,t'
+  =: \tilde K(t,t'),
+\]
+which depends on $\bx,\bx'$ only through $(t,t')$. The function
+$\tilde K(t,t')$ is precisely the one-dimensional ReLU NTK $\bar K(t,t')$
+on the projected inputs, up to an additive constant $c_{0}$ contributed
+by neurons whose $\relu$-gate is identically activated (formally,
+$c_{0} = \E_{w_{j},a_{j}}[\,\cdot\,]$ aggregated across $j$, modifying
+$\bar K$ only on its bias direction). The dead-neuron contribution
+contributes a residual of squared norm $O(\alpha_{\mathrm{init}}^{2})$.
 \end{proof}
 
 \begin{remark}[Pointwise vs.\ population kernel]\label{rem:pop-kernel}
@@ -712,15 +727,22 @@ bias--variance decomposition~\eqref{eq:bv} but with the 1D eigenvalues
 $\bar\lambda_{l}$ in place of $\lambda_{l}^{(d)}$:
 
 \begin{itemize}
-\item the bias term is $\eta^{2s/3}$, since the source condition for the
-  link function $\rho \in \mathcal{H}^{s}$ on $\R$ gives Hermite coefficients
-  $c_{l}^{2} \cdot l^{2s} \in \ell^{1}$, and the threshold argument yields
-  $\eta^{2 \cdot s \cdot (1/3)} \cdot 3 = \eta^{2s/3}$, but since the
-  eigenvalues decay as $l^{-3}$, the exponent in the bias is
-  $\eta^{2s/3}$ \emph{after rescaling}. To be precise, with
-  $\bar\lambda_{l} \asymp l^{-3}$, the smoothness $s$ on the link translates to
-  $c_{l}^{2}\, \bar\lambda_{l}^{-2s/3} \in \ell^{1}$, giving bias
-  $\asymp \eta^{2s/3}$;
+\item the bias term is $\Theta(\eta^{2s/3})$. To see this, fix the
+  threshold $l_{\eta}$ at which $\bar\lambda_{l_{\eta}} = \eta$, namely
+  $l_{\eta} \asymp \eta^{-1/3}$ (cf.\
+  Proposition~\ref{prop:1d-df}). Splitting the bias sum at $l_{\eta}$,
+  \[
+    \sum_{l \ge 1} \frac{\eta^{2}\, c_{l}^{2}}{(\bar\lambda_{l} + \eta)^{2}}
+    \asymp
+    \sum_{l \le l_{\eta}} c_{l}^{2}
+    \;+\; \eta^{2}\!\!\sum_{l > l_{\eta}} \frac{c_{l}^{2}}{\bar\lambda_{l}^{2}}.
+  \]
+  Under the source condition $\sum_{l} c_{l}^{2} l^{2s} < \infty$, the
+  second sum is bounded by $\eta^{2}\, l_{\eta}^{6-2s}
+  \asymp \eta^{2}\, \eta^{-(6-2s)/3} = \eta^{2s/3}$ (for $s < 3$,
+  with the obvious adaptation for higher $s$), and the first sum is
+  $O(l_{\eta}^{-2s}) = O(\eta^{2s/3})$. Hence the bias is
+  $\Theta(\eta^{2s/3})$;
 
 \item the variance term is $\sigma^{2} \eta^{-1/3}/n$ by
   Proposition~\ref{prop:1d-df}.
@@ -775,18 +797,21 @@ target.
 
 \begin{definition}[Architecture, critical depth]\label{def:critical-depth}
 Let $A$ denote an architecture family parametrized by depth $L$ and width
-(taken to infinity). For each $L$, let $\bM_{A,L}$ denote the noise
-propagation operator of the trained network on a single-index target with
-$s = 1$, with effective rank $r_{\mathrm{eff}}(\bM_{A,L})$ as in
+(taken to infinity). Fix smoothness $s = 1$ throughout this definition
+(matching the regularity at which Theorem~\ref{thm:critical-depth}
+applies). For each $L$, let $\bM_{A,L}$ denote the noise
+propagation operator of the trained network on a single-index target,
+with effective rank $r_{\mathrm{eff}}(\bM_{A,L})$ as in
 Definition~\ref{def:reff}. The \emph{critical depth} for $A$ is
 \[
   L^{*}_{A}(n, d) := \min\bigl\{ L \in \mathbb{N} :
-    r_{\mathrm{eff}}(\bM_{A,L}) \leq n^{2s/(2s+1)}
+    r_{\mathrm{eff}}(\bM_{A,L}) \leq n^{2s/(2s+1)} \big|_{s=1}
+    = n^{2/3}
   \bigr\},
 \]
 or $\infty$ if no such $L$ exists. Equivalently, $L^{*}_{A}$ is the
 smallest depth at which the test risk attains the dimension-free rate
-$n^{-2s/(2s+1)}$ in the trichotomy of~\cite{paperA}.
+$n^{-2/3}$ in the trichotomy of~\cite{paperA}.
 \end{definition}
 
 \begin{theorem}[Architecture-Specific Critical Depth]\label{thm:critical-depth}
@@ -797,8 +822,14 @@ single-index target with $s=1$ satisfy:
 \textbf{(FC ReLU stacks).} For fully-connected ReLU networks with depth
 $L$ and width going to infinity,
 \begin{equation}\label{eq:lstar-fc}
-  L^{*}_{\mathrm{FC}}(n, d) = \lceil (d-1)/2 \rceil.
+  L^{*}_{\mathrm{FC}}(n, d)
+  = \lfloor (d-1)/2 \rfloor + 1
+  = \lceil d/2 \rceil.
 \end{equation}
+The implied rate carries a depth-dependent prefactor of
+$L^{L\alpha_{0}} = \exp(\Theta(d \log d))$ for $L = \Theta(d)$,
+tracked explicitly in Proposition~\ref{prop:depth-mult} and
+Remark~\ref{rem:depth-const}.
 
 \textbf{(ResNet, identity skip).} For residual networks
 $h_{\ell+1} = h_{\ell} + g_{\ell}(h_{\ell})$ with each $g_{\ell}$ a
@@ -858,33 +889,40 @@ $\sigma_{j} = \sqrt{\lambda_{j}} \asymp j^{-(d+1)/(2(d-1))}$,
 giving the claimed $\alpha_{0}$.
 \end{proof}
 
-\begin{lemma}[Per-layer cross-correlation exponent]\label{lem:beta0}
+\begin{assumption}[One-step rich-regime gain;
+labeled \texttt{(B0)}]\label{ass:beta0}
 For a single-index target with $s=1$ and Gaussian inputs, after one
 gradient step in the rich regime starting from a small-scale random
 initialization, the per-layer cross-correlation diagonal
 $\varrho_{j} := \sqrt{\bGamma_{jj}}$ satisfies the power-law decay
 \[
   \varrho_{j} \asymp j^{-\beta_{0}}, \qquad
-  \beta_{0} = \frac{d+3}{2(d-1)}.
+  \beta_{0} = \alpha_{0} + \frac{1}{d-1} = \frac{d+3}{2(d-1)},
 \]
-\end{lemma}
+i.e.\ a $+1/(d-1)$ exponent gain over $\alpha_{0}$ in the
+flattened-shell index.
+\end{assumption}
 
-\begin{proof}[Sketch and citations]
-The one-step gradient feature analysis of Ba--Mei--Misiakiewicz--Montanari
-\cite{ba2022mei}, applied to a single-index target with information
-exponent $\kappa = 1$, shows that after one step of gradient descent on
-the population loss, the relevant gradient features are concentrated on
-the $\bv^{*}$-aligned spherical-harmonic shells with weight enhanced by
-a factor $\Theta(1)$ relative to the kernel-regime baseline.
-Concretely~\cite[Theorem 2]{ba2022mei}, the dominant singular value
-along $\bv^{*}$ is enhanced by an additional one-dimensional factor.
-Quantitatively, this corresponds to enhancing $\beta_{0}$ over $\alpha_{0}$
-by exactly $1/(d-1)$, yielding
-$\beta_{0} = \alpha_{0} + 1/(d-1) = (d+3)/(2(d-1))$.
-The same conclusion is obtained by Damian--Lee--Soltanolkotabi
-\cite{DLS2022}, who give a direct derivation of the $1/(d-1)$ correction
-under one gradient step at the rich-regime initialization.
-\end{proof}
+\begin{remark}[Status of Assumption~\ref{ass:beta0}]\label{rem:beta0-status}
+We treat this as an explicit assumption rather than a fully proved
+lemma. The supporting evidence is twofold.
+\emph{(i) Spiked-RMT analysis.} The one-step gradient feature analysis
+of Ba--Erdogdu--Suzuki--Wu--Zhang~\cite{ba2022mei} shows that, at
+information exponent $\kappa = 1$, the post-step feature kernel
+exhibits a rank-one spiked deformation of the kernel-regime spectrum,
+with the spike concentrated along $\bv^{*}$.
+\emph{(ii) DLS spike strength.} Damian--Lee--Soltanolkotabi
+\cite{DLS2022} establish that the spike contributes a multiplicative
+factor of order $1/(d-1)$ to the rate exponent in the
+flattened-shell index for $\kappa = 1$. Combining (i) and (ii) is
+consistent with the formula $\beta_{0} = \alpha_{0} + 1/(d-1)$, but a
+direct derivation in the precise singular-value-on-Jacobian framework
+of~\cite{paperA} is not given in either reference; we therefore
+record~(B0) as an assumption and use it as a black-box input to the
+rest of this section. A first-principles derivation via the
+spherical-harmonic decomposition of the post-one-step Jacobian is left
+to future work.
+\end{remark}
 
 The single-layer rates do not by themselves satisfy
 $\beta_{0} > \alpha_{0} + 1/2$:
@@ -948,7 +986,7 @@ the constant.
 The depth-dependent constant $C_{L} = C_{0}^{L} L^{L\alpha_{0}}$ enters
 the bias and variance constants in~\eqref{eq:bv} but does not alter the
 $j$-exponent $L\alpha_{0}$. For the qualitative critical-depth result
-$L^{*}_{\mathrm{FC}}(n,d) = \lceil(d-1)/2\rceil$, what matters is the
+$L^{*}_{\mathrm{FC}}(n,d) = \lceil d/2 \rceil$, what matters is the
 exponent comparison $\beta > \alpha + 1/2$, which is unaffected by
 $C_{L}$. For sample-complexity bounds with explicit constants, one must
 absorb $C_{L}$ into the $\Theta(\cdot)$ in the rate; we do not pursue this
@@ -958,54 +996,45 @@ quantification here.
 
 \begin{remark}[Limit of the multiplicative inequality]\label{rem:counter-2x2}
 Proposition~\ref{prop:depth-mult} provides only an upper bound on the
-spectral decay of $\bJ_{\mathrm{total}}$. The exact equality
-$\sigma_{j}(\bJ_{\mathrm{total}}) = \Theta(j^{-L\alpha_{0}})$
-\emph{does not} hold in general: it requires the right singular vectors
-of $\bJ_{\ell+1}$ to align with the left singular vectors of $\bJ_{\ell}$
-across every $\ell$, which is a measure-zero condition. A simple
-$2\times 2$ counterexample illustrates this. Let $P$ be the permutation
-matrix that swaps coordinates,
+spectral decay of $\bJ_{\mathrm{total}}$. Beyond the leading
+$j^{-L\alpha_{0}}$ rate, no \emph{equality}
+$\sigma_{j}(\bJ_{\mathrm{total}}) = \Theta(\sigma_{j}(\bJ_{L})\cdots\sigma_{j}(\bJ_{1}))$
+holds in general: such a per-index multiplicative identity would require
+the right singular vectors of $\bJ_{\ell+1}$ to coincide with the left
+singular vectors of $\bJ_{\ell}$ across every $\ell$, which is a
+measure-zero condition. A simple $2\times 2$ example illustrates this
+gap. Let
 \[
   \bJ_{1} = \diag(1,\epsilon), \qquad
-  \bJ_{2} = P\,\diag(1,\epsilon).
+  \bJ_{2} = \diag(\epsilon, 1).
 \]
-Then $\sigma_{2}(\bJ_{1}) = \sigma_{2}(\bJ_{2}) = \epsilon$, while
-$\bJ_{2}\bJ_{1} = P\,\diag(1,\epsilon)\diag(1,\epsilon) = P\,\diag(1,\epsilon^{2})$
-has singular values $\{1,\epsilon^{2}\}$, so
-$\sigma_{2}(\bJ_{2}\bJ_{1}) = \epsilon^{2}$ matches the multiplicative
-prediction. \emph{However}, replacing $P$ by the orthogonal
+Both factors have singular values $\{1,\epsilon\}$, so
+$\sigma_{1}(\bJ_{\ell})\sigma_{2}(\bJ_{\ell}) = \epsilon$ for each
+$\ell$, and the naive per-index multiplicative \emph{equality} would
+predict $\sigma_{2}(\bJ_{2}\bJ_{1}) = \sigma_{2}(\bJ_{2})\sigma_{2}(\bJ_{1})
+= \epsilon^{2}$. Direct computation gives
 \[
-  Q = \begin{pmatrix} \cos\phi & -\sin\phi \\ \sin\phi & \cos\phi \end{pmatrix}
-  = \frac{1}{\sqrt{2}}\begin{pmatrix} 1 & -1 \\ 1 & 1 \end{pmatrix}
-  \quad (\phi = \pi/4),
+  \bJ_{2}\bJ_{1} = \diag(\epsilon, \epsilon) = \epsilon\,\bI,
 \]
-which permutes the singular directions of $\bJ_{1}$ in a non-axis-aligned
-way (now setting $\bJ_{2} = Q\,\diag(1,\epsilon)$), gives the product
-$\bJ_{2}\bJ_{1} = Q\,\diag(1,\epsilon)\,\diag(1,\epsilon) = Q\,\diag(1,\epsilon^{2})$
-which still gives $\sigma_{2}(\bJ_{2}\bJ_{1}) = \epsilon^{2}$. The
-counterexample to multiplicativity arises when the second factor's
-singular directions are \emph{misaligned} with the first's: take
-\[
-  \bJ_{2} = Q\,\diag(1,\epsilon)\,Q^{\top}
-  = \begin{pmatrix} (1+\epsilon)/2 & (1-\epsilon)/2 \\ (1-\epsilon)/2 & (1+\epsilon)/2 \end{pmatrix},
-\]
-so $\bJ_{2}$ has singular values $\{1,\epsilon\}$ but its singular vectors
-are the rotated basis $Q$ rather than the standard basis. Direct
-computation gives
-\[
-  \bJ_{2}\bJ_{1} = \frac{1}{2}\begin{pmatrix} 1+\epsilon & \epsilon-\epsilon^{2} \\ 1-\epsilon & \epsilon+\epsilon^{2} \end{pmatrix},
-\]
-whose singular values are $\sigma_{1} = 1+O(\epsilon)$ and
-$\sigma_{2} = \epsilon\sqrt{2}/(1+O(\epsilon)) = \Theta(\epsilon)$, not
-$\Theta(\epsilon^{2})$. This shows the multiplicative bound can be far
-from tight when intermediate singular vectors misalign, and motivates
-our use of an upper-bound argument throughout.
+so $\sigma_{2}(\bJ_{2}\bJ_{1}) = \epsilon$, not $\epsilon^{2}$. This is
+consistent with Weyl's product \emph{inequality}, which only asserts
+$\sigma_{2}(\bJ_{2}\bJ_{1}) \le \sigma_{1}(\bJ_{2})\sigma_{2}(\bJ_{1}) = 1\cdot\epsilon = \epsilon$,
+and which is saturated here. The mechanism is that $\bJ_{2}$'s
+\emph{top} singular direction $e_{2}$ coincides with $\bJ_{1}$'s
+\emph{bottom} singular direction $e_{2}$, so the small-singular-value
+direction of $\bJ_{1}$ is amplified by the top singular value of
+$\bJ_{2}$. This shows the multiplicative bound on $\sigma_{j}$ can be
+loose by a factor as large as $\sigma_{1}(\bJ_{\ell+1})/\sigma_{j}(\bJ_{\ell+1})$
+per layer when intermediate singular vectors misalign, and motivates
+our use of an upper-bound argument throughout: only the leading
+$j^{-L\alpha_{0}}$ rate is universal, while sharper per-index
+constants depend on the alignment of consecutive singular bases.
 \end{remark}
 
 \subsection{The $\beta_{0}$ exponent and depth scaling}
 
 A symmetric argument applied to the cross-correlation matrix
-$\bGamma_{\mathrm{total}}$ via Lemma~\ref{lem:beta0} gives the per-depth
+$\bGamma_{\mathrm{total}}$ via Assumption~\ref{ass:beta0} gives the per-depth
 bound $\varrho_{j}(\bGamma_{\mathrm{total}}) \leq C_{L} j^{-L\beta_{0}}$
 with $\beta_{0} = (d+3)/(2(d-1))$ and $C_{L}$ a depth-dependent constant
 analogous to Proposition~\ref{prop:depth-mult}. Combined with
@@ -1027,31 +1056,39 @@ which simplifies to
   \iff
   L > \frac{d-1}{2}.
 \]
-The smallest integer $L$ satisfying this strict inequality is
-$L = \lceil (d-1)/2 \rceil$ when $d$ is even, and
-$L = (d+1)/2 = \lceil (d-1)/2 \rceil + \mathbf{1}\{(d-1)/2 \in \mathbb{Z}\}$ when
-$d$ is odd. We adopt the convention
-$L^{*}_{\mathrm{FC}}(n,d) = \lceil (d-1)/2 \rceil$ for even $d$ and
-$L^{*}_{\mathrm{FC}}(n,d) = d/2$ rounded up to the next integer when
-strict inequality requires it; the qualitative scaling is
-$L^{*}_{\mathrm{FC}}(n,d) = \Theta(d)$ in either case, recovering~\eqref{eq:lstar-fc}.
+The smallest positive integer $L$ satisfying this strict inequality is
+$L = \lfloor (d-1)/2 \rfloor + 1 = \lceil d/2 \rceil$, uniformly in the
+parity of $d$: when $d$ is even, $(d-1)/2$ is non-integer and
+$\lceil (d-1)/2\rceil = d/2 = \lceil d/2 \rceil$ already exceeds it;
+when $d$ is odd, $(d-1)/2 \in \mathbb{Z}$ so the strict inequality
+forces $L \ge (d-1)/2 + 1 = (d+1)/2 = \lceil d/2 \rceil$. The
+qualitative scaling is $L^{*}_{\mathrm{FC}}(n,d) = \Theta(d)$,
+recovering~\eqref{eq:lstar-fc}.
 
 \subsection{Sharpness}
 
-The matching lower bound is provided by considering $L < \lceil(d-1)/2\rceil$:
-in this case $L\beta_{0} - L\alpha_{0} = L/(d-1) \leq 1/2$, so by
-Theorem~2 of~\cite{paperA} the depth-$L$ network is in the tempered or
-catastrophic regime, and $r_{\mathrm{eff}}(\bM)$ is at least
-$\Theta(\log n)$ rather than $O(1)$. Hence
-$L < \lceil(d-1)/2 \rceil$ does not attain the benign rate.
+The matching lower bound is provided by considering
+$L < \lceil d/2 \rceil$, equivalently $L \le (d-1)/2$: in this case
+$L\beta_{0} - L\alpha_{0} = L/(d-1) \le 1/2$, so by Theorem~2
+of~\cite{paperA} the depth-$L$ network falls in the tempered or
+catastrophic regime, with effective rank at the saturation level
+$r_{\mathrm{eff}}(\bM) \asymp n^{1/(2L\alpha_{0}+1)}$ on a
+power-law-decaying spectrum at the boundary $\beta = \alpha + 1/2$
+(see~\cite[Proposition~3]{paperA}). For $L \le (d-1)/2$ and any
+$d \ge 3$ the resulting effective-rank exponent exceeds $2/3$
+(the threshold $n^{2s/(2s+1)}|_{s=1} = n^{2/3}$ in
+Definition~\ref{def:critical-depth}), so the single-index target with
+$s=1$ does not attain the benign threshold. Hence
+$L < \lceil d/2 \rceil$ does not attain the benign rate, establishing
+matching sharpness up to the integer threshold.
 
 \subsection{Smooth-tame fix for the strict-saddle argument}
 
 The above derivation invokes the alignment of weights from~\cite{paperB},
-whose underlying use of the strict-saddle avoidance of
-Lee--Simchowitz--Jordan--Recht requires a $C^{2}$ assumption that is not
-satisfied by the ReLU activation. The appropriate replacement is the
-tame-function framework of Davis--Drusvyatskiy--Kakade--Lee~\cite{DDKL2020},
+whose underlying use of the strict-saddle avoidance results in the
+nonconvex-optimization literature requires a $C^{2}$ assumption that is
+not satisfied by the ReLU activation. The appropriate replacement is
+the tame-function framework of Davis--Drusvyatskiy--Kakade--Lee~\cite{DDKL2020},
 under which subgradient flow from almost every initialization avoids
 non-minimizing Clarke critical points. ReLU losses are semialgebraic (a
 subclass of tame functions), so the alignment conclusion goes through
@@ -1146,19 +1183,21 @@ rigorous.
 Let $g_{\mathrm{attn}}(\bx)$ denote a single attention head with key,
 query, and value matrices $W_{K},W_{Q},W_{V} \in \R^{d\times d}$, applied
 to a token $\bx \in \R^{d}$. The output of the head is
-$g_{\mathrm{attn}}(\bx) = \softmax(W_{Q}\bx \cdot (W_{K}X)^{\top}/\sqrt{d})\,W_{V}X$
-for an input token sequence $X$. Heuristically, the softmax $\softmax(z)$
+$g_{\mathrm{attn}}(\bx) = \bigl(W_{V} X\bigr)^{\top}\,\softmax\!\bigl(\,(W_{K} X)^{\top}(W_{Q}\bx)\,/\sqrt{d}\,\bigr)$
+for an input token sequence $X \in \R^{d \times T}$ (columns are
+tokens) and target token $\bx$, where the softmax is taken over the
+$T$-many columns of $W_{K}X$. Heuristically, the softmax $\softmax(z)$
 is a $C^{\infty}$ Lipschitz map (with operator-norm gradient bounded by
 $1$) and acts as a smoothing operator on the spherical-harmonic content
 of the gradient feature. If one accepts the heuristic that this smoothing
 adds $+1/2$ to the spherical-harmonic decay exponent (the same gain that
 would follow from convolving against a $C^{\infty}$ kernel and converting
-eigenvalues $\to$ singular values via $\rho \mapsto \sqrt{\lambda}$), then
+eigenvalues $\to$ singular values via $\lambda \mapsto \sqrt{\lambda}$), then
 the per-layer cross-correlation exponent for a transformer block becomes
 \[
   \beta_{0}^{\mathrm{attn}} = \beta_{0} + \tfrac{1}{2},
 \]
-where $\beta_{0}$ is the FC value of Lemma~\ref{lem:beta0}. We do not
+where $\beta_{0}$ is the FC value of Assumption~\ref{ass:beta0}. We do not
 establish this heuristic rigorously here: a rigorous derivation would
 require an explicit spherical-harmonic decomposition of the
 attention-output map, which depends on the joint distribution of
