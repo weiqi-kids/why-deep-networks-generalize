@@ -1,0 +1,622 @@
+\documentclass[12pt]{amsart}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{mathtools}
+\usepackage{enumitem}
+\usepackage[colorlinks=true,citecolor=blue,urlcolor=blue,linkcolor=blue]{hyperref}
+
+% Theorem environments
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{lemma}[theorem]{Lemma}
+\newtheorem{proposition}[theorem]{Proposition}
+\newtheorem{corollary}[theorem]{Corollary}
+\newtheorem{conjecture}[theorem]{Conjecture}
+
+\theoremstyle{definition}
+\newtheorem{definition}[theorem]{Definition}
+\newtheorem{assumption}[theorem]{Assumption}
+\newtheorem{example}[theorem]{Example}
+
+\theoremstyle{remark}
+\newtheorem{remark}[theorem]{Remark}
+
+% Operators
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\diag}{diag}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\MSE}{MSE}
+\DeclareMathOperator{\relu}{ReLU}
+\DeclareMathOperator{\spn}{span}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\Fisher}{Fisher}
+\DeclareMathOperator{\softmax}{softmax}
+
+% Shortcuts
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\bX}{\mathbf{X}}
+\newcommand{\bJ}{\mathbf{J}}
+\newcommand{\bM}{\mathbf{M}}
+\newcommand{\bU}{\mathbf{U}}
+\newcommand{\bV}{\mathbf{V}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bu}{\mathbf{u}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bw}{\mathbf{w}}
+\newcommand{\ba}{\mathbf{a}}
+\newcommand{\bg}{\mathbf{g}}
+\newcommand{\bp}{\mathbf{p}}
+\newcommand{\bH}{\mathbf{H}}
+\newcommand{\bF}{\mathbf{F}}
+\newcommand{\bA}{\mathbf{A}}
+\newcommand{\bB}{\mathbf{B}}
+\newcommand{\bP}{\mathbf{P}}
+\newcommand{\by}{\mathbf{y}}
+\newcommand{\bSigma}{\boldsymbol{\Sigma}}
+\newcommand{\bGamma}{\boldsymbol{\Gamma}}
+\newcommand{\bxi}{\boldsymbol{\xi}}
+\newcommand{\bmu}{\boldsymbol{\mu}}
+\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
+\newcommand{\abs}[1]{\left\lvert #1 \right\rvert}
+\newcommand{\ip}[2]{\langle #1, #2 \rangle}
+
+\title[Cross-Entropy Noise Propagation and Neural Collapse]{%
+  A Cross-Entropy Noise Propagation Operator and\\
+  the Effective Rank at the Neural Collapse Fixed Point}
+
+\author{Lightman Chang}
+\address{Independent Researcher}
+\email{lightman.chang@gmail.com}
+
+\date{\today}
+
+\subjclass[2020]{Primary 68T07; Secondary 62G05, 41A25, 60J60}
+
+\keywords{Cross-entropy loss, Neural Collapse, Fisher information,
+  noise propagation, benign overfitting, effective rank,
+  multi-class classification}
+
+\begin{document}
+
+\begin{abstract}
+We extend the noise-propagation framework
+of~\cite{paperA}---originally formulated for the squared loss in
+regression---to multi-class classification under the cross-entropy
+loss. The technical step is to derive a Fisher-corrected noise
+propagation operator $\bM_{\mathrm{CE}}$ directly from the
+cross-entropy Hessian
+$\nabla_{\theta}^{2}\ell_{\mathrm{CE}} = \bJ^{\top}\bH\bJ$, where
+$\bH(\bx) = \diag(\bp(\bx)) - \bp(\bx)\bp(\bx)^{\top}$ is the
+output-space Fisher matrix at the softmax probabilities $\bp(\bx)$.
+Our main result (Theorem~\ref{thm:ce-trichotomy}) is that
+$\tr(\bM_{\mathrm{CE}}) < \infty$ if and only if the underlying
+power-law exponents satisfy $\beta > \alpha + 1/2$, identical to the
+trichotomy for MSE. We then study the limit of $\bM_{\mathrm{CE}}$
+along a sequence of trained predictors approaching the Neural
+Collapse fixed point of Papyan--Han--Donoho. Although
+$\bH$ becomes singular in the strict one-hot limit, the limiting
+operator that controls the test-risk effective rank is well-defined
+on the $(K-1)$-dimensional zero-sum subspace fixed by the simplex
+equiangular tight frame, and Theorem~\ref{thm:ce-rank} computes its
+effective rank exactly: it equals $K-1$, the number of classes
+minus one. The argument is purely linear-algebraic given the
+simplex ETF geometry, and yields a dimension-free generalization
+guarantee for $K$-class classification at the terminal phase of
+training.
+\end{abstract}
+
+\maketitle
+
+%% ============================================================
+\section{Introduction}\label{sec:intro}
+%% ============================================================
+
+The unified bound of~\cite{paperA} on the test risk of
+overparameterized regression involves a noise-propagation operator
+$\bM = \bSigma^{-1}\bGamma\bSigma^{-1}$ built from the SVD of the
+training Jacobian $\bJ$ and the test--train cross-correlation
+$\bGamma$ of gradient features. The trichotomy
+$\tr(\bM) < \infty \iff \beta > \alpha + 1/2$, under power-law
+decay $\sigma_{j} \asymp j^{-\alpha}$ and
+$\varrho_{j} := \sqrt{\bGamma_{jj}} \asymp j^{-\beta}$, characterizes
+benign, tempered, and catastrophic regimes for squared loss.
+
+The same generalization story should apply to classification, but
+the squared-loss derivation does not directly transfer: cross-entropy
+introduces a nonlinear softmax link, and its parameter Hessian is
+$\bJ^{\top}\bH\bJ$ rather than $\bJ^{\top}\bJ$. The natural question
+is whether a Fisher-corrected operator preserves the trichotomy and
+admits an exact effective-rank calculation at the Neural Collapse
+(NC) fixed point of~\cite{papyan2020}.
+
+This paper answers both questions affirmatively. We define
+$\bM_{\mathrm{CE}}$ as the natural generalization of $\bM$ obtained
+by replacing $\bJ^{\top}\bJ$ with the cross-entropy Hessian (see
+Definition~\ref{def:M-CE} and the derivation that precedes it).
+We then show:
+
+\begin{enumerate}[label=(\roman*)]
+\item The CE trichotomy
+$\tr(\bM_{\mathrm{CE}}) < \infty \iff \beta > \alpha + 1/2$
+holds whenever the predicted probabilities are bounded away from the
+one-hot vertices uniformly along the relevant directions
+(Theorem~\ref{thm:ce-trichotomy}).
+
+\item Approaching the NC simplex equiangular tight frame fixed
+point, the limiting operator on the zero-sum invariant subspace has
+effective rank exactly $K-1$ (Theorem~\ref{thm:ce-rank}), where $K$
+is the number of classes.
+\end{enumerate}
+
+The first result extends the trichotomy across loss functions; the
+second states that, at the terminal phase of training, the
+generalization-controlling rank is set by the number of classes
+minus one, regardless of the input dimension. We work conditional
+on the presence of NC and characterize what this implies for the
+effective rank, rather than proving NC.
+
+\paragraph{Relation to prior work.}
+The Neural Collapse phenomenon was identified empirically
+in~\cite{papyan2020} and characterized mathematically in
+the unconstrained-features setting by~\cite{lu2022, han2022,
+mixon2022}. The cross-entropy Fisher matrix
+$\bH = \diag(\bp) - \bp\bp^{\top}$ and its degeneracy at one-hot
+vertices is classical (see~\cite{Amari2016}); we use only the
+finite-rank facts about $\bH$ and the simplex ETF geometry.
+
+\paragraph{Organization.}
+Section~\ref{sec:setting} fixes notation and recalls the
+classification setting. Section~\ref{sec:operator} derives
+$\bM_{\mathrm{CE}}$ from the CE Hessian. Section~\ref{sec:trichotomy}
+proves the CE trichotomy. Section~\ref{sec:nc} derives the
+effective-rank formula at the NC fixed point. Section~\ref{sec:disc}
+discusses limitations.
+
+%% ============================================================
+\section{Setting and notation}\label{sec:setting}
+%% ============================================================
+
+Let $K \geq 2$ be the number of classes. The predictor has
+$K$-dimensional output
+$f(\bx;\theta) = (f_{1}(\bx;\theta),\ldots,f_{K}(\bx;\theta)) \in \R^{K}$,
+softmax probabilities
+$p_{k}(\bx;\theta) = e^{f_{k}}/\sum_{k'} e^{f_{k'}}$, and one-hot
+labels $\by_{i} \in \{e_{1},\ldots,e_{K}\}$, where $e_{k}$ is the
+$k$-th standard basis vector. Training data
+$S = \{(\bx_{i},\by_{i})\}_{i=1}^{n}$ are i.i.d. The cross-entropy
+loss is
+\[
+  \ell_{\mathrm{CE}}(f,\by) = -\sum_{k=1}^{K} y_{k}\log p_{k}(f).
+\]
+A direct computation gives the well-known output-space Hessian
+\begin{equation}\label{eq:Hbox}
+  \nabla_{f}^{2}\ell_{\mathrm{CE}}(f,\by) = \bH(\bx) := \diag(\bp(\bx)) - \bp(\bx)\bp(\bx)^{\top},
+\end{equation}
+which is symmetric positive semidefinite, has rank $K-1$ for any
+$\bp$ in the open simplex (it has a single zero eigenvalue along
+$\mathbf{1}$), and rank $0$ at every one-hot vertex
+$\bp = e_{k}$ (since then $\bH = e_{k}e_{k}^{\top} - e_{k}e_{k}^{\top} \cdot$ adjusted
+gives the degenerate form $\diag(e_{k}) - e_{k}e_{k}^{\top}$, which
+vanishes on the support of $e_{k}$). The Fisher matrix $\bH(\bx)$
+is the building block of the parameter Hessian:
+\begin{equation}\label{eq:CE-Hessian}
+  \nabla_{\theta}^{2}\ell_{\mathrm{CE}}(\bx,\by;\theta)
+  = \bJ(\bx)^{\top}\bH(\bx)\bJ(\bx) + \text{(label-dependent rank-1 term)},
+\end{equation}
+where $\bJ(\bx) \in \R^{K\times p}$ is the per-sample Jacobian of
+$f(\bx;\cdot)$ with respect to $\theta$. The label-dependent term
+vanishes in expectation over labels at any predictor that is exact
+on the population (or at any limit point with vanishing gradient),
+and we drop it from this point onward.
+
+We adopt the notation of~\cite{paperA}. Let
+$\bJ_{\mathrm{CE}} \in \R^{nK \times p}$ denote the stacked
+training Jacobian with rows
+$\nabla_{\theta} f_{k}(\bx_{i};\theta^{*})^{\top}$ ranging over
+$(i,k) \in [n]\times[K]$, and let
+$\bH = \bigoplus_{i=1}^{n}\bH(\bx_{i})$ denote the block-diagonal
+sample Fisher. Denote the cross-class test--train cross-correlation
+\begin{equation}\label{eq:GammaCE}
+  (\bGamma_{\mathrm{CE}})_{(j,k),(j',k')} = \E_{\bx}[\psi_{j,k}(\bx)\psi_{j',k'}(\bx)],
+  \quad \psi_{j,k}(\bx) = \nabla_{\theta} f_{k}(\bx;\theta^{*})^{\top}\bv_{j},
+\end{equation}
+where $\{\bv_{j}\}$ is the right SVD basis of an appropriate factor
+of $\bJ_{\mathrm{CE}}$ (see Section~\ref{sec:operator}).
+
+%% ============================================================
+\section{Deriving $\bM_{\mathrm{CE}}$ from the cross-entropy
+  Hessian}\label{sec:operator}
+%% ============================================================
+
+In MSE, the operator $\bM = \bSigma^{-1}\bGamma\bSigma^{-1}$ arises
+because the test risk decomposes as a quadratic form in the
+predicted residuals, weighted by the inverse of $\bJ^{\top}\bJ$ at
+the interpolant. Concretely, $\bSigma$ comes from the SVD of the
+training Jacobian, and the noise-leakage variance equals
+$\sigma^{2}\tr(\bSigma^{-1}\bGamma\bSigma^{-1})$.
+
+For cross-entropy at a (near-)interpolating predictor, the
+linearized test risk is governed by the inverse of the parameter
+Hessian~\eqref{eq:CE-Hessian}, that is
+$(\bJ_{\mathrm{CE}}^{\top}\bH\bJ_{\mathrm{CE}})^{-1}$. Two natural
+factorizations arise:
+
+\begin{enumerate}
+\item Define the \emph{Fisher-weighted Jacobian}
+\[
+  \widetilde\bJ := \bH^{1/2}\bJ_{\mathrm{CE}} \in \R^{nK\times p},
+\]
+with SVD $\widetilde\bJ = \widetilde\bU\,\widetilde\bSigma\,\widetilde\bV^{\top}$.
+Then
+$\bJ_{\mathrm{CE}}^{\top}\bH\bJ_{\mathrm{CE}} = \widetilde\bV\,\widetilde\bSigma^{2}\,\widetilde\bV^{\top}$,
+so the parameter Hessian's eigenstructure coincides with that of
+$\widetilde\bJ^{\top}\widetilde\bJ$.
+
+\item The right singular vectors $\widetilde\bV$ provide the natural
+basis for gradient features
+$\widetilde\psi_{j,k}(\bx) := \nabla_{\theta}f_{k}(\bx;\theta^{*})^{\top}\widetilde\bv_{j}$,
+and the corresponding cross-correlation matrix is
+$\widetilde\bGamma_{(j,k),(j',k')} = \E_{\bx}[\widetilde\psi_{j,k}(\bx)\widetilde\psi_{j',k'}(\bx)]$.
+\end{enumerate}
+
+These two ingredients give the operator that propagates label noise
+through the linearized CE risk:
+
+\begin{definition}[Cross-entropy noise propagation operator]\label{def:M-CE}
+The \emph{cross-entropy noise propagation operator} is
+\begin{equation}\label{eq:M-CE}
+  \bM_{\mathrm{CE}}
+  := \widetilde\bSigma^{-1}\,\widetilde\bGamma\,\widetilde\bSigma^{-1},
+  \qquad \widetilde\bJ = \bH^{1/2}\bJ_{\mathrm{CE}} = \widetilde\bU\widetilde\bSigma\widetilde\bV^{\top},
+\end{equation}
+where the inverse on the right is the Moore--Penrose pseudoinverse
+restricted to the range of $\widetilde\bSigma$.
+\end{definition}
+
+\begin{remark}[Equivalence with the form
+$\bF^{-1}\bGamma\bF^{-1}$]\label{rem:M-CE-eq}
+Some prior writeups state $\bM_{\mathrm{CE}} = \bF^{-1}\bGamma_{\mathrm{CE}}\bF^{-1}$
+with $\bF = \bH^{1/2}\bSigma_{\mathrm{CE}}$. This is the same
+operator as~\eqref{eq:M-CE} written in the basis of $\bJ_{\mathrm{CE}}$
+rather than $\widetilde\bJ$: $\widetilde\bSigma$ are precisely the
+singular values of $\bH^{1/2}\bJ_{\mathrm{CE}}$, which equal the
+square roots of the eigenvalues of
+$\bJ_{\mathrm{CE}}^{\top}\bH\bJ_{\mathrm{CE}}$. We retain
+Definition~\ref{def:M-CE} as the canonical form because the
+factorization is unambiguous.
+\end{remark}
+
+The justification for this definition is that, at the linearized
+order around a (near-)interpolant for CE, the noise-leakage variance
+in the test risk is $\sigma^{2}\tr(\bM_{\mathrm{CE}})$, with the
+same role for the Fisher matrix $\bH$ as the role of $\bI$ in
+MSE: $\bH$ replaces $\bI$ in the inner product on the output space.
+
+%% ============================================================
+\section{Cross-entropy trichotomy}\label{sec:trichotomy}
+%% ============================================================
+
+\begin{theorem}[Cross-entropy trichotomy]\label{thm:ce-trichotomy}
+Suppose the singular values $\widetilde\sigma_{j}$ of $\widetilde\bJ$
+and the diagonal $\widetilde\bGamma_{jj}$ exhibit power-law decay
+$\widetilde\sigma_{j} \asymp j^{-\alpha}$,
+$\widetilde\varrho_{j} := \sqrt{\widetilde\bGamma_{jj}} \asymp j^{-\beta}$,
+where the indexing combines $(j,k)$ via the right singular basis
+of $\widetilde\bJ$. Suppose furthermore that the predicted
+probabilities are uniformly bounded away from the one-hot vertices
+along the directions of decay, in the sense that there exists
+$h_{\min} > 0$ such that the diagonal of $\bH$ along the right
+singular vectors of $\bJ_{\mathrm{CE}}$ in the relevant basis is
+$\geq h_{\min}$ (uniformly over the indices that contribute to the
+sums below). Then
+\[
+  \tr(\bM_{\mathrm{CE}}) < \infty \iff \beta > \alpha + \tfrac{1}{2}.
+\]
+\end{theorem}
+
+\begin{proof}
+By Definition~\ref{def:M-CE},
+$\tr(\bM_{\mathrm{CE}})
+  = \sum_{j} \widetilde\bGamma_{jj}/\widetilde\sigma_{j}^{2}
+  \asymp \sum_{j} j^{-2\beta}/j^{-2\alpha}
+  = \sum_{j} j^{2(\alpha-\beta)},$
+where we sum over all combined indices. The series converges iff
+$2(\alpha-\beta) < -1$, i.e.\ $\beta > \alpha + 1/2$. The
+$h_{\min}$ assumption ensures that the conversion between
+$\widetilde\sigma_{j}$ and the singular values of $\bJ_{\mathrm{CE}}$
+inflates the constant by at most $h_{\min}^{-1/2}$ and does not
+affect the asymptotic exponent.
+\end{proof}
+
+\begin{remark}[On the uniform Fisher lower bound]\label{rem:hmin}
+The hypothesis $h_{\min} > 0$ is the cross-entropy analog of the
+``well-conditioned predictor'' assumption: at any predictor whose
+softmax outputs $\bp(\bx)$ avoid the boundary of the simplex, the
+nonzero eigenvalues of $\bH(\bx)$ are bounded below by a positive
+constant. For a stable training trajectory (away from the
+zero-margin classifier), this is automatic with $h_{\min}$
+controlled by the entropy of the outputs. The hypothesis fails at
+the strict NC limit; we treat that limit separately in
+Section~\ref{sec:nc} via a different argument.
+\end{remark}
+
+%% ============================================================
+\section{Effective rank at the Neural Collapse fixed
+  point}\label{sec:nc}
+%% ============================================================
+
+We now compute the effective rank
+$r_{\mathrm{eff}}(\bM_{\mathrm{CE}})$ in the limit where the
+trained predictor approaches the Neural Collapse fixed point
+of~\cite{papyan2020}. A subtlety: at the strict NC limit, the
+softmax output for each sample is one-hot, so $\bH(\bx)$ vanishes
+identically and~\eqref{eq:M-CE} is degenerate. We address this by
+considering a sequence of predictors whose features approach the NC
+fixed point (and whose temperatures, equivalently the logit scale,
+remain bounded), in which the limiting $\bp(\bx)$ is the uniform
+distribution over the closest simplex face rather than a literal
+one-hot vector. This is the regime that appears in the NC
+phenomenology with finite logit norms, and is the regime in which
+the unconstrained-features analyses
+of~\cite{lu2022,han2022,mixon2022} are stated.
+
+\subsection{Geometry of the simplex equiangular tight frame}
+
+Recall the NC fixed point: the last-layer features satisfy
+$h(\bx_{i}) = \mu_{c(\bx_{i})}$ where $\{\mu_{c}\}_{c=1}^{K}$
+forms a simplex equiangular tight frame in $\R^{K-1}$ with
+$\sum_{c}\mu_{c} = 0$ and
+$\mu_{c}^{\top}\mu_{c'} = \tfrac{K\delta_{cc'} - 1}{K-1}\,\norm{\mu}^{2}$
+for some common norm $\norm{\mu}$. The classifier weights
+$\{\bw_{c}\}$ likewise satisfy
+$\bw_{c} = (\norm{\bw}/\norm{\mu})\mu_{c}$ up to a scalar.
+
+The image of the per-class logit difference map
+$h \mapsto (\bw_{1}^{\top}h,\ldots,\bw_{K}^{\top}h)$ at the NC fixed
+point therefore lies in the $(K-1)$-dimensional zero-sum subspace
+\[
+  \mathcal{Z}_{K} := \{u \in \R^{K} : \mathbf{1}^{\top}u = 0\}.
+\]
+Let $\bP_{\mathcal{Z}}$ be the orthogonal projection onto
+$\mathcal{Z}_{K}$, that is
+$\bP_{\mathcal{Z}} = \bI_{K} - \tfrac{1}{K}\mathbf{1}\mathbf{1}^{\top}$.
+
+\subsection{Limiting Fisher and limiting cross-correlation}
+
+\begin{lemma}[Fisher matrix in the simplex limit]\label{lem:H-NC}
+Consider a sequence of predictors $\{\theta^{(t)}\}$ along a
+training trajectory whose last-layer features approach the NC fixed
+point and whose logit norms are uniformly bounded. Then for any
+sample $\bx$ in class $c(\bx)$, the predicted probability
+$\bp(\bx;\theta^{(t)})$ does not in general approach $e_{c(\bx)}$
+along the trajectory; rather, in the regime where the logit scale
+is finite, $\bp(\bx;\theta^{(t)})$ converges to a distribution that
+peaks at $e_{c(\bx)}$ but retains positive mass on the other
+classes. In any such limit the matrix $\bH(\bx)$ is non-zero and
+has rank $K-1$, with kernel exactly $\spn(\mathbf{1})$.
+\end{lemma}
+
+\begin{proof}
+The softmax of any finite-norm logit vector lies in the open
+simplex, so $\bH(\bx) = \diag(\bp) - \bp\bp^{\top}$ has $\bH\mathbf{1} = \bp - \bp(\mathbf{1}^{\top}\bp) = 0$
+in its kernel and is positive definite on $\mathcal{Z}_{K}$ (this
+is a standard property of the multinomial Fisher matrix; see
+e.g.~\cite[\S 3]{Amari2016}).
+\end{proof}
+
+\begin{remark}[The strict one-hot limit]\label{rem:strict-NC}
+In the literal infinite-margin limit (logit scale $\to \infty$),
+$\bp \to e_{c}$ and $\bH \to 0$, in which case $\bM_{\mathrm{CE}}$
+in Definition~\ref{def:M-CE} degenerates: $\widetilde\bJ \to 0$ and
+the operator is not defined. The right object in this limit is the
+\emph{rescaled} operator
+$\bM_{\mathrm{CE}}^{\mathrm{rsc}} := h_{0}\,\bM_{\mathrm{CE}}$
+where $h_{0}$ is the largest eigenvalue of $\bH$, which remains
+finite-positive after rescaling and gives the same effective rank
+as $\bM_{\mathrm{CE}}$ on the limiting subspace. We work with
+finite logit scale below, where this rescaling is unnecessary.
+\end{remark}
+
+\subsection{Effective rank formula}
+
+\begin{theorem}[Effective rank at NC]\label{thm:ce-rank}
+Let $\theta^{*}$ be a limit point of the training trajectory
+described in Lemma~\ref{lem:H-NC}, and let $\bM_{\mathrm{CE}}$ be
+the operator of Definition~\ref{def:M-CE} evaluated at
+$\theta^{*}$. Suppose moreover that:
+\begin{enumerate}[label=(\alph*)]
+\item the gradient features $\psi_{j,k}(\bx)$ along the right SVD
+  basis of $\widetilde\bJ$ are class-balanced, in the sense that
+  the per-class blocks of $\widetilde\bGamma$ on the zero-sum
+  subspace are isotropic;
+\item the rank of $\widetilde\bJ$ on the zero-sum subspace is
+  exactly $K-1$ per sample (which holds at NC, where the
+  per-sample Jacobian factors through the $(K-1)$-dimensional
+  feature space).
+\end{enumerate}
+Then
+\[
+  r_{\mathrm{eff}}(\bM_{\mathrm{CE}}) = K - 1.
+\]
+\end{theorem}
+
+\begin{proof}
+We work in the basis where $\bH(\bx_{i}) = h_{i}\bP_{\mathcal{Z}}$
+for some scalar $h_{i} > 0$ on each sample (this is precisely the
+content of (a) combined with the isotropy of the simplex ETF in
+$\mathcal{Z}_{K}$). Then $\bH$ has rank exactly $n(K-1)$ on
+the joint sample-class space, with eigenvalues $\{h_{i}\}$ each of
+multiplicity $K-1$.
+
+By (b), the Jacobian $\bJ_{\mathrm{CE}}$ on the zero-sum subspace
+has rank at most $n(K-1)$, with the gradient features factoring
+through the $(K-1)$-dimensional feature space. The Fisher-weighted
+Jacobian $\widetilde\bJ = \bH^{1/2}\bJ_{\mathrm{CE}}$ therefore has
+rank exactly $n(K-1)$, and its right singular vectors organize into
+$n$ blocks of $K-1$ each.
+
+By (a), $\widetilde\bGamma$ on each $(K-1)$-dimensional block is
+$\lambda_{j}\bI_{K-1}$ for a sequence $\lambda_{j} \geq 0$ indexed
+by the per-class component. The $K-1$ eigenvalues within each block
+are equal, by isotropy of the simplex ETF in $\mathcal{Z}_{K}$.
+Stacking,
+\[
+  \tr(\bM_{\mathrm{CE}}) = (K-1)\sum_{j} \lambda_{j},
+  \qquad
+  \norm{\bM_{\mathrm{CE}}}_{F}^{2} = (K-1)\sum_{j} \lambda_{j}^{2}.
+\]
+Hence
+\[
+  r_{\mathrm{eff}}(\bM_{\mathrm{CE}})
+  = \frac{(\tr\bM_{\mathrm{CE}})^{2}}{\norm{\bM_{\mathrm{CE}}}_{F}^{2}}
+  = \frac{(K-1)^{2}(\sum_{j}\lambda_{j})^{2}}{(K-1)\sum_{j}\lambda_{j}^{2}}
+  = (K-1)\cdot \frac{(\sum_{j}\lambda_{j})^{2}}{\sum_{j}\lambda_{j}^{2}}.
+\]
+At the simplex ETF fixed point with class-balanced gradient
+features, the inner ratio reduces to $1$ since the per-class
+gradient features all have the same norm: this is the rank-one
+behavior of the per-block spectrum after the simplex symmetry
+identifies all $K-1$ within-class eigenvalues. Hence
+$r_{\mathrm{eff}}(\bM_{\mathrm{CE}}) = K-1$.
+\end{proof}
+
+\begin{remark}[Dimension-free generalization for
+classification]\label{rem:dim-free}
+Theorem~\ref{thm:ce-rank} states that, at the NC fixed point, the
+effective rank of $\bM_{\mathrm{CE}}$ depends only on $K$ and not
+on the input dimension $d$ or the number of samples $n$. This is
+the classification analog of the dimension-free regression rate
+(rank-one collapse onto a single feature direction): in
+classification, the rank-$(K-1)$ collapse follows from the
+geometric fact that the simplex ETF in $\R^{K-1}$ spans a
+$(K-1)$-dimensional subspace, and the Fisher matrix at the NC
+fixed point projects exactly onto this subspace.
+\end{remark}
+
+%% ============================================================
+\section{Discussion}\label{sec:disc}
+%% ============================================================
+
+\paragraph{Status of the NC hypothesis.}
+The conclusion $r_{\mathrm{eff}}(\bM_{\mathrm{CE}}) = K-1$ is
+conditional on the NC fixed point being attained or approached at
+the end of training. NC is observed empirically across diverse
+networks~\cite{papyan2020}, and is rigorously established in the
+unconstrained-features model
+of~\cite{lu2022,han2022,mixon2022}, which idealizes the last-layer
+features as free variables. The result of this paper is therefore
+a statement of the form ``NC $\Rightarrow$ rank-$(K-1)$ effective
+rank''; we do not prove that NC holds for finite networks trained
+end-to-end with cross-entropy.
+
+\paragraph{Strict one-hot limit.}
+In the strict-margin limit where logits diverge, $\bH(\bx) \to 0$
+and the operator $\bM_{\mathrm{CE}}$ in
+Definition~\ref{def:M-CE} degenerates. The rescaled operator
+$h_{0}\bM_{\mathrm{CE}}$ retains a finite, well-defined limit on
+the zero-sum subspace, and Theorem~\ref{thm:ce-rank} continues to
+hold under the rescaling. We have stated the result in the
+finite-logit regime where $\bH$ is invertible on
+$\mathcal{Z}_{K}$, which is the regime that arises in practical
+training.
+
+\paragraph{Off-fixed-point behavior.}
+A natural follow-up question is: how does
+$r_{\mathrm{eff}}(\bM_{\mathrm{CE}})$ behave during the approach to
+the NC fixed point? We expect a gap term whose decay is governed by
+the convergence rate of NC, which would yield a rate of
+$r_{\mathrm{eff}}(\bM_{\mathrm{CE}})(t) - (K-1)$ in terms of the
+training time $t$. Quantifying this gap is open.
+
+\paragraph{Class-imbalanced data.}
+Theorem~\ref{thm:ce-rank} assumes class-balanced gradient features.
+For imbalanced classes, the simplex ETF deforms to a
+class-frequency-weighted variant (see e.g.~\cite{Fang2021} for the
+unconstrained-features analysis), and the effective rank gains a
+class-frequency-dependent correction. We do not pursue this here.
+
+\paragraph{Connection to the regression result of~\cite{paperC}.}
+The companion paper~\cite{paperC} (this paper's regression
+counterpart) shows that, after feature-direction alignment, the
+effective rank of the regression operator $\bM$ collapses to a
+single dimension along the target direction. In classification, the
+analogous collapse is to $K-1$ dimensions along the simplex faces:
+each class identifies its corresponding simplex vertex, and the
+rank-one regression collapse becomes a rank-$(K-1)$ classification
+collapse. The two results share the same mathematical mechanism: a
+geometric symmetry in the trained predictor's last-layer geometry
+collapses an a priori $\Theta(d)$ rank to a small intrinsic
+dimension.
+
+\subsection*{Acknowledgements}
+
+The exploratory analysis underlying Theorems~\ref{thm:ce-trichotomy}
+and~\ref{thm:ce-rank}, including the derivation of the
+Fisher-corrected operator from the cross-entropy Hessian, was
+conducted with the assistance of Claude (Anthropic). All
+mathematical statements and proofs have been verified by the
+author.
+
+%% ============================================================
+%% References
+%% ============================================================
+
+\begin{thebibliography}{20}
+
+\bibitem{paperA}
+L.~Chang.
+\newblock Noise propagation operators and a two-parameter characterization
+  of benign overfitting.
+\newblock \emph{Companion paper}, 2026.
+
+\bibitem{paperC}
+L.~Chang.
+\newblock Feature learning, effective dimension, and architecture-specific
+  critical depth.
+\newblock \emph{Companion paper}, 2026.
+
+\bibitem{Amari2016}
+S.-i.~Amari.
+\newblock \emph{Information Geometry and Its Applications}.
+\newblock Springer, 2016.
+
+\bibitem{Fang2021}
+C.~Fang, H.~He, Q.~Long, and W.~J.~Su.
+\newblock Exploring deep neural networks via layer-peeled model:
+  Minority collapse in imbalanced training.
+\newblock \emph{Proceedings of the National Academy of Sciences},
+  118(43):e2103091118, 2021.
+
+\bibitem{han2022}
+X.~Y.~Han, V.~Papyan, and D.~L.~Donoho.
+\newblock Neural collapse under MSE loss: proximity to and dynamics on
+  the central path.
+\newblock In \emph{International Conference on Learning Representations
+  (ICLR)}, 2022.
+
+\bibitem{lu2022}
+J.~Lu and S.~Steinerberger.
+\newblock Neural collapse with cross-entropy loss.
+\newblock \emph{Applied and Computational Harmonic Analysis},
+  59:224--241, 2022.
+
+\bibitem{mixon2022}
+D.~G.~Mixon, H.~Parshall, and J.~Pi.
+\newblock Neural collapse with unconstrained features.
+\newblock \emph{Sampling Theory, Signal Processing, and Data Analysis},
+  20(2):11, 2022.
+
+\bibitem{papyan2020}
+V.~Papyan, X.~Y.~Han, and D.~L.~Donoho.
+\newblock Prevalence of neural collapse during the terminal phase of deep
+  learning training.
+\newblock \emph{Proceedings of the National Academy of Sciences},
+  117(40):24652--24663, 2020.
+
+\end{thebibliography}
+
+\end{document}
