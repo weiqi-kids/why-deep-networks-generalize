@@ -1069,18 +1069,23 @@ recovering~\eqref{eq:lstar-fc}.
 
 The matching lower bound is provided by considering
 $L < \lceil d/2 \rceil$, equivalently $L \le (d-1)/2$: in this case
-$L\beta_{0} - L\alpha_{0} = L/(d-1) \le 1/2$, so by Theorem~2
-of~\cite{paperA} the depth-$L$ network falls in the tempered or
-catastrophic regime, with effective rank at the saturation level
-$r_{\mathrm{eff}}(\bM) \asymp n^{1/(2L\alpha_{0}+1)}$ on a
-power-law-decaying spectrum at the boundary $\beta = \alpha + 1/2$
-(see~\cite[Proposition~3]{paperA}). For $L \le (d-1)/2$ and any
-$d \ge 3$ the resulting effective-rank exponent exceeds $2/3$
-(the threshold $n^{2s/(2s+1)}|_{s=1} = n^{2/3}$ in
-Definition~\ref{def:critical-depth}), so the single-index target with
-$s=1$ does not attain the benign threshold. Hence
-$L < \lceil d/2 \rceil$ does not attain the benign rate, establishing
-matching sharpness up to the integer threshold.
+\[
+  \beta - \alpha \;=\; L\beta_{0} - L\alpha_{0}
+  \;=\; \frac{L}{d-1} \;\le\; \frac{1}{2},
+\]
+so the depth-$L$ network fails the strict benign overfitting condition
+$\beta > \alpha + 1/2$ of paperA's Theorem~2 (Trichotomy). By that
+trichotomy the network instead lies in the tempered regime
+($\beta = \alpha + 1/2$, attained when $L = (d-1)/2$ for odd $d$) or
+the catastrophic regime ($\beta < \alpha + 1/2$, all other cases with
+$L \le (d-1)/2$). In the catastrophic regime test risk does not vanish
+as $n \to \infty$, while in the tempered regime test risk decays at a
+rate strictly slower than the dimension-free benign rate
+$n^{-2s/(2s+1)}$ guaranteed by the benign branch of paperA's Theorem~2;
+in particular the trichotomy excludes the benign rate whenever
+$\beta \le \alpha + 1/2$ (see~\cite[Theorem~2 and Proposition~3]{paperA}).
+Hence $L < \lceil d/2 \rceil$ does not attain the benign rate,
+establishing matching sharpness up to the integer threshold.
 
 \subsection{Smooth-tame fix for the strict-saddle argument}
 

@@ -65,8 +65,8 @@
 \newcommand{\ip}[2]{\langle #1, #2 \rangle}
 
 \title[Cross-Entropy Noise Propagation and Neural Collapse]{%
-  A Cross-Entropy Noise Propagation Operator and\\
-  the Effective Rank at the Neural Collapse Fixed Point}
+  A Cross-Entropy Noise Propagation Operator and the\\
+  Effective Rank of the Class-Averaged Block at Neural Collapse}
 
 \author{Lightman Chang}
 \address{Independent Researcher}
@@ -92,23 +92,32 @@ cross-entropy Hessian
 $\nabla_{\theta}^{2}\ell_{\mathrm{CE}} = \bJ^{\top}\bH\bJ$, where
 $\bH(\bx) = \diag(\bp(\bx)) - \bp(\bx)\bp(\bx)^{\top}$ is the
 output-space Fisher matrix at the softmax probabilities $\bp(\bx)$.
-Our main result (Theorem~\ref{thm:ce-trichotomy}) is that
+Our first result (Theorem~\ref{thm:ce-trichotomy}) is that
 $\tr(\bM_{\mathrm{CE}}) < \infty$ if and only if the underlying
 power-law exponents satisfy $\beta > \alpha + 1/2$, identical to the
 trichotomy for MSE. We then study the limit of $\bM_{\mathrm{CE}}$
 along a sequence of trained predictors approaching the Neural
 Collapse fixed point of Papyan--Han--Donoho. Although
 $\bH$ becomes singular in the strict one-hot limit, the limiting
-operator that controls the test-risk effective rank is well-defined
-on the $(K-1)$-dimensional zero-sum subspace fixed by the simplex
-equiangular tight frame, and Theorem~\ref{thm:ce-rank} computes the
-effective rank of the per-sample block (equivalently, of the
-output-space averaged operator $\overline{\bM}_{\mathrm{CE}}$ on the
-zero-sum subspace $\mathcal{Z}_{K}$): it equals exactly $K-1$, the
-number of classes minus one. The argument is purely linear-algebraic
-given the simplex ETF geometry, and yields a dimension-free
-generalization scaling for $K$-class classification at the terminal
-phase of training.
+operator is well-defined on the $(K-1)$-dimensional zero-sum
+subspace fixed by the simplex equiangular tight frame.
+Theorem~\ref{thm:ce-rank} establishes two facts about the
+effective rank on this subspace: (a) for the
+\emph{class-averaged} block $\overline{\bM}_{\mathrm{CE}}$, the
+$S_{K}$-symmetry of the simplex ETF combined with the irreducibility
+of $\mathcal{Z}_{K}$ as an $S_{K}$-representation forces a scalar
+operator, so $r_{\mathrm{eff}}(\overline{\bM}_{\mathrm{CE}})$ equals
+exactly $K-1$; (b) for an individual per-sample block
+$\bM_{\mathrm{CE}}^{(i)}$, the stabilizer is only $S_{K-1}$ and
+$\mathcal{Z}_{K}$ splits into a $1$-dimensional ``target vs. mean
+non-target'' direction and a $(K-2)$-dimensional ``differences among
+non-targets'' subspace, on which $\bH$ has two distinct eigenvalues
+$Ka b$ and $b$; consequently $r_{\mathrm{eff}}(\bM_{\mathrm{CE}}^{(i)})
+\in [1, K-1]$ in general, with $r_{\mathrm{eff}} \to K-1$ only in
+the symmetric edge case where the two eigenvalue blocks coincide.
+The class-averaged statement gives a dimension-free generalization
+scaling for $K$-class classification at the terminal phase of
+training.
 \end{abstract}
 
 \maketitle
@@ -152,18 +161,33 @@ one-hot vertices uniformly along the relevant directions
 (Theorem~\ref{thm:ce-trichotomy}).
 
 \item Approaching the NC simplex equiangular tight frame fixed
-point, each per-sample block of $\bM_{\mathrm{CE}}$ on the zero-sum
-subspace has effective rank exactly $K-1$ (Theorem~\ref{thm:ce-rank}),
-where $K$ is the number of classes; the same holds for the averaged
-operator $\overline{\bM}_{\mathrm{CE}}$.
+point, the \emph{class-averaged} block
+$\overline{\bM}_{\mathrm{CE}}$ on the zero-sum subspace
+$\mathcal{Z}_{K}$ has effective rank exactly $K-1$
+(Theorem~\ref{thm:ce-rank}\,(b)). The proof uses Schur's lemma:
+$\mathcal{Z}_{K}$ is the $(K-1)$-dimensional standard irreducible
+$S_{K}$-representation, and class-averaging produces an
+$S_{K}$-equivariant operator, hence a scalar.
+\item For a fixed \emph{per-sample} block $\bM_{\mathrm{CE}}^{(i)}$
+the stabilizer of class $c_{i}$ is only $S_{K-1}$, which splits
+$\mathcal{Z}_{K}$ into a $1$-dimensional and a $(K-2)$-dimensional
+isotypic component carrying generically distinct eigenvalues, so
+$r_{\mathrm{eff}}(\bM_{\mathrm{CE}}^{(i)}) \in [1, K-1]$ in
+general; we give the explicit two-eigenvalue formula
+(Theorem~\ref{thm:ce-rank}\,(a)).
 \end{enumerate}
 
-The first result extends the trichotomy across loss functions; the
-second states that, at the terminal phase of training, the
-generalization-controlling rank is set by the number of classes
-minus one, regardless of the input dimension. We work conditional
-on the presence of NC and characterize what this implies for the
-effective rank, rather than proving NC.
+The first result extends the trichotomy across loss functions. The
+second and third together identify the right object whose effective
+rank is dimension-free at NC: the class-averaged block, not the
+per-sample block. The averaged statement is what controls
+generalization at the terminal phase, since the noise-leakage
+variance $\sigma^{2}\tr(\bM_{\mathrm{CE}})$ in
+Lemma~\ref{lem:noise-leakage}, and the corresponding effective rank,
+aggregate over training samples; class-balance averages the
+per-sample contributions back into a fully $S_{K}$-symmetric object.
+We work conditional on the presence of NC and characterize what
+this implies for the effective rank, rather than proving NC.
 
 \paragraph{Relation to prior work.}
 The Neural Collapse phenomenon was identified empirically
@@ -313,6 +337,21 @@ $\bJ_{\mathrm{CE}}^{\top}\bH\bJ_{\mathrm{CE}}$. We retain
 Definition~\ref{def:M-CE} as the canonical form because the
 factorization is unambiguous.
 \end{remark}
+
+\paragraph{Cross-reference to \cite{paperC}.}
+The symbols $\bM, \bSigma, \bGamma$ used in this paper are the
+direct cross-entropy analogs of the squared-loss operators in the
+companion paper~\cite{paperC}. The dictionary is:
+$\bSigma$ (singular values of $\bJ$) $\leftrightarrow$
+$\widetilde\bSigma$ (singular values of
+$\widetilde\bJ = \bH^{1/2}\bJ_{\mathrm{CE}}$);
+$\bGamma$ (test--train cross-correlation in the right singular
+basis of $\bJ$) $\leftrightarrow$ $\widetilde\bGamma$ (in the right
+singular basis of $\widetilde\bJ$); and
+$\bM = \bSigma^{-1}\bGamma\bSigma^{-1}$ $\leftrightarrow$
+$\bM_{\mathrm{CE}} = \widetilde\bSigma^{-1}\widetilde\bGamma\widetilde\bSigma^{-1}$.
+Setting $\bH \equiv \bI$ in the cross-entropy definitions recovers
+the squared-loss objects of~\cite{paperC} verbatim.
 
 The justification for Definition~\ref{def:M-CE} is the following
 linearization lemma, which derives the noise-leakage variance from
@@ -502,7 +541,7 @@ exactly $K-1$ with kernel $\spn(\mathbf{1})$, and the operator
 inequality
 \[
   \bH(\bx_{i}) \;\succeq\; h_{\min}\,\bP_{\mathcal{Z}_{K}},
-  \qquad h_{\min} := p_{\min}(1 - 1/K),
+  \qquad h_{\min} := (K-1)\,p_{\min}^{2},
 \]
 holds uniformly in $i$ and $t$.
 \end{lemma}
@@ -515,33 +554,56 @@ $\bH = \diag(\bp) - \bp\bp^{\top}$ satisfies
 $\bH\mathbf{1} = \bp - \bp(\mathbf{1}^{\top}\bp) = 0$, so
 $\spn(\mathbf{1}) \subseteq \ker\bH$, with equality on the open
 simplex (a standard fact about the multinomial Fisher matrix; see
-e.g.~\cite[\S 3]{Amari2016}). The bound on the smallest nonzero
-eigenvalue of $\bH$ on $\mathcal{Z}_{K}$ follows from the standard
-estimate $\lambda_{\min}(\bH|_{\mathcal{Z}_{K}}) \geq p_{\min}(1 - p_{\max})
-\geq p_{\min}(1 - 1/K)$ for $\bp$ supported on the open simplex
-with $p_{\max} \leq 1 - (K-1)p_{\min} \leq 1 - 1/K$ (achieved at
-the corner of the bounded-logit constraint set).
+e.g.~\cite[\S 3]{Amari2016}). For the lower eigenvalue bound on
+$\mathcal{Z}_{K}$, the classical estimate is
+\[
+  \lambda_{\min}\bigl(\bH|_{\mathcal{Z}_{K}}\bigr)
+  \;\geq\; p_{\min}\,(1 - p_{\max}),
+\]
+which follows from the variational characterization. Since
+$p_{\max} = 1 - \sum_{k \neq \arg\max}p_{k} \leq 1 - (K-1)p_{\min}$,
+we obtain
+\[
+  \lambda_{\min}\bigl(\bH|_{\mathcal{Z}_{K}}\bigr)
+  \;\geq\; p_{\min}\,\bigl(1 - (1 - (K-1)p_{\min})\bigr)
+  \;=\; (K-1)\,p_{\min}^{2}.
+\]
+(The chain ``$p_{\max} \leq 1 - (K-1)p_{\min} \leq 1 - 1/K$'' that
+might be tempting requires $p_{\min} \geq 1/K$ and is generally
+false: $p_{\min} = e^{-2L}/K < 1/K$ whenever $L > 0$. Hence we
+retain the sharper bound $h_{\min} = (K-1)p_{\min}^{2}$, which is
+correct for all $L > 0$.)
 \end{proof}
 
 \begin{remark}[Strict-one-hot limit and rescaling]\label{rem:strict-NC}
 In the strict infinite-margin limit ($L \to \infty$), the
-bounded-logit condition fails, $\bp \to e_{c}$, and
-$\bH \to 0$, so $\widetilde\bJ \to 0$ and Definition~\ref{def:M-CE}
-degenerates. The natural rescaled object is
+bounded-logit condition fails, $\bp \to e_{c}$, and $\bH \to 0$, so
+$\widetilde\bJ \to 0$ and Definition~\ref{def:M-CE} degenerates as
+written. The natural rescaled object is
 \[
   \widetilde\bJ_{\mathrm{rsc}} := h_{\min}^{-1/2}\widetilde\bJ
-   \;=\; (h_{\min}^{-1/2}\bH^{1/2})\,\bJ_{\mathrm{CE}},
+   \;=\; (h_{\min}^{-1/2}\bH^{1/2})\,\bJ_{\mathrm{CE}}.
 \]
-which converges to the projector $\bP_{\mathcal{Z}_{K}}\bJ_{\mathrm{CE}}$
-in the limit (since $h_{\min}^{-1/2}\bH^{1/2}$ has unit spectrum on
-the support of $\bH$ and zero kernel along $\mathbf{1}$). The
-operator $\bM_{\mathrm{CE}}$ rebuilt from
-$\widetilde\bJ_{\mathrm{rsc}}$ is well-defined on the zero-sum
-subspace and satisfies
-$r_{\mathrm{eff}}(\bM_{\mathrm{CE}}^{\mathrm{rsc}}) = r_{\mathrm{eff}}(\bM_{\mathrm{CE}})$
-since effective rank is invariant under positive scalar rescaling
-of $\widetilde\bSigma$. In what follows we work with finite logit
-scale where this rescaling is unnecessary.
+The operator $\bM_{\mathrm{CE}}$ rebuilt from
+$\widetilde\bJ_{\mathrm{rsc}}$ has the same effective rank as the
+unrescaled $\bM_{\mathrm{CE}}$, since $r_{\mathrm{eff}}$ is
+invariant under positive scalar rescaling of $\widetilde\bSigma$. We
+caution that $h_{\min}^{-1/2}\bH^{1/2}$ does \emph{not} converge to
+the projector $\bP_{\mathcal{Z}_{K}}$: at NC the per-sample
+probabilities $\bp(\bx_{i})$ are of the form $(a, b, \ldots, b)$
+with $a + (K-1)b = 1$ and $a > b$, and the eigenvalues of
+$\bH(\bx_{i})|_{\mathcal{Z}_{K}}$ are $K a b$ on the
+$1$-dimensional ``target vs. mean non-target'' direction and $b$ on
+the $(K-2)$-dimensional ``differences among non-targets'' subspace
+(direct calculation, see Step~2 of the proof of
+Theorem~\ref{thm:ce-rank}). The ratio $K a b / b = K a$ remains
+finite (and equals $K$ in the strict $a \to 1$ limit), so
+$h_{\min}^{-1/2}\bH^{1/2}$ rescales the trace but not the
+eigenvalue ratio: rescaling by $h_{\min}$ does not symmetrize the
+spectrum. This is what forces us to track the two eigenvalue blocks
+separately in Theorem~\ref{thm:ce-rank}, rather than collapsing
+them by a strict-NC limit. Below we work with finite logit scale
+throughout.
 \end{remark}
 
 \subsection{Effective rank formula}
@@ -596,14 +658,50 @@ the \emph{averaged operator}
 \begin{theorem}[Effective rank at NC]\label{thm:ce-rank}
 Let $\theta^{*}$ be a limit point of the training trajectory of
 Lemma~\ref{lem:H-NC} satisfying Assumption~\ref{ass:nc-backbone},
-and assume the training set is class-balanced
-($n/K$ samples per class). Then both per-sample blocks and the
-averaged operator satisfy
+and assume the training set is class-balanced ($n/K$ samples per
+class).
+\begin{enumerate}[label=(\alph*)]
+\item (\textbf{Per-sample block, two-eigenvalue formula.}) For each
+sample $i$ in class $c_{i}$, the per-sample block
+$\bM_{\mathrm{CE}}^{(i)}$ vanishes on $\spn(\mathbf{1})$ and on
+$\mathcal{Z}_{K}$ has at most two distinct eigenvalues:
 \[
-  r_{\mathrm{eff}}(\bM_{\mathrm{CE}}^{(i)}) \;=\; K - 1
-  \qquad \text{and} \qquad
-  r_{\mathrm{eff}}(\overline{\bM}_{\mathrm{CE}}) \;=\; K - 1.
+  \lambda_{1}^{(i)} \;=\; \frac{\gamma_{1}^{(i)}}{K\,a\,b}
+  \quad\text{(multiplicity $1$, on the target-vs-non-target axis)},
 \]
+\[
+  \lambda_{2}^{(i)} \;=\; \frac{\gamma_{2}^{(i)}}{b}
+  \quad\text{(multiplicity $K-2$, on differences among non-targets)},
+\]
+where $a, b > 0$ are the target / non-target softmax probabilities
+($a + (K-1)b = 1$), and $\gamma_{1}^{(i)}, \gamma_{2}^{(i)} > 0$ are
+the corresponding eigenvalues of the per-sample
+$\widetilde\bGamma$-block under the $S_{K-1}$-isotypic decomposition.
+Consequently
+\[
+  r_{\mathrm{eff}}\bigl(\bM_{\mathrm{CE}}^{(i)}\bigr)
+  \;=\;
+  \frac{\bigl(\lambda_{1}^{(i)} + (K-2)\lambda_{2}^{(i)}\bigr)^{2}}
+       {(\lambda_{1}^{(i)})^{2} + (K-2)(\lambda_{2}^{(i)})^{2}}
+  \;\in\; [1,\,K-1],
+\]
+with the upper bound $K-1$ attained iff $\lambda_{1}^{(i)} = \lambda_{2}^{(i)}$
+and the lower bound approached as one eigenvalue dominates the
+other. (For $K=2$ the second block is absent and
+$r_{\mathrm{eff}} = 1$; for $K \geq 3$ the range is non-degenerate.)
+\item (\textbf{Class-averaged block, exact $K-1$.}) The class-averaged
+operator $\overline{\bM}_{\mathrm{CE}}$ on $\mathcal{Z}_{K}$ is a
+scalar:
+\[
+  \overline{\bM}_{\mathrm{CE}}\bigl|_{\mathcal{Z}_{K}}
+  \;=\; \kappa\,\bP_{\mathcal{Z}_{K}}, \qquad \kappa > 0,
+\]
+hence
+\[
+  r_{\mathrm{eff}}\bigl(\overline{\bM}_{\mathrm{CE}}\bigr)
+  \;=\; K - 1.
+\]
+\end{enumerate}
 \end{theorem}
 
 \begin{proof}
@@ -624,89 +722,253 @@ exactly, by Assumption~\ref{ass:nc-backbone}(b)). Hence
 $\bJ(\bx_{i})\bP_{\mathcal{Z}_{K}}$ has row rank exactly $K-1$, and
 the same holds for $\widetilde\bJ(\bx_{i}) = \bH(\bx_{i})^{1/2}\bJ(\bx_{i})$.
 
-\emph{Step 2: Per-sample block has all $K-1$ eigenvalues equal.}
-By Lemma~\ref{lem:H-NC} and the simplex-ETF symmetry, the per-sample
-Fisher restricted to $\mathcal{Z}_{K}$ is a positive scalar multiple
-of the identity:
-$\bH(\bx_{i})|_{\mathcal{Z}_{K}} = h_{i}\,\bI_{\mathcal{Z}_{K}}$ for
-some $h_{i} > 0$. (Direct calculation: at NC, $\bp(\bx_{i})$ is
-permutation-symmetric across the $K-1$ non-target classes by the
-simplex-ETF symmetry, so $\bH(\bx_{i})|_{\mathcal{Z}_{K}}$ is a
-scalar matrix.) Likewise, by simplex-ETF symmetry across the $K-1$
-output directions in $\mathcal{Z}_{K}$, the cross-correlation
-$\widetilde\bGamma$ restricted to a per-sample block on
-$\mathcal{Z}_{K}$ is a scalar matrix
-$\gamma_{i}\,\bI_{\mathcal{Z}_{K}}$ for some $\gamma_{i} \geq 0$:
-the $K-1$ within-block directions are equivalent under the action
-of the simplex-ETF symmetry group $S_{K-1}$ that fixes the class of
-$\bx_{i}$.
+\emph{Step 2: Eigenstructure of $\bH(\bx_{i})$ on $\mathcal{Z}_{K}$.}
+At NC, the predicted probability for sample $\bx_{i}$ in class
+$c_{i}$ is permutation-symmetric across the $K-1$ non-target
+classes (since the corresponding logits
+$\bw_{c}^{\top}\mu_{c_{i}} = (\norm{\bw}/\norm{\mu})\mu_{c}^{\top}\mu_{c_{i}}$
+take the common value $-(\norm{\bw}\norm{\mu})/(K-1)$ for all
+$c \neq c_{i}$ by the simplex-ETF inner product). Thus
+$\bp(\bx_{i})$ has the form $(\,\ldots,\,a,\,\ldots\,)$ with the
+target coordinate $a$ at position $c_{i}$ and every non-target
+coordinate equal to $b$, with $a + (K-1)b = 1$ and $a > b > 0$
+(strict inequalities by the bounded-logit Lemma~\ref{lem:H-NC} and
+the assumption that NC is non-trivial, i.e., not the uniform
+prediction $a = b = 1/K$).
 
-\emph{Step 3: Computing $r_{\mathrm{eff}}$.}
-By Steps 1--2, $\bM_{\mathrm{CE}}^{(i)}$ on $\mathcal{Z}_{K}$ is
-$(\gamma_{i}/h_{i})\bI_{\mathcal{Z}_{K}}$ — a positive scalar
-multiple of the identity on a $(K-1)$-dimensional space, with the
-remaining direction $\spn(\mathbf{1})$ killed by $\bH$. All $K-1$
-nonzero eigenvalues of $\bM_{\mathrm{CE}}^{(i)}$ are equal, hence by
-Definition~\ref{def:reff},
+Decompose $\mathcal{Z}_{K}$ into the two $S_{K-1}$-isotypic
+components fixed by permutations of the non-target indices:
+\begin{itemize}
+\item $V_{1}^{(i)} \;:=\; \spn\bigl((K-1)\,e_{c_{i}} - \sum_{c \neq c_{i}}e_{c}\bigr)$,
+the $1$-dimensional ``target vs. mean of non-targets'' direction;
+\item $V_{2}^{(i)} \;:=\; \{u \in \mathcal{Z}_{K} : u_{c_{i}} = 0\}$,
+the $(K-2)$-dimensional ``differences among non-target coordinates''
+subspace.
+\end{itemize}
+A direct computation (using $a + (K-1)b = 1$, equivalently
+$1 - (a-b) = K b$ and $1 + (K-1)(a-b) = K a$) gives
+\[
+  \bH(\bx_{i})\,v \;=\; K a b\,v \quad \forall v \in V_{1}^{(i)},
+  \qquad
+  \bH(\bx_{i})\,v \;=\; b\,v \quad \forall v \in V_{2}^{(i)}.
+\]
+For $v \in V_{2}^{(i)}$ this is immediate from
+$\bH v = \diag(\bp)v - \bp(\bp^{\top}v) = b v - 0$ since
+$\bp^{\top}v = b\sum_{c\neq c_{i}}v_{c} = 0$ on $V_{2}^{(i)}$.
+For $v_{1} = (K-1)e_{c_{i}} - \sum_{c \neq c_{i}}e_{c} \in V_{1}^{(i)}$,
+$\diag(\bp)v_{1} = (K-1)a\,e_{c_{i}} - b\sum_{c \neq c_{i}}e_{c}$
+and $\bp^{\top}v_{1} = (K-1)(a-b)$, so
+\begin{align*}
+  \bH(\bx_{i})v_{1}
+  &= (K-1)a\,e_{c_{i}} - b\!\sum_{c \neq c_{i}}\!e_{c}
+     \;-\; (K-1)(a-b)\bigl[a\,e_{c_{i}} + b\!\sum_{c \neq c_{i}}\!e_{c}\bigr] \\
+  &= e_{c_{i}}\,(K-1)a\bigl[1 - (a-b)\bigr]
+     \;+\; \sum_{c \neq c_{i}}e_{c}\,(-b)\bigl[1 + (K-1)(a-b)\bigr] \\
+  &= e_{c_{i}}\,(K-1)a\,(K b)
+     \;-\; \sum_{c \neq c_{i}}e_{c}\,b\,(K a)
+   = K a b\,v_{1}.
+\end{align*}
+The two eigenvalues $Kab$ (on $V_{1}^{(i)}$) and $b$ (on
+$V_{2}^{(i)}$) are equal iff $K a = 1$, i.e., $a = 1/K$ (uniform
+prediction), which is excluded at non-trivial NC. The earlier draft
+of this paper claimed these eigenvalues are equal by simplex-ETF
+symmetry; that claim is incorrect because the stabilizer of class
+$c_{i}$ is only $S_{K-1}$, not transitive on $\mathcal{Z}_{K}$.
+
+\emph{Step 3: Eigenstructure of the per-sample $\widetilde\bGamma$
+block.}
+By Assumption~\ref{ass:nc-backbone}, the gradient features
+$\widetilde\psi_{j,k}(\bx)$ commute with the $S_{K-1}$-action that
+permutes the non-target indices $c \neq c_{i}$ (the simplex ETF and
+the backbone are both invariant under this action; only the target
+index $c_{i}$ is distinguished). Hence the per-sample block of
+$\widetilde\bGamma$ on $\mathcal{Z}_{K}$ commutes with this
+$S_{K-1}$-action and, by Schur's lemma applied to the
+$S_{K-1}$-isotypic decomposition $\mathcal{Z}_{K} = V_{1}^{(i)} \oplus V_{2}^{(i)}$
+(both isotypic components carry inequivalent
+$S_{K-1}$-representations: $V_{1}^{(i)}$ is the trivial rep and
+$V_{2}^{(i)}$ is the standard $(K-2)$-dimensional irreducible rep
+of $S_{K-1}$), is block-diagonal with eigenvalues
+$\gamma_{1}^{(i)} \geq 0$ on $V_{1}^{(i)}$ (multiplicity $1$) and
+$\gamma_{2}^{(i)} \geq 0$ on $V_{2}^{(i)}$ (multiplicity $K-2$).
+We assume $\gamma_{1}^{(i)}, \gamma_{2}^{(i)} > 0$ (i.e., the
+gradient features genuinely populate both blocks); this is generic.
+
+\emph{Step 4: Per-sample $r_{\mathrm{eff}}$ formula.}
+The per-sample block $\bM_{\mathrm{CE}}^{(i)} = \widetilde\bSigma^{-1}\widetilde\bGamma\widetilde\bSigma^{-1}$
+restricted to $\mathcal{Z}_{K}$ is, in the basis $V_{1}^{(i)} \oplus V_{2}^{(i)}$,
+the diagonal matrix with entries $\gamma_{1}^{(i)}/(K a b)$ on
+$V_{1}^{(i)}$ and $\gamma_{2}^{(i)}/b$ on $V_{2}^{(i)}$. Calling
+these $\lambda_{1}^{(i)}$ and $\lambda_{2}^{(i)}$ respectively,
 \[
   r_{\mathrm{eff}}(\bM_{\mathrm{CE}}^{(i)})
-  = \frac{((K-1)\,\gamma_{i}/h_{i})^{2}}{(K-1)\,(\gamma_{i}/h_{i})^{2}}
-  = K - 1.
+  = \frac{(\lambda_{1}^{(i)} + (K-2)\lambda_{2}^{(i)})^{2}}
+         {(\lambda_{1}^{(i)})^{2} + (K-2)(\lambda_{2}^{(i)})^{2}}.
 \]
+Cauchy--Schwarz applied to the vectors $(1, \sqrt{K-2})$ and
+$(\lambda_{1}^{(i)}, \sqrt{K-2}\,\lambda_{2}^{(i)})$ gives the
+upper bound $1 + (K-2) = K-1$, attained iff
+$\lambda_{1}^{(i)} = \lambda_{2}^{(i)}$. As $\lambda_{1}^{(i)}/\lambda_{2}^{(i)} \to \infty$
+the ratio tends to $1$; as $\lambda_{1}^{(i)}/\lambda_{2}^{(i)} \to 0$ it tends
+to $K-2$. Hence the lower bound is $1$ for $K \geq 3$. This proves~(a).
 
-\emph{Step 4: Averaged operator.}
-By class-balance, the per-sample blocks group into $K$ equal-size
-class subsets, each of which gives the same $\gamma/h$ ratio by
-the simplex-ETF symmetry permuting classes. Hence
-$\overline{\bM}_{\mathrm{CE}} = (\bar\gamma/\bar h)\bI_{\mathcal{Z}_{K}}$
-on $\mathcal{Z}_{K}$ for the corresponding averages, with all $K-1$
-nonzero eigenvalues equal. By the same calculation,
-$r_{\mathrm{eff}}(\overline{\bM}_{\mathrm{CE}}) = K-1$.
+\emph{Step 5: Averaged operator is scalar by Schur's lemma.}
+The class-averaged block is
+\(
+  \overline{\bM}_{\mathrm{CE}}
+  = \frac{1}{n}\sum_{i=1}^{n}\bM_{\mathrm{CE}}^{(i)}
+\)
+with class-balanced training data ($n/K$ samples per class). By the
+simplex-ETF symmetry of NC (Assumption~\ref{ass:nc-backbone}\,(a)--(b)),
+the data distribution and the predictor are invariant under the
+full permutation group $S_{K}$ acting simultaneously on classes,
+last-layer features, and rows of $W$. The per-sample blocks
+$\bM_{\mathrm{CE}}^{(i)}$ depend on $i$ only through the class
+$c_{i}$, and the averaged operator $\overline{\bM}_{\mathrm{CE}}$
+commutes with the diagonal $S_{K}$-action on $\R^{K}$.
+
+The standard fact about the $(K-1)$-dimensional zero-sum subspace
+$\mathcal{Z}_{K} \subset \R^{K}$ is that it is the
+\emph{standard irreducible representation} of $S_{K}$ (see, e.g.,
+\cite[\S 2.3]{Amari2016} or any text on symmetric-group
+representations). By Schur's lemma, every $S_{K}$-equivariant
+endomorphism of an irreducible representation is a scalar. Hence
+$\overline{\bM}_{\mathrm{CE}}|_{\mathcal{Z}_{K}} = \kappa\,\bP_{\mathcal{Z}_{K}}$
+for some scalar $\kappa > 0$ (positivity follows from the fact that
+each $\bM_{\mathrm{CE}}^{(i)}$ is positive semidefinite and at
+least one per-sample block has $\gamma_{j}^{(i)} > 0$). Therefore
+all $K-1$ nonzero eigenvalues of $\overline{\bM}_{\mathrm{CE}}$ are
+equal, and by Definition~\ref{def:reff},
+\[
+  r_{\mathrm{eff}}(\overline{\bM}_{\mathrm{CE}})
+  = \frac{((K-1)\kappa)^{2}}{(K-1)\kappa^{2}}
+  = K-1.
+\]
+This proves~(b).
 \end{proof}
+
+\begin{remark}[How does class-averaging restore $K-1$?]\label{rem:averaging}
+The mechanism is purely group-theoretic. Each per-sample block
+$\bM_{\mathrm{CE}}^{(i)}$ has only an $S_{K-1}$ symmetry (the
+stabilizer of class $c_{i}$), and $\mathcal{Z}_{K}$ decomposes as
+$V_{1}^{(i)} \oplus V_{2}^{(i)}$ with two distinct eigenvalues.
+But the target direction $V_{1}^{(c)}$ moves as $c$ varies over the
+$K$ classes: explicitly, $V_{1}^{(c)} = \spn(K e_{c} - \mathbf{1})$
+and one computes
+\[
+  \sum_{c=1}^{K}
+  \frac{(K e_{c} - \mathbf{1})(K e_{c} - \mathbf{1})^{\top}}{\norm{Ke_{c} - \mathbf{1}}^{2}}
+  \Bigg|_{\mathcal{Z}_{K}}
+  \;=\; \frac{K}{K-1}\,\bP_{\mathcal{Z}_{K}}.
+\]
+That is, summing the rank-one projectors onto target directions
+across all classes yields a scalar on $\mathcal{Z}_{K}$. Combined
+with the corresponding sum over the $V_{2}^{(c)}$-blocks (also
+scalar by symmetry), the class-average produces an operator with a
+single eigenvalue across all $K-1$ directions. Schur's lemma is the
+clean abstract way to phrase this.
+\end{remark}
 
 \begin{remark}[Dimension-free scaling for
 classification]\label{rem:dim-free}
-Theorem~\ref{thm:ce-rank} states that, at the NC fixed point, the
-effective rank of $\bM_{\mathrm{CE}}$ on each per-sample block (and
-of the averaged operator) depends only on $K$ and not on the input
-dimension $d$ or the parameter count $p$. This is the classification
-analog of the dimension-free regression rate (rank-one collapse
-onto a single feature direction): the rank-$(K-1)$ collapse follows
-from the geometric fact that the simplex ETF in $\R^{K-1}$ spans a
-$(K-1)$-dimensional subspace, on which the Fisher matrix at NC is a
-scalar.
+Theorem~\ref{thm:ce-rank}\,(b) states that, at the NC fixed point,
+the effective rank of the \emph{class-averaged} block
+$\overline{\bM}_{\mathrm{CE}}$ depends only on $K$ and not on the
+input dimension $d$ or the parameter count $p$. This is the
+classification analog of the dimension-free regression rate of
+\cite{paperC} (rank-one collapse onto a single target direction):
+both rest on a residual symmetry of the trained predictor at its
+fixed point that quotients out the ambient parameter dimension. In
+classification the residual symmetry is $S_{K}$ acting on the
+simplex-ETF directions, and the target subspace
+$\mathcal{Z}_{K} = \R^{K}/\spn(\mathbf{1})$ is irreducible of
+dimension $K-1$.
 \end{remark}
 
 \begin{remark}[Full-operator effective rank]\label{rem:full-vs-per-sample}
-The full operator $\bM_{\mathrm{CE}}$ on the joint sample-class
-space has rank $n(K-1)$ on the zero-sum subspace by Step~1,
-all eigenvalues equal under class-balance and simplex-ETF symmetry,
-so $r_{\mathrm{eff}}(\bM_{\mathrm{CE}}) = n(K-1)$ at the limit
-point. This is consistent: each of the $n$ training samples
-contributes $K-1$ equal eigenvalues. The dimension-free scaling we
-care about for generalization is the per-sample / averaged
-quantity, which captures the noise leakage \emph{per training
-example}.
+With $n$ training samples class-balanced and the $S_{K}$-symmetry
+of NC, the full operator $\bM_{\mathrm{CE}}$ on the joint
+sample-class space has rank $n(K-1)$ on the zero-sum subspace and
+$r_{\mathrm{eff}}(\bM_{\mathrm{CE}}) = n(K-1)$ at the limit point
+(once both the per-sample two-block structure and the $S_{K}$-
+averaging across classes are simultaneously taken into account).
+The dimension-free scaling we care about for generalization is the
+class-averaged quantity, which captures the noise leakage \emph{per
+training example averaged over class identity}; this is the right
+object because the noise-leakage variance
+$\sigma^{2}\tr(\bM_{\mathrm{CE}})$ from
+Lemma~\ref{lem:noise-leakage} aggregates over both samples and
+classes and is invariant under the diagonal $S_{K}$-action.
 \end{remark}
+
+\subsection{Comparison with prior work}\label{subsec:prior-work}
+
+The result of Theorem~\ref{thm:ce-rank} is positioned at the
+intersection of three prior literatures, and its novelty lies
+precisely in the operator-framework angle that none of them
+addresses.
+\begin{itemize}
+\item \emph{NC geometry (Lu--Steinerberger~\cite{lu2022},
+Mixon--Parshall--Pi~\cite{mixon2022}).} These works characterize
+the NC fixed point itself in the unconstrained-features model
+under cross-entropy: the simplex ETF, self-duality, and within-class
+collapse. They establish that NC is the unique global minimizer of
+the layer-peeled / unconstrained-features objective, and they
+quantify how rapidly NC is approached. We use their geometric
+characterization as input (Assumption~\ref{ass:nc-backbone}) and
+do not re-derive it.
+\item \emph{Central path under MSE (Han--Papyan--Donoho~\cite{han2022}).}
+This work studies the dynamical approach to NC under squared loss,
+identifying a central path in feature/classifier space. Our
+treatment is for the cross-entropy noise-propagation operator
+$\bM_{\mathrm{CE}}$, not for the central-path dynamics; the
+loss-specific ingredient (Fisher matrix $\bH$ instead of identity)
+is what forces the two-eigenvalue per-sample structure of
+Theorem~\ref{thm:ce-rank}\,(a) and the $S_{K}$-equivariant Schur
+argument of Theorem~\ref{thm:ce-rank}\,(b).
+\item \emph{Class-imbalanced extension (Fang et al.~\cite{Fang2021}).}
+The unconstrained-features model under class imbalance shows that
+the simplex ETF deforms to a frequency-weighted variant. Our
+$S_{K}$-symmetry argument relies on class balance; the imbalanced
+case would replace $S_{K}$-equivariance by a smaller invariance
+group and is left to future work.
+\end{itemize}
+The novel contribution here is the
+\textbf{$r_{\mathrm{eff}}$-of-$\bM_{\mathrm{CE}}$ characterization
+within the noise-propagation operator framework of~\cite{paperA}}:
+identifying the right object (the class-averaged block on
+$\mathcal{Z}_{K}$, not the per-sample block), exhibiting the exact
+two-eigenvalue per-sample formula, and using $S_{K}$-irreducibility
+of $\mathcal{Z}_{K}$ to obtain $r_{\mathrm{eff}} = K-1$ for the
+averaged operator. The earlier draft of this paper conflated the
+per-sample and averaged statements; the corrected statement
+delineates them, and is what is actually proven by simplex-ETF
+geometry plus Schur's lemma.
 
 %% ============================================================
 \section{Discussion}\label{sec:disc}
 %% ============================================================
 
 \paragraph{Status of the NC hypothesis.}
-The conclusion $r_{\mathrm{eff}}(\bM_{\mathrm{CE}}^{(i)}) = K-1$
-(per-sample) is conditional on the NC fixed point being attained or
-approached at the end of training. NC is observed empirically
-across diverse networks~\cite{papyan2020}, and is rigorously
-established in the unconstrained-features model
+The conclusion $r_{\mathrm{eff}}(\overline{\bM}_{\mathrm{CE}}) = K-1$
+(class-averaged block) is conditional on the NC fixed point being
+attained or approached at the end of training. NC is observed
+empirically across diverse networks~\cite{papyan2020}, and is
+rigorously established in the unconstrained-features model
 of~\cite{lu2022,mixon2022}, which idealizes the last-layer features
 as free variables. The result of this paper is therefore a
 statement of the form ``NC $+$ backbone non-degeneracy
 (Assumption~\ref{ass:nc-backbone}(c)) $\Rightarrow$ rank-$(K-1)$
-effective rank''; we do not prove that NC holds for finite networks
-trained end-to-end with cross-entropy. Limitations in the strict
-one-hot limit are addressed by rescaling
-(Remark~\ref{rem:strict-NC}); see also the discussion below.
+effective rank for the class-averaged block''; we do not prove that
+NC holds for finite networks trained end-to-end with cross-entropy.
+Per-sample blocks have $r_{\mathrm{eff}}^{(i)} \in [1, K-1]$ in
+general (see Theorem~\ref{thm:ce-rank}\,(a) and Step~2 of the
+proof); the dimension-free $K-1$ scaling is a property of the
+class-averaged object only.
+Limitations in the strict one-hot limit are addressed by rescaling
+(Remark~\ref{rem:strict-NC}); the strict limit does \emph{not}
+flatten the per-sample two-block spectrum, but the class-averaged
+quantity is unaffected.
 
 \paragraph{Off-fixed-point behavior.}
 A natural follow-up question is: how does
@@ -726,17 +988,22 @@ class-frequency-dependent correction. We do not pursue this here.
 \paragraph{Connection to the regression result of~\cite{paperC}.}
 The companion paper~\cite{paperC} (this paper's regression
 counterpart) shows that, after feature-direction alignment, the
-effective rank of the regression operator $\bM$ (the squared-loss
-analog of $\bM_{\mathrm{CE}}$ in this paper) collapses to a single
+effective rank of the regression operator
+$\bM = \bSigma^{-1}\bGamma\bSigma^{-1}$ collapses to a single
 dimension along the target direction. In classification, the
-analogous collapse for $\bM_{\mathrm{CE}}$ is to $K-1$ dimensions
-along the simplex faces: each class identifies its corresponding
-simplex vertex, and the rank-one regression collapse for $\bM$
-becomes a rank-$(K-1)$ classification collapse for
-$\bM_{\mathrm{CE}}$. The two results share the same mathematical
-mechanism: a geometric symmetry in the trained predictor's
-last-layer geometry collapses an a priori $\Theta(d)$ rank to a
-small intrinsic dimension. We retain distinct notation
+analogous collapse for the class-averaged block
+$\overline{\bM}_{\mathrm{CE}}$ is to $K-1$ dimensions along the
+simplex faces: each class identifies its corresponding simplex
+vertex, and the rank-one regression collapse becomes a
+rank-$(K-1)$ classification collapse. Both reflect the same
+abstract mechanism --- a residual symmetry of the trained
+predictor at its fixed point reduces an a priori $\Theta(d)$ rank
+to a small representation-theoretic invariant --- but the per-sample
+behavior differs: paper~\cite{paperC}'s per-sample rank-one
+collapse is exact for each sample, whereas in classification the
+per-sample blocks have only the smaller stabilizer $S_{K-1}$ and
+the dimension-free $K-1$ statement holds only after $S_{K}$-averaging
+across class identities. We retain distinct notation
 $\bM$ vs.\ $\bM_{\mathrm{CE}}$ throughout to disambiguate the two
 operators.
 
