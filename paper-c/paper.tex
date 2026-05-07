@@ -1078,12 +1078,19 @@ $\beta > \alpha + 1/2$ of paperA's Theorem~2 (Trichotomy). By that
 trichotomy the network instead lies in the tempered regime
 ($\beta = \alpha + 1/2$, attained when $L = (d-1)/2$ for odd $d$) or
 the catastrophic regime ($\beta < \alpha + 1/2$, all other cases with
-$L \le (d-1)/2$). In the catastrophic regime test risk does not vanish
-as $n \to \infty$, while in the tempered regime test risk decays at a
-rate strictly slower than the dimension-free benign rate
-$n^{-2s/(2s+1)}$ guaranteed by the benign branch of paperA's Theorem~2;
-in particular the trichotomy excludes the benign rate whenever
-$\beta \le \alpha + 1/2$ (see~\cite[Theorem~2 and Proposition~3]{paperA}).
+$L \le (d-1)/2$). By definition in paperA's Theorem~2~\cite[Theorem~2]{paperA}, the
+benign regime is $\tr(\bM) < \infty$, equivalently
+$\beta > \alpha + 1/2$ strictly. The tempered regime
+($\tr(\bM) = \Theta(\log n)$, unbounded) and the catastrophic
+regime ($\tr(\bM) = \infty$, divergent series) both violate this
+finiteness condition, so neither sub-case lies in the benign
+regime. The dimension-free feature-learning rate $n^{-2s/(2s+1)}$
+of our own Theorem~\ref{thm:fl-collapse} is established under the
+joint hypothesis (i) the alignment hypothesis from~\cite{paperB}
+and (ii) the benign condition $\tr(\bM) < \infty$ inherited from
+paperA via the unified bound of~\cite[Thm.~1]{paperA}.  When
+$\beta \le \alpha + 1/2$, condition (ii) fails, hence
+Theorem~\ref{thm:fl-collapse}'s benign rate is no longer guaranteed.
 Hence $L < \lceil d/2 \rceil$ does not attain the benign rate,
 establishing matching sharpness up to the integer threshold.
 
