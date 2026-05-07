@@ -367,8 +367,9 @@ the training set $S$, with parameter Hessian
 $\bF := \bJ_{\mathrm{CE}}^{\top}\bH\bJ_{\mathrm{CE}}$ invertible
 on its range. Suppose label perturbations
 $\bxi_{i} \in \R^{K}$ satisfy $\E[\bxi_{i}] = 0$ and
-$\E[\bxi_{i}\bxi_{i}^{\top}] = \sigma^{2}\,\bH(\bx_{i})$ (the
-Fisher-weighted noise model that matches the CE link). Let
+$\E[\bxi_{i}\bxi_{i}^{\top}] = \sigma^{2}\bI_{K}$, so that
+$\bH^{1/2}\bxi_{i}$ is the effective Fisher-weighted label noise that
+matches the CE link.  Let
 $\theta^{*}_{\bxi}$ denote the perturbed stationary point. Then to
 linear order in $\bxi$,
 \begin{enumerate}[label=(\roman*)]
@@ -708,18 +709,17 @@ hence
 $\mathcal{Z}_{K}$.}
 By Lemma~\ref{lem:H-NC}, $\bH(\bx_{i})$ is positive definite on
 $\mathcal{Z}_{K}$ and zero on $\spn(\mathbf{1})$. By
-Assumption~\ref{ass:nc-backbone}(c) the backbone Jacobian has rank
-$K-1$, and the chain rule gives
-\[
-  \bJ(\bx_{i}) \;=\; W \cdot \frac{\partial h(\bx_{i};\theta^{*})}{\partial\theta}
-                \;+\; \frac{\partial f}{\partial W}\Big|_{(\bx_{i})} \cdot
-                  \frac{\partial W}{\partial\theta},
-\]
-where $\partial f/\partial W$ at the NC weight has rank $K-1$ on
-$\mathcal{Z}_{K}$ (the simplex-ETF rows of $W$ span $\mathcal{Z}_{K}$
-exactly, by Assumption~\ref{ass:nc-backbone}(b)). Hence
-$\bJ(\bx_{i})\bP_{\mathcal{Z}_{K}}$ has row rank exactly $K-1$, and
-the same holds for $\widetilde\bJ(\bx_{i}) = \bH(\bx_{i})^{1/2}\bJ(\bx_{i})$.
+Assumption~\ref{ass:nc-backbone}(b)--(c), the model output map
+$f(\bx_{i};\theta) = W\,h(\bx_{i};\theta)$ has the property that
+varying $W$ along the simplex-ETF directions sweeps out the full
+$(K-1)$-dimensional zero-sum subspace $\mathcal{Z}_{K}$ in output
+space (since the rescaled rows of $W$, namely
+$(\norm{W}/\norm{\mu})\mu_{c}$ for $c \in [K]$, are exactly the $K$
+vertices of the simplex ETF in $\mathcal{Z}_{K}$ and span it). Hence
+the projected Jacobian $\bP_{\mathcal{Z}_{K}}\bJ(\bx_{i})$ has row
+rank exactly $K-1$ at any predictor satisfying the NC backbone
+hypothesis, and the same holds for
+$\widetilde\bJ(\bx_{i}) = \bH(\bx_{i})^{1/2}\bJ(\bx_{i})$.
 
 \emph{Step 2: Eigenstructure of $\bH(\bx_{i})$ on $\mathcal{Z}_{K}$.}
 At NC, the predicted probability for sample $\bx_{i}$ in class
