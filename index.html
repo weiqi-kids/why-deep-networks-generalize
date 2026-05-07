@@ -749,7 +749,7 @@ footer {
   </div>
 </section>
   <section id="sec-thm1" class="theorem-section" data-nav="thm1">
-  <h2>定理 1：統一泛化界</h2>
+  <h2>定理 1：統一泛化界 <span style="font-size:0.7em;color:var(--color-link);font-weight:500;">[Paper A]</span></h2>
   <div class="layer-intuition">
     <p>你在新考題上的表現 = 真正學會的東西造成的偏差 + 訓練雜音的迴聲 + 運氣成分 + 簡化誤差（我們用直尺量曲線時多出來的小偏差）。四項加起來就是你跟「真正懂」之間的距離。</p>
   </div>
@@ -787,7 +787,7 @@ footer {
   </div>
 </section>
   <section id="sec-thm2" class="theorem-section" data-nav="thm2">
-  <h2>定理 2：Benign Overfitting 分界</h2>
+  <h2>定理 2：Benign Overfitting 分界 <span style="font-size:0.7em;color:var(--color-link);font-weight:500;">[Paper A]</span></h2>
   <div class="layer-intuition">
     <p>水龍頭漏水。$\alpha$ 控制水龍頭開多大（奇異值衰減慢 = 水量大），$\beta$ 控制排水管有多粗（測試相關性衰減快 = 排水快）。$\beta > \alpha + 1/2$ 意味排水比進水快，水不會滿出來（benign）；$\beta < \alpha + 1/2$ 意味水無限累積（catastrophic）；$\beta = \alpha + 1/2$ 剛好臨界，水會慢慢累積但速度越來越慢（tempered，對數修正）。</p>
   </div>
@@ -826,7 +826,7 @@ footer {
   </div>
 </section>
   <section id="sec-thm4" class="theorem-section" data-nav="thm4">
-  <h2>定理 4：Feature Learning 消除維度詛咒</h2>
+  <h2>定理 4：Feature Learning 消除維度詛咒 <span style="font-size:0.7em;color:var(--color-link);font-weight:500;">[Paper C]</span></h2>
   <div class="layer-intuition">
     <p>在 100 維空間裡找一條線上的規律。笨方法（NTK）是在 100 維裡地毯式搜索；聰明方法（Feature Learning）是先發現「其實答案只跟某個方向有關」，把問題降到一維再找。需要的資料量從 $n^{100\text{相關}}$ 驟降到 $n^{1\text{相關}}$。</p>
   </div>
@@ -871,7 +871,7 @@ footer {
   </div>
 </section>
   <section id="sec-thm5" class="theorem-section" data-nav="thm5">
-  <h2>定理 5：Feature Learning 必然發生</h2>
+  <h2>定理 5：Feature Learning 必然發生 <span style="font-size:0.7em;color:var(--color-link);font-weight:500;">[Paper B]</span></h2>
   <div class="layer-intuition">
     <p>四條獨立的證明路線，全部指向同一結論：隨機初始化的梯度下降必然學到正確的特徵方向。</p>
     <ul>
@@ -922,7 +922,7 @@ footer {
   </div>
 </section>
   <section id="sec-thm3" class="theorem-section" data-nav="thm3">
-  <h2>定理 3：Jacobian 譜分離</h2>
+  <h2>定理 3：Jacobian 譜分離 <span style="font-size:0.7em;color:var(--color-link);font-weight:500;">[Paper A]</span></h2>
   <div class="layer-intuition">
     <p>樂團裡的主奏和伴奏。$k$ 個教師神經元對應 $k$ 個主奏樂器，聲音洪亮（大奇異值）；其餘神經元是靜音的伴奏（微小奇異值）。中間有明確的音量斷層。</p>
   </div>
@@ -966,7 +966,7 @@ footer {
   </div>
 </section>
   <section id="sec-thm6" class="theorem-section" data-nav="thm6">
-  <h2>定理 6：架構臨界深度</h2>
+  <h2>定理 6：架構臨界深度 <span style="font-size:0.7em;color:var(--color-link);font-weight:500;">[Paper C]</span></h2>
   <div class="layer-intuition">
     <p>疊濾鏡。每多一層，噪聲就多被過濾一次。全連接網路需要疊 $\lceil(d-1)/2\rceil$ 層才夠；ResNet 有捷徑跳過濾鏡，所以深度影響不大；Transformer 的 attention 自帶強力濾鏡，幾層就夠了。</p>
   </div>
@@ -1335,13 +1335,17 @@ footer {
     </div>
   </div>
 
-  <h3 data-nav="ext16c">擴展 K：分類 Cross-Entropy——與 MSE 分界相同（Paper D）</h3>
+  <h3 data-nav="ext16c">擴展 K：分類 Cross-Entropy——與 MSE 分界相同 <span style="font-size:0.7em;color:var(--color-link);font-weight:500;">[Paper D]</span></h3>
   <div class="layer-intuition">
-    <p>Benign 分界 $\beta > \alpha + 1/2$ 與 MSE 相同。Neural Collapse 下的 effective rank 分兩個層面看：</p>
+    <h4 style="font-size:var(--text-base);font-weight:700;margin-bottom:0.5rem;">日常譬喻：分類問題像「只認自己的家」</h4>
+    <p>把貓狗鳥三類想成三戶人家。每張照片要回家——貓的回貓家、狗的回狗家。當網路訓練到完美時，每張照片都會回到正確的家門口（這就叫 <strong>Neural Collapse</strong>，特徵點塌縮到三個點，正好是「三戶等距排列」的單純形頂點）。</p>
+    <p>「有效維度（effective rank）」回答：「為了告訴 SGD 這張照片該放哪一家，網路要花幾個獨立的方向去記？」答案應該是 <strong>K-1</strong>（K 戶人家只需 K-1 個獨立方向就能定位，最後一個方向是冗餘的，因為機率總和為 1）。</p>
+    <p>但是這裡有個微妙的事：</p>
     <ul>
-      <li><strong>單一樣本（per-sample）</strong>：$r_{\text{eff}}(\bM_{\text{CE}}^{(i)}) \in [1, K-1]$，因 $\bH$ 在 $\mathcal{Z}_K$ 上有兩個不同特徵值 $Kab$ 與 $b$（$\bp = (a, b, \ldots, b)$，target vs 非 target 兩塊不同步）。</li>
-      <li><strong>類別平均（class-averaged）</strong>：$r_{\text{eff}}(\overline{\bM}_{\text{CE}}) = K - 1$ 嚴格成立，由 $S_K$ 在標準不可約表示 $\mathcal{Z}_K$ 上的 Schur 引理保證。</li>
+      <li><strong>看單張照片</strong>（per-sample）：對一張貓的照片，網路只需在「貓 vs 平均的非貓」這個 1 維方向，加上「狗 vs 鳥」這個 K-2 維方向上判斷——但這兩塊的「敏感度」不一樣大（target 那邊比較大），所以 effective rank 在 $[1, K-1]$ 之間，不是恰好 K-1。</li>
+      <li><strong>看全部類別取平均</strong>（class-averaged）：當你把貓、狗、鳥三種照片都拿來平均，三類就「站在對等地位」上，敏感度被打平，effective rank <strong>恰好 K-1</strong>。</li>
     </ul>
+    <p>結論：泛化界（用來預測 test loss）使用平均後的算子，所以 K-1 是 honest 的。但「per-sample 是 K-1」這個直覺要小心——它只在類別對稱時才嚴格成立。</p>
   </div>
   <details class="layer">
     <summary>形式化定理（Paper D Theorem 4.4）</summary>
