@@ -514,8 +514,14 @@ footer {
     },
     {
       "@type": "MediaObject",
-      "name": "Paper C：Feature Learning, Effective Dimension, and Architecture-Specific Critical Depth in Two-Layer ReLU Networks",
+      "name": "Paper C：Feature Learning, Effective Dimension, and Architecture-Specific Critical Depth",
       "contentUrl": "https://why-deep-networks-generalize.proof.weiqi.kids/paper-c/paper.pdf",
+      "encodingFormat": "application/pdf"
+    },
+    {
+      "@type": "MediaObject",
+      "name": "Paper D：Effective Rank of the Class-Averaged Block at Neural Collapse",
+      "contentUrl": "https://why-deep-networks-generalize.proof.weiqi.kids/paper-d/paper.pdf",
       "encodingFormat": "application/pdf"
     }
   ]
@@ -667,7 +673,12 @@ footer {
         <a href="paper-c/paper.pdf" class="download-btn" data-paper="paper-c" target="_blank" rel="noopener"
            aria-label="下載 Paper C 之 PDF 完整版">
           <span class="download-btn-title">📄 Paper C：Feature Learning & Architecture-Specific Critical Depth</span>
-          <span class="download-btn-meta">PDF · 21 頁 · 420 KB</span>
+          <span class="download-btn-meta">PDF · 23 頁 · 433 KB</span>
+        </a>
+        <a href="paper-d/paper.pdf" class="download-btn" data-paper="paper-d" target="_blank" rel="noopener"
+           aria-label="下載 Paper D 之 PDF 完整版">
+          <span class="download-btn-title">📄 Paper D：Effective Rank at Neural Collapse</span>
+          <span class="download-btn-meta">PDF · 16 頁 · 398 KB</span>
         </a>
       </div>
     </div>
@@ -1324,20 +1335,27 @@ footer {
     </div>
   </div>
 
-  <h3 data-nav="ext16c">擴展 K：分類 Cross-Entropy——與 MSE 分界相同</h3>
+  <h3 data-nav="ext16c">擴展 K：分類 Cross-Entropy——與 MSE 分界相同（Paper D）</h3>
   <div class="layer-intuition">
-    <p>Benign 分界 $\beta > \alpha + 1/2$ 與 MSE 相同。Neural Collapse：$r_{\text{eff}} = K - 1$。</p>
+    <p>Benign 分界 $\beta > \alpha + 1/2$ 與 MSE 相同。Neural Collapse 下的 effective rank 分兩個層面看：</p>
+    <ul>
+      <li><strong>單一樣本（per-sample）</strong>：$r_{\text{eff}}(\bM_{\text{CE}}^{(i)}) \in [1, K-1]$，因 $\bH$ 在 $\mathcal{Z}_K$ 上有兩個不同特徵值 $Kab$ 與 $b$（$\bp = (a, b, \ldots, b)$，target vs 非 target 兩塊不同步）。</li>
+      <li><strong>類別平均（class-averaged）</strong>：$r_{\text{eff}}(\overline{\bM}_{\text{CE}}) = K - 1$ 嚴格成立，由 $S_K$ 在標準不可約表示 $\mathcal{Z}_K$ 上的 Schur 引理保證。</li>
+    </ul>
   </div>
   <details class="layer">
-    <summary>形式化定理</summary>
+    <summary>形式化定理（Paper D Theorem 4.4）</summary>
     <div class="layer-content">
       <p>Cross-Entropy 損失下，benign/catastrophic 過擬合的分界條件為 $\beta > \alpha + 1/2$，與 MSE 完全一致。</p>
-      <p>Neural Collapse 現象：最後一層特徵收斂到 $(K-1)$ 維正則單純形，有效秩 $r_{\text{eff}} = K - 1$。</p>
+      <p><strong>Neural Collapse 下的 effective rank（修正版）</strong>：</p>
+      <p>(a) 對任一樣本 $i$，$\bH(\bx_i)|_{\mathcal{Z}_K}$ 不是純量算子；其譜由 simplex-ETF 對稱性中 class $c_i$ 的穩定子 $S_{K-1}$（不對 $\mathcal{Z}_K$ 作 transitive 作用）切成兩塊：1 維「target vs 非 target 平均」方向特徵值 $Kab$，$(K-2)$ 維「非 target 之間差異」方向特徵值 $b$。故 $r_{\text{eff}}(\bM_{\text{CE}}^{(i)}) \in [1, K-1]$。</p>
+      <p>(b) 對 $K$ 類別取平均後，$\overline{\bM}_{\text{CE}}$ 與全 $S_K$ 換位作用 commute；$\mathcal{Z}_K$ 為 $S_K$ 之 $(K-1)$ 維標準不可約表示，由 Schur 引理 $\overline{\bM}_{\text{CE}}|_{\mathcal{Z}_K}$ 為純量，故 $r_{\text{eff}}(\overline{\bM}_{\text{CE}}) = K - 1$ 嚴格。</p>
+      <p>headline 結果是 (b)（適用於泛化界），而 (a) 提醒：「scalar on $\mathcal{Z}_K$」這個直覺只有對「class 平均後」的算子成立，個別樣本不行。</p>
     </div>
   </details>
   <div class="charts">
     <div class="chart-container" id="chart-35">
-      <h3>Neural Collapse 單純形</h3>
+      <h3>Neural Collapse 單純形（per-sample 兩塊特徵值 vs 類別平均後純量）</h3>
       <div class="chart-controls">
         <label>類別數 $K$ <input type="range" id="chart35-K" min="3" max="6" step="1" value="3"><span class="value-display" id="chart35-K-val">3</span></label>
       </div>

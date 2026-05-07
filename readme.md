@@ -388,3 +388,19 @@ Neural Collapse：r_eff = K-1，維度無關泛化自然融入。
 M 的定義不依賴分佈假設（純代數）。Sub-Gaussian：Hanson-Wright 仍適用，
 界多 O((r_eff/n)^{1/2}) 修正項，benign 分界不變。
 流形假設：d → d_M，benign 條件更易滿足（解釋了高維數據在流形結構下的泛化）。
+
+
+---
+
+## 附錄：抽出之投稿論文
+
+本研究筆記透過 `research-to-papers` pipeline 抽出四篇英文投稿稿：
+
+| 論文 | 標題 | 對應節 |
+|---|---|---|
+| `paper-a/paper.tex` | Noise Propagation Operators and a Two-Parameter Characterization of Benign Overfitting | §2 (Theorem 1) + §3 (Theorem 2) |
+| `paper-b/paper.tex` | A Landscape Analysis Approach to Feature Alignment in Shallow ReLU Networks | §6 (Theorem 5: Alignment) |
+| `paper-c/paper.tex` | Feature Learning, Effective Dimension, and Architecture-Specific Critical Depth | §5 (Theorem 4) + §7 (Theorem 6) |
+| `paper-d/paper.tex` | Effective Rank of the Class-Averaged Block at Neural Collapse | §16c (Cross-Entropy / Neural Collapse extension) |
+
+每篇含獨立 `meta.md` 列出建議投稿期刊。所有 paper-* 之 PDF 已隨 repo 提供。
